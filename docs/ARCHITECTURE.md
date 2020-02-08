@@ -12,6 +12,7 @@ Scale-out distributed coordination service
 * "High-Availability" - The minority half of a partition would never have "availability" in the academic sense. We mean to handle one or more crash-stop failures without
   an outside observer seeing the system as unavailable
 * Controller + Model
+* Easy to rollback failed cluster changes, easy to disagnose problems with cluster changes, easy to diagnose problems with cluster health
 
 ## Nodes
 Master nodes
@@ -23,7 +24,6 @@ Keyspace nodes
 * Sequential consistency and Linearizability
 * One master node per AZ, master nodes form 1 raft group. Master raft group is used to store cluster metadata like node-replica assignment.
   i.e. there exists a single "CLUSTER" keyspace that has the same interface as any user-facing keyspace that the cluster itself uses for config.
-  "eat our own dogfood"
 * Replica assignment for each raft group ensures one replica per AZ
 * "Cluster controller" - partition-node assignment, rebalancing
 
@@ -36,9 +36,18 @@ between collection objects
 * Keyspace to Raft Group Mapping (Desired + Current)
 * Raft Group Replica to Node Mapping (Desired + Current)
 
-## Processes
+## Cluster Management Controller
+* Replica allocation: decide where to place replicas, 
 
-Node States: { Normal, Deleting, Decomissioning }
+## Failure Modes That We Should Tolerate (liveness may not be guaranteed)
+* Network partitions
+* Fail-stop faults
+
+## Safety Properties
+* Loosely speaking, state transitions should always be resumable if some step fails or is interrupted
+* Cluster should not enter a corrupted state if a node fails during state transition.
+
+## Liveness Properties
 
 ### Bootstrapping a Raft Group
 1. A new raft group is created
@@ -52,8 +61,6 @@ Node States: { Normal, Deleting, Decomissioning }
 4. When the new node learns that it needs a replica from another node it asks the old node for the replica data. The old node will
    reject the request if it has not yet learned of the reassignment. (transfer implies that the replica state is locked)
 5. The new node updates the cluster metadata indicating that it is now the current home for that replica
-
-Invariants: only the desired node can update current node
 
 ### Removing a Node From The Cluster (Graceful)
 Cluster downsizing normal
@@ -77,6 +84,12 @@ A node has permanently gone offline (disk data not recoverable)
 ### How Cluster Operations Work For Master Node?
 Is it any different than any other raft group/keyspace?
 
+### Leader Election
+* Some of the algorithms listed above make the assumption that only
+  one leader is reading and writing cluster metadata at once.
+* Fencing may be necesssary to prevent concurrent updates from breaking global invariants:
+  i.e. ensuring replicas for a keyspace all exist on different nodes
+
 ## API
 * Create
 * Set
@@ -86,9 +99,23 @@ Is it any different than any other raft group/keyspace?
 * Get
 * Watch
 
-## Layers
-These represent interface boundaries
+## State Layers
+How data structures are layered
 * Raft Group
-* Log: Multiple logs per raft group
-* Keyspace:  
+* Log
+* Keyspace
+
+## Control Loops
 * 
+* 
+
+Keyspaces have a "disruption budget"
+
+Cluster management operations:
+- Add Node
+- Remove Node
+- Decomission Node
+- Initialize Keyspace
+- Delete Keyspace
+- Rebalance
+- Backup/Restore - How to take consistent snapshot? Depends
