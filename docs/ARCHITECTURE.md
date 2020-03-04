@@ -109,6 +109,56 @@ How data structures are layered
 * 
 * 
 
+Assuming we had 1M keyspaces, 1M raft logs would cause a lot of undue overhead.
+Perhaps it's useful to decouple #keyspaces from #raft groups. N:M.
+How would rebalancing work say if we needed to reduce or increase the number of keyspaces
+per raft group without impacting availability or consistency?
+
+K = # keyspaces
+R = # raft groups
+P = R/K
+
+P = 1 -> Full parallelism
+P < 1 -> Keyspaces share raft logs
+
+Raft Group Split -> Increase P
+Raft Group Merge -> Decrease P
+N logical logs hosted on M physical logs
+
+#### Splits
+When one physical log needs to be split into two physical logs
+there may be ongoing append or read operations. Ideally we would
+like to preserve availability for these operations. Perhaps it's
+enough during a split to simply stall the request? 
+A logical log could temporarily span 2 physical logs after a split!
+
+Roughly:
+1. Provision a new raft log
+2. Append to original log an indication that it is splitting and no longer
+   accepting appends for certain logical logs or reads past certain indexes.
+   Any appends to the raft log that are for a logical log that has been moved elsewhere
+   at the point the append commits will effectively result in a no-op, requiring an internal
+   retry to the new log.
+3. Map logical logs to new raft log after a certain index (appends move right away, reads depend on the reader position)
+
+non-linearizable reads don't require log appends and can be served from stale replicas
+linearizable reads do require log appends
+
+What can go wrong?
+
+#### Merges
+When two physical logs need to be merged into one physical log
+
+Roughly:
+1. Provision a new raft log
+2. Append to original logs an indication that it is merging and no longer
+   accepting appends for logical logs or reads for those logs past certain indexes.
+3. Map logical logs to a new raft log after a certain index
+
+IMPORTANT SAFETY PROPERTY
+There must be at-most one raft log at any given time that can accept writes on behalf of
+any given logical log to prevent lost updates
+
 Keyspaces have a "disruption budget"
 
 Cluster management operations:

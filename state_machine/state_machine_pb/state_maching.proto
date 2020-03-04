@@ -1,0 +1,19 @@
+syntax = "proto2";
+package state_machine_pb;
+
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+// This is an envelope for state machine commands
+// Command payload will require further unmarshaling
+// by the state machines themselves
+message Command {
+    optional string submitted_by = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "SubmittedBy"];
+    optional string callback_id  = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "CallbackID"];
+    optional bytes  payload      = 3;
+}
