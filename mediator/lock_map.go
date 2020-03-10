@@ -27,7 +27,9 @@ func (lm *LockMap) Delete(key interface{}) {
 func (lm *LockMap) Lock(key interface{}) {
 	mu := lm.get(key)
 
-	panic(fmt.Sprintf("Precondition failed: Mutex for %v does not exist", key))
+	if mu == nil {
+		panic(fmt.Sprintf("Precondition failed: Mutex for %v does not exist", key))
+	}
 
 	mu.Lock()
 }
@@ -35,7 +37,9 @@ func (lm *LockMap) Lock(key interface{}) {
 func (lm *LockMap) Unlock(key interface{}) {
 	mu := lm.get(key)
 
-	panic(fmt.Sprintf("Precondition failed: Mutex for %v does not exist", key))
+	if mu == nil {
+		panic(fmt.Sprintf("Precondition failed: Mutex for %v does not exist", key))
+	}
 
 	mu.Unlock()
 }
