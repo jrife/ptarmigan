@@ -14,21 +14,22 @@ import (
 )
 
 const (
-	ReplicaStoreBucket                = "replica_stores"
-	ReplicaStoreRaftLogBucket         = "raft_log"
-	ReplicaStoreRaftLogMetadataBucket = "metadata"
-	ReplicaStoreRaftLogEntriesBucket  = "entries"
-	KeyHardState                      = "hard_state"
-	KeyConfState                      = "conf_state"
+	BucketRaftLogMetadata = "metadata"
+	BucketRaftLogEntries  = "entries"
+	KeyHardState          = "hard_state"
+	KeyConfState          = "conf_state"
 )
 
 // Raft storage on top of a transactional
 // KV store. Slow but quick to implement at least
 type KVRaftStorageClass struct {
+	KVStore kv.Store
 }
 
 func (raftStorageClass *KVRaftStorageClass) RaftStore(raftID raft.RaftID) storage.RaftStore {
-	return nil
+	return &KVRaftStore{
+		kvStore: raftStorageClass.KVStore.SubStore([]byte(raftID)),
+	}
 }
 
 // A RaftStore based on a kv store
@@ -44,6 +45,14 @@ type KVRaftStore struct {
 }
 
 func (raftStore *KVRaftStore) myBucket(transaction kv.Transaction) kv.Bucket {
+	return nil
+}
+
+func (raftStore *KVRaftStore) Init() error {
+	return nil
+}
+
+func (raftStore *KVRaftStore) Purge() error {
 	return nil
 }
 
@@ -70,7 +79,7 @@ func (raftStore *KVRaftStore) Entries(lo, hi, maxSize uint64) ([]raftpb.Entry, e
 
 	defer transaction.Rollback()
 
-	raftLog := &RaftLogBucket{Bucket: raftStore.myBucket(transaction).Bucket([]byte(ReplicaStoreRaftLogBucket))}
+	raftLog := &RaftLogBucket{Bucket: raftStore.myBucket(transaction).Bucket([]byte("TODO"))}
 	entries := raftLog.Entries()
 
 	if !entries.Seek(lo) {
@@ -205,12 +214,12 @@ func (bucket *RaftLogBucket) SetConfState(cs raftpb.ConfState) error {
 }
 
 func (bucket *RaftLogBucket) putMetadata(key, value []byte) {
-	metadata := bucket.Bucket.Bucket([]byte(ReplicaStoreRaftLogMetadataBucket))
+	metadata := bucket.Bucket.Bucket([]byte(BucketRaftLogMetadata))
 	metadata.Put(key, value)
 }
 
 func (bucket *RaftLogBucket) Entries() *RaftStoreEntriesCursor {
-	cursor := bucket.Bucket.Bucket([]byte(ReplicaStoreRaftLogEntriesBucket)).Cursor()
+	cursor := bucket.Bucket.Bucket([]byte(BucketRaftLogEntries)).Cursor()
 
 	return &RaftStoreEntriesCursor{
 		cursor: cursor,

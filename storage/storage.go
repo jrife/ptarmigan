@@ -114,5 +114,8 @@ type RaftSnapshotWAL interface {
 	Append(raft.RaftID, raftpb.Snapshot) error
 	Delete(raft.RaftID) error
 	Get(raft.RaftID) (raftpb.Snapshot, error)
-	ForEach(func(raft.RaftID, raftpb.Snapshot)) error
+	ForEach(func(raft.RaftID, raftpb.Snapshot) error) error
 }
+
+// Other than snapshotting, the raft storage is fairly self-contained and
+// acts sort of like a WAL for the state machine storage itself.

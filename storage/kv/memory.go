@@ -15,23 +15,8 @@ func (store *MemoryStore) Begin(writable bool) (Transaction, error) {
 	return &MemoryTransaction{}, nil
 }
 
-func (store *MemoryStore) BeginBucket(name []byte, writable bool) (BucketTransaction, error) {
-	return &MemoryBucketTransaction{}, nil
-}
-
-var _ BucketTransaction = (*MemoryBucketTransaction)(nil)
-
-type MemoryBucketTransaction struct {
-	MemoryBucket
-	transaction *MemoryTransaction
-}
-
-func (bucketTransaction *MemoryBucketTransaction) Commit() error {
-	return bucketTransaction.Commit()
-}
-
-func (bucketTransaction *MemoryBucketTransaction) Rollback() error {
-	return bucketTransaction.Rollback()
+func (store *MemoryStore) SubStore(bucket []byte) Store {
+	return &MemoryStore{}
 }
 
 var _ Transaction = (*MemoryTransaction)(nil)
@@ -41,6 +26,10 @@ type MemoryTransaction struct {
 
 func (transaction *MemoryTransaction) Bucket(name []byte) Bucket {
 	return &MemoryBucket{}
+}
+
+func (transaction *MemoryTransaction) Namespace(bucket []byte) Transaction {
+	return nil
 }
 
 func (transaction *MemoryTransaction) CreateBucket(name []byte) (Bucket, error) {
@@ -67,12 +56,23 @@ func (transaction *MemoryTransaction) Commit() error {
 	return nil
 }
 
+func (transaction *MemoryTransaction) OnCommit(cb func()) {
+}
+
 func (transaction *MemoryTransaction) Rollback() error {
 	return nil
 }
 
 func (transaction *MemoryTransaction) Size() int64 {
 	return 0
+}
+
+func (transaction *MemoryTransaction) Snapshot() (io.ReadCloser, error) {
+	return nil, nil
+}
+
+func (transaction *MemoryTransaction) ApplySnapshot(io.Reader) error {
+	return nil
 }
 
 var _ Bucket = (*MemoryBucket)(nil)
@@ -117,14 +117,6 @@ func (bucket *MemoryBucket) NextSequence() (uint64, error) {
 }
 
 func (bucket *MemoryBucket) Put(key []byte, value []byte) error {
-	return nil
-}
-
-func (bucket *MemoryBucket) Snapshot() (io.ReadCloser, error) {
-	return nil, nil
-}
-
-func (bucket *MemoryBucket) ApplySnapshot(io.Reader) error {
 	return nil
 }
 

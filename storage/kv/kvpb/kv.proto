@@ -1,0 +1,33 @@
+syntax = "proto2";
+package kvpb;
+
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+message SnapshotHeader {
+    // Useful for checking format
+    // and version compatibility
+    map<string,bytes> metadata = 1;
+}
+
+// This is an envelope for sending raw bytes
+// io.Reader    -> Chunk Stream
+// Chunk Stream -> io.Reader
+message SnapshotChunk {
+    // Payload for this chunk
+    optional bytes content = 1;
+    // Checksum of stream up to this point. At the end of the stream
+    // the checksums should match
+    optional bytes checksum = 2;
+}
+
+message KVPair {
+    repeated bytes bucket = 1;
+    optional bytes key = 2;
+    optional bytes value = 3;
+}
