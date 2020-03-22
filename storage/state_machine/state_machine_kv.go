@@ -67,15 +67,15 @@ func (stateMachineStore *KVStateMachineStore) Snapshot() (io.ReadCloser, error) 
 	snapshot, err := transaction.Snapshot()
 
 	if err != nil {
-		transaction.Rollback()
+		snapshot.Close()
 
 		return nil, fmt.Errorf("Could not create snapshot: %s", err.Error())
 	}
 
-	return &SnapshotReader{transaction: transaction, snapshot: snapshot}, nil
+	return snapshot, nil
 }
 
-func (stateMachineStore *KVStateMachineStore) ApplySnapshot(snapshot io.ReadCloser) error {
+func (stateMachineStore *KVStateMachineStore) ApplySnapshot(snapshot io.Reader) error {
 	transaction, err := stateMachineStore.kvStore.Begin(true)
 
 	if err != nil {
@@ -114,36 +114,4 @@ func (stateMachineStore *KVStateMachineStore) Step(raftIndex uint64) (kv.Transac
 	})
 
 	return transaction.Namespace([]byte(BucketStateMachineState)), nil
-}
-
-var _ io.ReadCloser = (*SnapshotReader)(nil)
-
-// SnapshotReader ensures that the transaction
-// assicated with this snapshot is closed when
-// the reader is closed
-type SnapshotReader struct {
-	transaction kv.Transaction
-	snapshot    io.ReadCloser
-}
-
-func (snapshotReader *SnapshotReader) Read(p []byte) (n int, err error) {
-	return snapshotReader.snapshot.Read(p)
-}
-
-// Close closes the reader and rolls back the
-// transaction associated with this snapshot
-func (snapshotReader *SnapshotReader) Close() error {
-	err := snapshotReader.snapshot.Close()
-
-	if err != nil {
-		return fmt.Errorf("Could not close inner snapshot reader: %s", err.Error())
-	}
-
-	err = snapshotReader.transaction.Rollback()
-
-	if err != nil {
-		return fmt.Errorf("Could not close snapshot transaction: %s", err.Error())
-	}
-
-	return nil
 }

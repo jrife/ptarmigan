@@ -1,39 +1,44 @@
 package kv
 
-import "io"
+import (
+	"io"
+)
 
 type Store interface {
-	Begin(writable bool) (Transaction, error)
-	SubStore(bucket []byte) Store
+	Close() error
+	Delete() error
+	SubStore
 }
 
-type BucketRoot interface {
-	Bucket(name []byte) Bucket
-	CreateBucket(name []byte) (Bucket, error)
-	CreateBucketIfNotExists(name []byte) (Bucket, error)
-	Cursor() Cursor
-	DeleteBucket(name []byte) error
+type SubStore interface {
+	Begin(writable bool) (Transaction, error)
+	Snapshot() (io.ReadCloser, error)
+	ApplySnapshot(io.Reader) error
+	Namespace(bucket []byte) SubStore
 }
 
 type Transaction interface {
-	BucketRoot
-	ForEach(fn func(name []byte, b Bucket) error) error
+	Root() Bucket
 	Namespace(bucket []byte) Transaction
 	OnCommit(func())
 	Commit() error
 	Rollback() error
 	Size() int64
-	Snapshot() (io.ReadCloser, error)
-	ApplySnapshot(io.Reader) error
 }
 
 type Bucket interface {
-	BucketRoot
+	Bucket(name []byte) Bucket
+	CreateBucket(name []byte) (Bucket, error)
+	CreateBucketIfNotExists(name []byte) (Bucket, error)
+	Cursor() Cursor
+	DeleteBucket(name []byte) error
+	ForEachBucket(fn func(name []byte, bucket Bucket) error) error
 	ForEach(fn func(key []byte, value []byte) error) error
 	Delete(key []byte) error
 	Get(key []byte) []byte
 	NextSequence() (uint64, error)
 	Put(key []byte, value []byte) error
+	Purge() error
 }
 
 type BucketTransaction interface {

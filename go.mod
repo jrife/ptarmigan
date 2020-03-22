@@ -6,6 +6,7 @@ require (
 	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.4 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.5.0 // indirect
 	go.etcd.io/bbolt v1.3.3

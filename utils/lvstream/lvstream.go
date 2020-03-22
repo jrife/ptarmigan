@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 )
 
 // 10 MB
@@ -14,10 +15,11 @@ var MaxValueSize = 10 * 1024 * 1024 * 1024
 // [length|msg|length|msg...] -> msg,msg,msg
 var EClosed = errors.New("Closed")
 
-var _ io.ReadCloser = (*LVStreamReader)(nil)
+var _ io.ReadCloser = (*LVStreamEncoder)(nil)
 
-type LVStreamReader struct {
-	ReadValue func() ([]byte, error)
+type LVStreamEncoder struct {
+	nextValue func() ([]byte, error)
+	cleanup   func()
 	isLength  bool
 	length    []byte
 	value     []byte
@@ -25,56 +27,50 @@ type LVStreamReader struct {
 	err       error
 }
 
+func NewLVStreamEncoder(nextValue func() ([]byte, error), cleanup func()) *LVStreamEncoder {
+	encoder := &LVStreamEncoder{
+		length:    make([]byte, 4),
+		nextValue: nextValue,
+		cleanup:   cleanup,
+	}
+
+	return encoder
+}
+
 // Read implements io.Reader
 // It will panic if any of the preconditions
 // are not met.
-// Preconditions:
-// - ReadValue is not nil
-// - ReadValue must not return a nil value
-// - ReadValue must not return an empty value
-// - ReadValue must not return a value whose length is greater than math.MaxUint32
-func (reader *LVStreamReader) Read(p []byte) (int, error) {
-	if reader.err != nil {
-		return 0, reader.err
-	}
-
-	// Precondition check. Programmer error
-	if reader.ReadValue == nil {
-		panic("ReadValue cannot be nil")
-	}
-
-	// lazy init
-	if reader.chunk == nil {
-		reader.isLength = false
-		reader.length = make([]byte, 4)
-		reader.chunk = reader.value
+func (encoder *LVStreamEncoder) Read(p []byte) (int, error) {
+	if encoder.err != nil {
+		return 0, encoder.err
 	}
 
 	n := 0
+	pLen := len(p)
 
-	for n < len(p) {
-		if len(reader.chunk) == 0 {
-			if reader.isLength {
-				reader.isLength = false
-				reader.chunk = reader.value
+	for n < pLen {
+		if len(encoder.chunk) == 0 {
+			if encoder.isLength {
+				encoder.isLength = false
+				encoder.chunk = encoder.value
 			} else {
-				reader.isLength = true
-				value, err := reader.readValue()
+				encoder.isLength = true
+				value, err := encoder.nextValue()
 
 				if err != nil {
-					reader.err = err
+					encoder.close(err)
 
-					return n, reader.err
+					return n, encoder.err
 				}
 
-				reader.value = value
-				binary.BigEndian.PutUint32(reader.length, uint32(len(value)))
-				reader.chunk = reader.length
+				encoder.value = value
+				binary.BigEndian.PutUint32(encoder.length, uint32(len(value)))
+				encoder.chunk = encoder.length
 			}
 		}
 
-		c := copy(p, reader.chunk)
-		reader.chunk = reader.chunk[c:]
+		c := copy(p, encoder.chunk)
+		encoder.chunk = encoder.chunk[c:]
 		p = p[c:]
 		n += c
 	}
@@ -82,116 +78,112 @@ func (reader *LVStreamReader) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-func (reader *LVStreamReader) readValue() ([]byte, error) {
-	value, err := reader.ReadValue()
-
-	if err != nil {
-		return nil, err
+func (encoder *LVStreamEncoder) close(err error) {
+	if encoder.err != nil {
+		return
 	}
 
-	// Precondition check. Programmer error
-	if len(value) == 0 {
-		panic("Encoded value size is 0")
-	} else if len(value) > MaxValueSize {
-		panic(fmt.Sprintf("Encoded value size is too large %d > max(%d)", len(value), MaxValueSize))
-	}
-
-	return value, nil
+	encoder.err = err
+	encoder.cleanup()
 }
 
-func (reader *LVStreamReader) Close() error {
-	if reader.err != nil {
-		return nil
-	}
-
-	reader.err = EClosed
+func (encoder *LVStreamEncoder) Close() error {
+	encoder.close(EClosed)
 
 	return nil
 }
 
-var _ io.WriteCloser = (*LVStreamWriter)(nil)
+var _ io.WriteCloser = (*LVStreamDecoder)(nil)
 
-type LVStreamWriter struct {
-	WriteValue func(value []byte) error
-	isLength   bool
-	chunkSize  int
-	chunk      []byte
-	err        error
+type LVStreamDecoder struct {
+	nextValue func([]byte) error
+	isLength  bool
+	chunkSize int
+	chunk     []byte
+	errMu     sync.Mutex
+	err       error
 }
 
-func (writer *LVStreamWriter) Write(p []byte) (int, error) {
-	if writer.err != nil {
-		return 0, writer.err
+func NewLVStreamDecoder(nextValue func([]byte) error) *LVStreamDecoder {
+	decoder := &LVStreamDecoder{
+		chunkSize: 4,
+		isLength:  true,
+		nextValue: nextValue,
 	}
 
-	// lazy init
-	if writer.chunk == nil {
-		writer.chunkSize = 4
-		writer.chunk = reallocate(writer.chunk, writer.chunkSize)
-		writer.isLength = true
+	decoder.chunk = reallocate(decoder.chunk, decoder.chunkSize)
+
+	return decoder
+}
+
+func (decoder *LVStreamDecoder) Write(p []byte) (int, error) {
+	if decoder.err != nil {
+		return 0, decoder.err
 	}
+
+	pLen := len(p)
 
 	for len(p) > 0 {
+		// cap(chunk) >= chunkSize
+		// copy p to chunk up to min(len(p), chunkSize)
+		copyAmount := min(decoder.chunkSize, len(p))
+		decoder.chunk = append(decoder.chunk, p[:copyAmount]...)
+		p = p[copyAmount:]
+
 		// Have we read all bytes for the current chunk?
-		if len(writer.chunk) == writer.chunkSize {
-			if writer.isLength {
+		if len(decoder.chunk) == decoder.chunkSize {
+			if decoder.isLength {
 				// It's the length prefix. This becomes our new chunk size
-				length := binary.BigEndian.Uint32(writer.chunk)
+				length := binary.BigEndian.Uint32(decoder.chunk)
 
 				if length > uint32(MaxValueSize) {
-					writer.err = fmt.Errorf("Encoded value length is too large: %d > max(%d)", length, MaxValueSize)
+					decoder.err = fmt.Errorf("Encoded value length is too large: %d > max(%d)", length, MaxValueSize)
 
-					return 0, writer.err
+					return 0, decoder.err
 				}
 
-				writer.chunkSize = int(length)
-				writer.chunk = reallocate(writer.chunk, writer.chunkSize)
-				writer.isLength = false
+				decoder.chunkSize = int(length)
+				decoder.chunk = reallocate(decoder.chunk, decoder.chunkSize)
+				decoder.isLength = false
 			} else {
-				// Precondition check. Programmer error
-				if writer.WriteValue == nil {
-					panic("WriteValue cannot be nil")
+				// It's the next value. Call submit
+				if err := decoder.nextValue(decoder.chunk); err != nil {
+					decoder.err = err
+
+					return 0, decoder.err
 				}
 
-				// It's the next value. Call WriteValue
-				if err := writer.WriteValue(writer.chunk); err != nil {
-					writer.err = err
-
-					return 0, writer.err
-				}
-
-				writer.chunkSize = 4
-				writer.chunk = reallocate(writer.chunk, writer.chunkSize)
-				writer.isLength = true
+				decoder.chunkSize = 4
+				decoder.chunk = reallocate(decoder.chunk, decoder.chunkSize)
+				decoder.isLength = true
 			}
 		}
-
-		// cap(chunk) >= chunkSize
-		// copy p to chunk up to max(len(p), chunkSize)
-		copyAmount := max(writer.chunkSize, len(p))
-		writer.chunk = append(writer.chunk, p[:copyAmount]...)
-		p = p[copyAmount:]
 	}
 
-	return len(p), nil
+	return pLen, nil
 }
 
-func max(a, b int) int {
-	if a < b {
+func (decoder *LVStreamDecoder) close(err error) error {
+	decoder.errMu.Lock()
+	defer decoder.errMu.Unlock()
+
+	if decoder.err == nil {
+		decoder.err = err
+	}
+
+	return decoder.err
+}
+
+func (decoder *LVStreamDecoder) Close() error {
+	return decoder.close(EClosed)
+}
+
+func min(a, b int) int {
+	if a > b {
 		return b
 	}
 
 	return a
-}
-
-func (writer *LVStreamWriter) Close() error {
-	if writer.err != nil {
-		return nil
-	}
-
-	writer.err = EClosed
-
-	return nil
 }
 
 func reallocate(b []byte, capacity int) []byte {

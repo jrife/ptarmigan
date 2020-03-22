@@ -17,36 +17,37 @@ func TestLVStreamWriter(t *testing.T) {
 }
 
 func TestLVStream(t *testing.T) {
-	input := [][]byte{
+	values := [][]byte{
 		[]byte("a"),
 		[]byte("b"),
 		[]byte("c"),
 	}
+	input := values
 	output := [][]byte{}
 
-	lvReader := &lvstream.LVStreamReader{
-		ReadValue: func() ([]byte, error) {
-			if len(input) == 0 {
-				return nil, io.EOF
-			}
+	lvReader := lvstream.NewLVStreamEncoder(func() ([]byte, error) {
+		if len(input) == 0 {
+			return nil, io.EOF
+		}
 
-			next := input[0]
-			input = input[1:]
+		next := input[0]
+		input = input[1:]
 
-			return next, nil
-		},
+		return next, nil
+	}, func() {})
+
+	lvWriter := lvstream.NewLVStreamDecoder(func(value []byte) error {
+		valueCopy := append([]byte{}, value...)
+		output = append(output, valueCopy)
+
+		return nil
+	})
+
+	if _, err := io.Copy(lvWriter, lvReader); err != nil {
+		t.Fatalf("io.Copy error: %s", err.Error())
 	}
-	lvWriter := &lvstream.LVStreamWriter{
-		WriteValue: func(value []byte) error {
-			output = append(output, value)
 
-			return nil
-		},
-	}
-
-	io.Copy(lvWriter, lvReader)
-
-	if !reflect.DeepEqual(input, output) {
-		t.Errorf("%v != %v", input, output)
+	if !reflect.DeepEqual(values, output) {
+		t.Errorf("%v != %v", values, output)
 	}
 }

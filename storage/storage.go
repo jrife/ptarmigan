@@ -85,7 +85,7 @@ type StateMachineStore interface {
 	// (all or nothing) and the storage class
 	// driver takes care of cleaning up artifacts
 	// from failed snapshots
-	ApplySnapshot(io.ReadCloser) error
+	ApplySnapshot(io.Reader) error
 }
 
 // Before StateMachineStore.ApplySnapshot() is called
