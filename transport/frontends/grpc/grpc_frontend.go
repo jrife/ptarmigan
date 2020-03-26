@@ -29,11 +29,13 @@ func (frontend *Frontend) Init(options frontends.Options) error {
 
 // Listen accepts connections from this listener
 func (frontend *Frontend) Listen(listener net.Listener) error {
-	return nil
+	return frontend.grpcServer.Serve(listener)
 }
 
 // Stop stops accepting connections from listeners and causes
 // all calls to Listen to return
 func (frontend *Frontend) Stop() error {
+	frontend.grpcServer.GracefulStop()
+
 	return nil
 }
