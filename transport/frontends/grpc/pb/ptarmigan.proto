@@ -1,0 +1,27 @@
+syntax = "proto3";
+package pb;
+
+import "github.com/coreos/etcd/raft/raftpb/raft.proto";
+import "transport/ptarmiganpb/ptarmigan.proto";
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+message RaftMessages {
+    repeated raftpb.Message messages = 1 [(gogoproto.nullable) = false];
+}
+
+message Empty {
+}
+
+// Service definitions only here
+service Raft {
+    rpc ApplySnapshot(stream ptarmiganpb.Chunk) returns (Empty);
+    rpc SendMessages(RaftMessages) returns (Empty);
+}
+
+// protoc -I=../../../vendor/ -I ../../../ -I=$GOPATH/src/ -I=$GOPATH/src/github.com/gogo/protobuf/protobuf -I=$GOPATH/src/github.com/gogo/protobuf -I=. --gogofaster_out=plugins=grpc:.  ptarmigan.proto

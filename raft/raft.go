@@ -22,3 +22,7 @@ type Raft interface {
 	HasReady() bool
 	Ready() raft.Ready
 }
+
+type RaftSpec struct {
+	ID string
+}

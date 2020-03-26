@@ -12,4 +12,5 @@ require (
 	go.etcd.io/bbolt v1.3.3
 	go.etcd.io/etcd v3.3.18+incompatible
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
+	google.golang.org/grpc v1.28.0
 )

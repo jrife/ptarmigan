@@ -1,0 +1,17 @@
+syntax = "proto3";
+package ptarmiganpb;
+option go_package = "github.com/jrife/ptarmigan/transport/ptarmiganpb";
+
+// Model definitions only here (to be used by other transports)
+import "github.com/coreos/etcd/raft/raftpb/raft.proto";
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+message Chunk {
+    bytes data = 1;
+}

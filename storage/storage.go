@@ -1,121 +1,154 @@
 package storage
 
 import (
-	"io"
+	"fmt"
 
-	etcd_raft "github.com/coreos/etcd/raft"
-	"github.com/coreos/etcd/raft/raftpb"
 	"github.com/jrife/ptarmigan/raft"
-
 	"github.com/jrife/ptarmigan/state_machine"
+	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/plugins"
+	storage_raft "github.com/jrife/ptarmigan/storage/raft"
+	raft_storage_class_kv "github.com/jrife/ptarmigan/storage/raft/storage_classes/kv"
+	wal_storage_class_kv "github.com/jrife/ptarmigan/storage/wal/storage_classes/kv"
+
+	storage_state_machine "github.com/jrife/ptarmigan/storage/state_machine"
+	state_machine_storage_class_kv "github.com/jrife/ptarmigan/storage/state_machine/storage_classes/kv"
+
+	"github.com/jrife/ptarmigan/storage/wal"
 )
 
-// I've been struggling to think of a general enough
-// storage interface so that we can adapt it to meet
-// the needs of many state machines. The most important
-// invariant is consistency at rest. That is to say,
-// at any given moment the state on disk must represent
-// a consistent state, where consistent is defined by
-// some application specific parameters. This may require
-// a write-ahead-log as a first-class abstraction of our API
-//
-// CONSISTENCY AT REST: If the program crashes at any time,
-// a consistent state is recoverable on restart.
-//
-// The challenges I face are presenting the following
-// through a series of interfaces that are flexible:
-//   1) Reading a consistent snapshot
-//   2) Applying a consistent snapshot atomically (no partial updates)
-//   3) Knowing the highest entry applied to a state machine
-//   4) Allowing flexible storage options for a state machine
-// Consequences of having a snapshot applied to a state machine store
-// without having applied the corresponding update to the raft
-// store? This could cause an inconsistency? 2PC or something like that
-// to prevent problems? WAL?
+var (
+	BucketRaftStores         = []byte{0}
+	BucketStateMachineStores = []byte{1}
+	BucketRaftSnapshotWAL    = []byte{2}
+)
 
-type SnapshotterCb func() (raftpb.Snapshot, error)
-
-type RaftStorageClass interface {
-	// Just a factory method
-	RaftStore(raftID raft.RaftID) RaftStore
+// StorageProvider describes an interface for
+// provisioning durable storage drivers for
+// different components.
+type StorageProvider interface {
+	// Raft returns a RaftStore instance for the specified
+	// raft instance. This function should automatically
+	// provision the storage if it doesn't exist yet for this
+	// raft instance.
+	Raft(raft.RaftSpec) (storage_raft.RaftStore, error)
+	// StateMachine returns a StateMachineStore instance for
+	// the specified state machine instance. This function
+	// should automatically provision the storage if it doesn't
+	// exist yet for this state machine instance. This function
+	// must return a StateMachineStore implementation matching
+	// the state machine's StorageClass. Different storage classes
+	// provide different interfaces
+	StateMachine(state_machine.StateMachineSpec) (storage_state_machine.StateMachineStore, error)
+	// WAL returns a RaftSnapshotWAL instance. It should provision
+	// the storage if it doesn't exist yet. It should return the same
+	// WAL every time.
+	WAL() (wal.RaftSnapshotWAL, error)
 }
 
-type RaftStore interface {
-	etcd_raft.Storage
-	Init() error
-	Purge() error
-	OnSnapshot(SnapshotterCb)
-	SetHardState(st raftpb.HardState) error
-	Append(entries []raftpb.Entry) error
+// SingleKVStorageProvider is an implementation of
+// StorageProvider built around a single KV store
+// instance. All storage objects it returns are
+// based on the same KV store.
+type SingleKVStorageProvider struct {
+	kvStore      kv.Store
+	stateMachine kv.SubStore
+	raft         kv.SubStore
+	wal          kv.SubStore
 }
 
-type StateMachineStorageClass interface {
-	// Just a factory method. We could add more stuff later
-	// to this interface if we need functions that affect
-	// all instances of this storage class
-	StateMachineStore(stateMachineID state_machine.StateMachineID) StateMachineStore
+func NewSingleKVStorageProvider(kvStorePlugin string, kvStoreOptions kv.PluginOptions) (*SingleKVStorageProvider, error) {
+	kvPluginManager := plugins.NewKVPluginManager()
+	plugin := kvPluginManager.Plugin(kvStorePlugin)
+
+	if plugin == nil {
+		return nil, fmt.Errorf("%s is not a recognized KV store plugin", kvStorePlugin)
+	}
+
+	kvStore, err := plugin.NewStore(kvStoreOptions)
+
+	if err != nil {
+		return nil, fmt.Errorf("Could not create new %s store with options %+v: %s", kvStorePlugin, kvStoreOptions, err.Error())
+	}
+
+	storageProvider := &SingleKVStorageProvider{
+		kvStore: kvStore,
+	}
+
+	if store, err := storageProvider.ensureSubStore(kvStore, BucketRaftStores); err != nil {
+		return nil, fmt.Errorf("Could not ensure the existence of the raft sub-store: %s", err.Error())
+	} else {
+		storageProvider.raft = store
+	}
+
+	if store, err := storageProvider.ensureSubStore(kvStore, BucketStateMachineStores); err != nil {
+		return nil, fmt.Errorf("Could not ensure the existence of the state machine sub-store: %s", err.Error())
+	} else {
+		storageProvider.stateMachine = store
+	}
+
+	if store, err := storageProvider.ensureSubStore(kvStore, BucketRaftSnapshotWAL); err != nil {
+		return nil, fmt.Errorf("Could not ensure the existence of the WAL sub-store: %s", err.Error())
+	} else {
+		storageProvider.wal = store
+	}
+
+	return storageProvider, nil
 }
 
-// Each type of state machine can describe its own
-// StateMachineStorage or use one that is already
-// defined. In our case we'll implement a storage
-// implementation that multiplexes a lot of state
-// machine storages over the same transactional kv store.
-// This interface is essential for ptarmigan to take
-// and transfer snapshots at the right time.
-// New state machine types are welcome to structure
-// their persistent storage howerver they want
-// as long as they register a new state machine storage driver
-// and it implements this interface.
-type StateMachineStore interface {
-	Init() error
-	Purge() error
-	// Keep track of the last applied raft index
-	// We shouldn't need to keep track of the term
-	// because we're only concerned with committed
-	// indexes. Every committed index should be processed
-	// by the state machine.
-	LastAppliedRaftIndex() uint64
-	// Create a consistent snapshot of the current state.
-	// When deserialized the new instance should return
-	// the same raft index.
-	Snapshot() (io.ReadCloser, error)
-	// Apply a consistent snapshot atomically
-	// At the very least this needs to be atomic
-	// (all or nothing) and the storage class
-	// driver takes care of cleaning up artifacts
-	// from failed snapshots
-	ApplySnapshot(io.Reader) error
+func (storageProvider *SingleKVStorageProvider) ensureSubStore(parent kv.SubStore, child []byte) (kv.SubStore, error) {
+	transaction, err := parent.Begin(true)
+
+	if err != nil {
+		return nil, fmt.Errorf("Could not begin transaction: %s", err.Error())
+	}
+
+	defer transaction.Rollback()
+
+	_, err = transaction.Root().CreateBucket(child)
+
+	if err != nil {
+		return nil, fmt.Errorf("Could not create bucket %v: %s", child, err.Error())
+	}
+
+	if err := transaction.Commit(); err != nil {
+		return nil, fmt.Errorf("Could not commit transaction: %s", err.Error())
+	}
+
+	return parent.Namespace(child), nil
 }
 
-// Before StateMachineStore.ApplySnapshot() is called
-// RaftSnapshotWAL.Append() is called to record the intent
-// to stable storage. Since StateMachineStore.ApplySnapshot()
-// is atomic its results will be totally synced to stable
-// storage or not at all. We want to arrive at a state
-// where the raft store state matches what is in the
-// state machine store before allowing new progress on
-// that raft state machine. On node startup we see if there
-// were any raft snapshot transactions that were interrupted.
-// There are three possible cases:
-// 1) An entry exists in the raft snapshot WAL for a raft instance.
-//    The LastAppliedRaftIndex() of the linked state machine matches
-//    the Index in the raft snapshot. This indicates that we may
-//    not have finished the snapshot tranaction and still need to
-//    apply the raft snapshot to the raft store. The application
-//    must not allow raft machine interactions until the snapshot
-//    is totally applied.
-// 2) An entry exists in the raft snapshot WAL for a raft instance.
-//    The LastAppliedRaftIndex() does not match the index of the
-//    raft snapshot. This means the state machine snapshot was never
-//    persisted. Need to delete this entry from the WAL and report
-//    failure back to sender.
-type RaftSnapshotWAL interface {
-	Append(raft.RaftID, raftpb.Snapshot) error
-	Delete(raft.RaftID) error
-	Get(raft.RaftID) (raftpb.Snapshot, error)
-	ForEach(func(raft.RaftID, raftpb.Snapshot) error) error
+func (storageProvider *SingleKVStorageProvider) Raft(spec raft.RaftSpec) (storage_raft.RaftStore, error) {
+	store, err := storageProvider.ensureSubStore(storageProvider.raft, []byte(spec.ID))
+
+	if err != nil {
+		return nil, fmt.Errorf("Could not ensure the existence of the state machine sub-store for raft instance %s: %s", spec.ID, err.Error())
+	}
+
+	return &raft_storage_class_kv.KVRaftStore{
+		Store: store,
+	}, nil
 }
 
-// Other than snapshotting, the raft storage is fairly self-contained and
-// acts sort of like a WAL for the state machine storage itself.
+func (storageProvider *SingleKVStorageProvider) StateMachine(spec state_machine.StateMachineSpec) (storage_state_machine.StateMachineStore, error) {
+	switch spec.StorageClass {
+	case state_machine_storage_class_kv.StorageClassName:
+		store, err := storageProvider.ensureSubStore(storageProvider.stateMachine, []byte(spec.ID))
+
+		if err != nil {
+			return nil, fmt.Errorf("Could not ensure the existence of the state machine sub-store for state machine %s: %s", spec.ID, err.Error())
+		}
+
+		return &state_machine_storage_class_kv.KVStateMachineStore{
+			Store: store,
+		}, nil
+	default:
+		return nil, fmt.Errorf("%s is not a recognized storage class", spec.StorageClass)
+	}
+}
+
+func (storageProvider *SingleKVStorageProvider) WAL() (wal.RaftSnapshotWAL, error) {
+	return &wal_storage_class_kv.KVRaftSnapshotWAL{
+		Store: storageProvider.wal,
+	}, nil
+}

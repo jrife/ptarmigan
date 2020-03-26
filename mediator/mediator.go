@@ -2,6 +2,7 @@ package mediator
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	etcd_raft "github.com/coreos/etcd/raft"
@@ -30,7 +31,7 @@ type Heartbeater interface {
 
 type SnapshotTransport interface {
 	StartStateMachineSnapshotDownload(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Message)
-	OnStateMachineSnapshotReceive(func(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Message, snapshot io.Reader) error)
+	OnStateMachineSnapshotReceive(func(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Message, snapshot io.ReadCloser) error)
 	OnStateMachineSnapshotRequest(func(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Snapshot, snapshotWriter io.Writer) error)
 }
 
@@ -50,18 +51,28 @@ type Mediator struct {
 	stateMachines     state_machine.ObservableStateMachineMap
 	replicas          replica.ObservableReplicaSet
 	commandHub        CommandHub
-	raftTransport     raft.RaftTransport
 	ticker            Ticker
 	heartbeater       Heartbeater
 	readyQueue        ReadyQueue
 	snapshotTransport SnapshotTransport
-	nodeStorage       storage.NodeStore
+	storageProvider   storage.StorageProvider
 }
 
-func (mediator *Mediator) Init() {
+func (mediator *Mediator) Init() error {
+	snapshotWAL, err := mediator.storageProvider.WAL()
+
+	if err != nil {
+		return fmt.Errorf("Could not get snapshot WAL instance from storage provider: %s", err.Error())
+	}
+
+	snapshotWAL.ForEach(func(raftID raft.RaftID, snap raftpb.Snapshot) error {
+		// If there are any half-finished snapshots they need to be finished up before
+		// allowing progress for those state machines
+		return nil
+	})
+
 	mediator.replicas.OnAdd(mediator.handleReplicaAdd)
 	mediator.replicas.OnDelete(mediator.handleReplicaDelete)
-	mediator.raftTransport.OnReceive(mediator.handleRaftTransportReceive)
 	mediator.ticker.OnTick(mediator.handleTick)
 	mediator.heartbeater.OnHeartbeat(mediator.handleHeartbeat)
 	mediator.commandHub.OnCommand(mediator.handleCommand)
@@ -71,6 +82,8 @@ func (mediator *Mediator) Init() {
 	for i := 0; i < 8; i++ {
 		go mediator.processReadyQueue()
 	}
+
+	return nil
 }
 
 func (mediator *Mediator) processReadyQueue() {
@@ -114,7 +127,7 @@ func (mediator *Mediator) processReady(raftID raft.RaftID) {
 	}
 
 	// Send messages
-	mediator.raftTransport.Send(rd.Messages)
+	// mediator.raftTransport.Send(rd.Messages)
 
 	// Process committed entries
 	replica.StateMachine().Step(state_machine_pb.Command{})
@@ -131,7 +144,14 @@ func (mediator *Mediator) processReady(raftID raft.RaftID) {
 
 func (mediator *Mediator) handleReplicaAdd(replica replica.Replica) {
 	mediator.raftLocks.Add(replica.Raft().ID())
-	mediator.nodeStorage.ReplicaStore("").RaftStore().OnSnapshot(func() (raftpb.Snapshot, error) {
+
+	raftStore, err := mediator.storageProvider.Raft(raft.RaftSpec{ID: (string)(replica.Raft().ID())})
+
+	if err != nil {
+		// TODO handle this somehow
+	}
+
+	raftStore.OnSnapshot(func() (raftpb.Snapshot, error) {
 		return mediator.takeSnapshot(replica.Raft(), replica.StateMachine())
 	})
 }
@@ -166,8 +186,14 @@ func (mediator *Mediator) handleRaftTransportReceive(messages []raftpb.Message) 
 	}
 }
 
-func (mediator *Mediator) handleStateMachineSnapshotReceive(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Message, snapshot storage.StateMachineSnapshot) error {
-	err := mediator.nodeStorage.ReplicaStore("").StateMachineStore().ApplySnapshot(snapshot)
+func (mediator *Mediator) handleStateMachineSnapshotReceive(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Message, snapshot io.ReadCloser) error {
+	stateMachineStore, err := mediator.storageProvider.StateMachine(state_machine.StateMachineSpec{ID: (string)(stateMachineID), StorageClass: "kv"})
+
+	if err != nil {
+		return fmt.Errorf("Could not retrieve state machine store instance for state machine %s from storage provider: %s", stateMachineID, err.Error())
+	}
+
+	err = stateMachineStore.ApplySnapshot(snapshot)
 
 	if err != nil {
 		return err
@@ -184,7 +210,13 @@ func (mediator *Mediator) handleStateMachineSnapshotReceive(stateMachineID state
 }
 
 func (mediator *Mediator) handleStateMachineSnapshotRequest(stateMachineID state_machine.StateMachineID, snapshotSpec raftpb.Snapshot, snapshotWriter io.Writer) error {
-	snapshot, err := mediator.nodeStorage.ReplicaStore("").StateMachineStore().GetSnapshot()
+	stateMachineStore, err := mediator.storageProvider.StateMachine(state_machine.StateMachineSpec{ID: (string)(stateMachineID), StorageClass: "kv"})
+
+	if err != nil {
+		return fmt.Errorf("Could not retrieve state machine store instance for state machine %s from storage provider: %s", stateMachineID, err.Error())
+	}
+
+	snapshot, err := stateMachineStore.Snapshot()
 
 	if err != nil {
 		return err

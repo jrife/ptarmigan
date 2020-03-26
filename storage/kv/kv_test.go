@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/builder"
-	"github.com/jrife/ptarmigan/utils/uuid"
+	"github.com/jrife/ptarmigan/storage/kv/plugins"
 )
 
 type storeModel bucketModel
@@ -111,31 +110,29 @@ func readBucket(bucket kv.Bucket) (bucketModel, error) {
 
 type tempStoreBuilder func(t *testing.T, model storeModel) kv.Store
 
-var plugins map[string]tempStoreBuilder = map[string]tempStoreBuilder{
-	"bbolt": buildTempBboltStore,
-}
+func builder(plugin kv.Plugin) tempStoreBuilder {
+	return func(t *testing.T, model storeModel) kv.Store {
+		store, err := plugin.NewTempStore()
 
-func buildTempBboltStore(t *testing.T, model storeModel) kv.Store {
-	store, err := builder.MakeStore("bbolt", map[string]interface{}{
-		"path": fmt.Sprintf("/tmp/bbolt-%s", uuid.MustUUID()),
-	})
-
-	if err != nil {
-		t.Fatalf("Could not build a bbolt store: %s", err.Error())
-	}
-
-	if model != nil {
-		if err := writeStore(store, model); err != nil {
-			t.Fatalf("Could not populate bbolt store: %s", err.Error())
+		if err != nil {
+			t.Fatalf("Could not build a %s store: %s", plugin.Name(), err.Error())
 		}
-	}
 
-	return store
+		if model != nil {
+			if err := writeStore(store, model); err != nil {
+				t.Fatalf("Could not populate %s store: %s", plugin.Name(), err.Error())
+			}
+		}
+
+		return store
+	}
 }
 
 func TestDrivers(t *testing.T) {
-	for plugin, builder := range plugins {
-		t.Run(plugin, driverTest(builder))
+	pluginManager := plugins.NewKVPluginManager()
+
+	for _, plugin := range pluginManager.Plugins() {
+		t.Run(plugin.Name(), driverTest(builder(plugin)))
 	}
 }
 

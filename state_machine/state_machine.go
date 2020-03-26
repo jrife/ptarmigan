@@ -19,3 +19,8 @@ type CommandQueue interface {
 	SubmitCommand(ctx context.Context, command []byte)
 	OnCommand(command state_machine_pb.Command)
 }
+
+type StateMachineSpec struct {
+	ID           string
+	StorageClass string
+}
