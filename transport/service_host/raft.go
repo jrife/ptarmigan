@@ -1,4 +1,4 @@
-package services
+package service_host
 
 import (
 	"io"
@@ -6,11 +6,7 @@ import (
 	"github.com/coreos/etcd/raft/raftpb"
 )
 
-type RaftClient interface {
-	SendRaftMessages(messages []raftpb.Message)
-}
-
-type RaftService interface {
+type RaftServiceHost interface {
 	Receive(messages []raftpb.Message)
 	ApplySnapshot(raftSnap raftpb.Snapshot, stateMachineSnap io.Reader) error
 }

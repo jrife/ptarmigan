@@ -3,13 +3,14 @@ package state_machine
 import (
 	"context"
 
+	"github.com/coreos/etcd/raft/raftpb"
 	"github.com/jrife/ptarmigan/state_machine/state_machine_pb"
+	"github.com/jrife/ptarmigan/storage/state_machine"
 )
 
 type StateMachine interface {
-	ID() StateMachineID
-	Step(command state_machine_pb.Command) (updateHint []byte)
-	ApplySnapshot()
+	Init(store state_machine.StateMachineStore) error
+	Step(command raftpb.Entry) ([]byte, error)
 }
 
 // State machine interface:

@@ -1,7 +1,6 @@
 #!/bin/bash
 set -x
 
-echo "$(whoami)"
 PTARMIGAN_ROOT=/home/me/ptarmigan
 GOGOPROTO_ROOT=/home/me/protobuf
 cd $PTARMIGAN_ROOT/transport/ptarmiganpb

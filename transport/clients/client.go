@@ -1,8 +1,4 @@
-package transport
-
-import (
-	"github.com/jrife/ptarmigan/transport/services"
-)
+package clients
 
 // PtarmiganClient describes the interface
 // for public clients of a ptarmigan cluster.
@@ -18,16 +14,5 @@ type PtarmiganClient interface {
 // nodes in the cluster.
 type PtarmiganClientInternal interface {
 	PtarmiganClient
-	services.RaftClient
-}
-
-// PtarmiganServer describes an interface
-// that will be passed to each type of
-// frontend. Each frontend provides support
-// for a different type of protocol. The
-// idea here is to decouple the inner
-// workings of a ptarmigan node from the
-// protocol that they use to communicate
-type PtarmiganServer interface {
-	services.RaftService
+	RaftServiceClient
 }

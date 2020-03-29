@@ -12,6 +12,22 @@ option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_getters_all) = false;
 option (gogoproto.goproto_enum_prefix_all) = false;
 
+message Error {
+    enum ErrorCode {
+        ErrNotFound = 0;
+    }
+
+    // Code must be one of the standard error codes
+    ErrorCode code = 1;
+    // Type can be used by a specific service to further discover what went wrong
+    string type = 2;
+    // Message can carry more detail on what the problem is
+    string message = 3;
+}
+
 message Chunk {
-    bytes data = 1;
+    oneof chunk_data {
+        bytes data = 1;
+        raftpb.Snapshot metadata = 2;
+    }
 }

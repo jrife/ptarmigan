@@ -3,9 +3,10 @@ package grpc
 import (
 	"net"
 
+	"github.com/jrife/ptarmigan/transport/service_host"
+
 	"github.com/jrife/ptarmigan/transport/frontends/grpc/pb"
 
-	"github.com/jrife/ptarmigan/transport"
 	"github.com/jrife/ptarmigan/transport/frontends"
 	"google.golang.org/grpc"
 )
@@ -13,16 +14,16 @@ import (
 // Frontend is an implementation of
 // PtarmiganFrontend for the gRPC protocol
 type Frontend struct {
-	ptarmiganServer transport.PtarmiganServer
-	grpcServer      *grpc.Server
+	host       service_host.PtarmiganHost
+	grpcServer *grpc.Server
 }
 
 // Init initializes the frontend
 func (frontend *Frontend) Init(options frontends.Options) error {
-	frontend.ptarmiganServer = options.Server
+	frontend.host = options.Host
 	frontend.grpcServer = grpc.NewServer()
 
-	pb.RegisterRaftServer(frontend.grpcServer, &RaftServer{raftService: frontend.ptarmiganServer})
+	pb.RegisterRaftServer(frontend.grpcServer, &RaftServer{host: frontend.host})
 
 	return nil
 }

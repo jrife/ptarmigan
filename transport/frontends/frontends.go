@@ -3,13 +3,13 @@ package frontends
 import (
 	"net"
 
-	"github.com/jrife/ptarmigan/transport"
+	"github.com/jrife/ptarmigan/transport/service_host"
 )
 
 // Options define standard options
 // passed to frontends during initialization
 type Options struct {
-	Server  transport.PtarmiganServer
+	Host    service_host.PtarmiganHost
 	Options map[string]interface{}
 }
 
