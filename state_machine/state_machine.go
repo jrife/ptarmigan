@@ -18,6 +18,18 @@ import (
 // - Store
 //
 
+// Keyspace - A namespace for partitions. Each keyspace may have a different
+// replication factor, or distribution settings
+// Partition - Represents a single partition of our keyspace backed by a single raft group
+// Replica - A replica of our partition.
+// Each replica of the raft group corresponds with one replica in the state machine partition
+// Placeholders
+type StatefulServiceReplicaSpec struct {
+	Store     string
+	Partition string
+	ID        string
+}
+
 // A StatefulServiceProvider could be a local implementation or
 // a remote service. Local implementations can use our already established
 // state machine storage drivers. External implementations in theory
@@ -28,22 +40,12 @@ import (
 // driven from the core (raft management). The advantage of an imperative
 // interface is the avoidance of repetitive logic
 type StatefulServiceProvider interface {
-	CreateStore()
-	DeleteStore()
-	// Keyspace - A namespace for partitions. Each keyspace may have a different
-	// replication factor, or distribution settings
-	// Partition - Represents a single partition of our keyspace backed by a single raft group
-	// Replica - A replica of our partition.
-	// Each replica of the raft group corresponds with one replica in the state machine partition
-	Step(store, partition, replica, message string) error
-	ApplySnapshot(store, partition, replica, snap io.Reader) error
-	Snapshot(store, partition, replica) (io.Reader, error)
-	LastAppliedIndex(store, partition, replica string) (int, error)
-}
-
-var _ StatefulServiceProvider = (*ExternalStatefulServiceProvider)(nil)
-
-type ExternalStatefulServiceProvider struct {
+	CreateReplica(replica StatefulServiceReplicaSpec) error
+	DeleteReplica(replica StatefulServiceReplicaSpec) error
+	StepReplica(replica StatefulServiceReplicaSpec, message raftpb.Entry) error
+	ApplyReplicaSnapshot(replica StatefulServiceReplicaSpec, snap io.Reader) error
+	ReplicaSnapshot(replica StatefulServiceReplicaSpec) (io.Reader, error)
+	ReplicaLastAppliedIndex(replica StatefulServiceReplicaSpec) (uint64, error)
 }
 
 // Side-note:
