@@ -8,5 +8,7 @@ package service_host
 // workings of a ptarmigan node from the
 // protocol that they use to communicate
 type PtarmiganHost interface {
+	NodeServiceHost
 	RaftServiceHost
+	StatefulServiceProvidersHost
 }

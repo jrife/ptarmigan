@@ -1,4 +1,4 @@
-package stateful_service
+package stateful_services
 
 import "io"
 
