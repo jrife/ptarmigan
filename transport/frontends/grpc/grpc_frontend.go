@@ -25,6 +25,8 @@ func (frontend *Frontend) Init(options frontends.Options) error {
 
 	pb.RegisterRaftServer(frontend.grpcServer, &RaftServer{host: frontend.host})
 
+	// TODO: Register statefulservicehost server
+
 	return nil
 }
 

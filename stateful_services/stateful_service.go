@@ -16,22 +16,15 @@ type StatefulServiceHost interface {
 }
 
 type StorageClassProvider interface {
-	// Get returns the serializable representation of this storage class
-	Get() (ptarmiganpb.StorageClass, error)
-	// Replicas returns the list of replicas that exist on this host for this storage class
+	GetStorageClass() (ptarmiganpb.StorageClass, error)
 	Replicas() ([]ptarmiganpb.Replica, error)
-	// Replica returns a replica handle for the replica with the given name
-	Replica(name string) Replica
-}
-
-type Replica interface {
-	Get() (ptarmiganpb.StorageClass, error)
-	Create() error
-	Delete() error
-	Step(message raftpb.Entry) error
-	ApplySnapshot(snap io.Reader) error
-	Snapshot() (io.Reader, error)
-	LastAppliedIndex() (uint64, error)
+	GetReplica(replicaName string) (ptarmiganpb.Replica, error)
+	CreateReplica(replica ptarmiganpb.Replica) error
+	DeleteReplica(replicaName string) error
+	StepReplica(replicaName string, message raftpb.Entry) (uint64, error)
+	ApplySnapshot(replicaName string, snap io.Reader) error
+	Snapshot(replicaName string) (io.Reader, error)
+	LastAppliedIndex(replicaName string) (uint64, error)
 }
 
 // LocalStatefulServiceHost implements StatefulServiceHost
@@ -40,6 +33,6 @@ type Replica interface {
 // StatefulServiceHostResolver returns a StatefulServiceHost suitable for this replica
 // If the replica is hosted locally it will be a local implementation of StatefulServiceHost
 // Otherwise it's an instance of ExternalStatefulServiceHost, a client that talks to that host remotely
-type StatefulServiceHostResolver interface {
-	StatefulServiceHost(replicaName string) (StatefulServiceHost, error)
+type StatefulServiceHostPool interface {
+	StatefulServiceHost(host string) (StatefulServiceHost, error)
 }

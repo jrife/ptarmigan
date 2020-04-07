@@ -1,0 +1,40 @@
+syntax = "proto3";
+package pb;
+
+import "github.com/coreos/etcd/raft/raftpb/raft.proto";
+import "transport/ptarmiganpb/ptarmigan.proto";
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+message ReplicaPage {
+    repeated ptarmiganpb.Replica data = 1;
+}
+
+message ReplicaRef {
+    string name = 1;
+}
+
+message ReplicaStep {
+    ReplicaRef replica = 1;
+    raftpb.Entry entry = 2;
+}
+
+message LastAppliedIndex {
+    uint64 index = 1;
+}
+
+service ReplicaHost {
+    rpc List(ptarmiganpb.Empty) returns (ReplicaPage);
+    rpc Get(ReplicaRef) returns (ptarmiganpb.Replica);
+    rpc Create(ptarmiganpb.Replica) returns (ptarmiganpb.Replica);
+    rpc Delete(ReplicaRef) returns (ptarmiganpb.Replica);
+    rpc Step(ReplicaStep) returns (LastAppliedIndex);
+    rpc ApplySnapshot(stream ptarmiganpb.Chunk) returns (ptarmiganpb.Empty);
+    rpc Snapshot(ReplicaRef) returns (stream ptarmiganpb.Chunk);
+    rpc LastAppliedIndex(ReplicaRef) returns (LastAppliedIndex);
+}

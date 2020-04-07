@@ -11,12 +11,7 @@ option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_getters_all) = false;
 option (gogoproto.goproto_enum_prefix_all) = false;
 
-message RaftMessages {
-    repeated raftpb.Message messages = 1 [(gogoproto.nullable) = false];
-}
-
-// Service definitions only here
-service Raft {
+service Flock {
     rpc ApplySnapshot(stream ptarmiganpb.Chunk) returns (ptarmiganpb.Empty);
     rpc SendMessages(RaftMessages) returns (ptarmiganpb.Empty);
 }

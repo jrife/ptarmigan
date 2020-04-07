@@ -25,6 +25,9 @@ message Error {
     string message = 3;
 }
 
+message Empty {
+}
+
 message Chunk {
     oneof chunk_data {
         bytes data = 1;
@@ -120,6 +123,7 @@ message ReplicaSpec {
     string raft_group_replica = 2;
     // A reference to the storage host where this replica should reside
     string storage_host = 3;
+    string storage_class = 4;
 }
 
 message ReplicaStatus {
