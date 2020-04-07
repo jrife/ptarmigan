@@ -47,9 +47,12 @@ func (Error_ErrorCode) EnumDescriptor() ([]byte, []int) {
 }
 
 type Error struct {
-	Code    Error_ErrorCode `protobuf:"varint,1,opt,name=code,proto3,enum=ptarmiganpb.Error_ErrorCode" json:"code,omitempty"`
-	Type    string          `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	Message string          `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	// Code must be one of the standard error codes
+	Code Error_ErrorCode `protobuf:"varint,1,opt,name=code,proto3,enum=ptarmiganpb.Error_ErrorCode" json:"code,omitempty"`
+	// Type can be used by a specific service to further discover what went wrong
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// Message can carry more detail on what the problem is
+	Message string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 }
 
 func (m *Error) Reset()         { *m = Error{} }
@@ -170,36 +173,985 @@ func (*Chunk) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+type RaftEntry struct {
+	Data          []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	AssociationId string `protobuf:"bytes,2,opt,name=association_id,json=associationId,proto3" json:"association_id,omitempty"`
+}
+
+func (m *RaftEntry) Reset()         { *m = RaftEntry{} }
+func (m *RaftEntry) String() string { return proto.CompactTextString(m) }
+func (*RaftEntry) ProtoMessage()    {}
+func (*RaftEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{2}
+}
+func (m *RaftEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftEntry.Merge(m, src)
+}
+func (m *RaftEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftEntry proto.InternalMessageInfo
+
+type ObjectMetadata struct {
+	Name   string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Labels map[string]string `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *ObjectMetadata) Reset()         { *m = ObjectMetadata{} }
+func (m *ObjectMetadata) String() string { return proto.CompactTextString(m) }
+func (*ObjectMetadata) ProtoMessage()    {}
+func (*ObjectMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{3}
+}
+func (m *ObjectMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ObjectMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ObjectMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ObjectMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ObjectMetadata.Merge(m, src)
+}
+func (m *ObjectMetadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *ObjectMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_ObjectMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ObjectMetadata proto.InternalMessageInfo
+
+type StorageClass struct {
+	Metadata ObjectMetadata     `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     StorageClassSpec   `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   StorageClassStatus `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *StorageClass) Reset()         { *m = StorageClass{} }
+func (m *StorageClass) String() string { return proto.CompactTextString(m) }
+func (*StorageClass) ProtoMessage()    {}
+func (*StorageClass) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{4}
+}
+func (m *StorageClass) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StorageClass) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StorageClass.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StorageClass) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StorageClass.Merge(m, src)
+}
+func (m *StorageClass) XXX_Size() int {
+	return m.Size()
+}
+func (m *StorageClass) XXX_DiscardUnknown() {
+	xxx_messageInfo_StorageClass.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StorageClass proto.InternalMessageInfo
+
+type StorageClassSpec struct {
+}
+
+func (m *StorageClassSpec) Reset()         { *m = StorageClassSpec{} }
+func (m *StorageClassSpec) String() string { return proto.CompactTextString(m) }
+func (*StorageClassSpec) ProtoMessage()    {}
+func (*StorageClassSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{5}
+}
+func (m *StorageClassSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StorageClassSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StorageClassSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StorageClassSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StorageClassSpec.Merge(m, src)
+}
+func (m *StorageClassSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *StorageClassSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_StorageClassSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StorageClassSpec proto.InternalMessageInfo
+
+type StorageClassStatus struct {
+}
+
+func (m *StorageClassStatus) Reset()         { *m = StorageClassStatus{} }
+func (m *StorageClassStatus) String() string { return proto.CompactTextString(m) }
+func (*StorageClassStatus) ProtoMessage()    {}
+func (*StorageClassStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{6}
+}
+func (m *StorageClassStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StorageClassStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StorageClassStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StorageClassStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StorageClassStatus.Merge(m, src)
+}
+func (m *StorageClassStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *StorageClassStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_StorageClassStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StorageClassStatus proto.InternalMessageInfo
+
+type StorageHost struct {
+	Metadata ObjectMetadata    `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     StorageHostSpec   `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   StorageHostStatus `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *StorageHost) Reset()         { *m = StorageHost{} }
+func (m *StorageHost) String() string { return proto.CompactTextString(m) }
+func (*StorageHost) ProtoMessage()    {}
+func (*StorageHost) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{7}
+}
+func (m *StorageHost) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StorageHost) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StorageHost.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StorageHost) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StorageHost.Merge(m, src)
+}
+func (m *StorageHost) XXX_Size() int {
+	return m.Size()
+}
+func (m *StorageHost) XXX_DiscardUnknown() {
+	xxx_messageInfo_StorageHost.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StorageHost proto.InternalMessageInfo
+
+type StorageHostSpec struct {
+	// A list of storage classes that this host provides
+	StorageClasses []string `protobuf:"bytes,1,rep,name=storage_classes,json=storageClasses,proto3" json:"storage_classes,omitempty"`
+	// A flag indicating whether or not this host can host raft replicas
+	RaftHost bool `protobuf:"varint,2,opt,name=raft_host,json=raftHost,proto3" json:"raft_host,omitempty"`
+	// Putting this here so I remember. We should use labels for availability zone indication
+	AvailabilityZone string `protobuf:"bytes,3,opt,name=availability_zone,json=availabilityZone,proto3" json:"availability_zone,omitempty"`
+}
+
+func (m *StorageHostSpec) Reset()         { *m = StorageHostSpec{} }
+func (m *StorageHostSpec) String() string { return proto.CompactTextString(m) }
+func (*StorageHostSpec) ProtoMessage()    {}
+func (*StorageHostSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{8}
+}
+func (m *StorageHostSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StorageHostSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StorageHostSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StorageHostSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StorageHostSpec.Merge(m, src)
+}
+func (m *StorageHostSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *StorageHostSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_StorageHostSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StorageHostSpec proto.InternalMessageInfo
+
+type StorageHostStatus struct {
+}
+
+func (m *StorageHostStatus) Reset()         { *m = StorageHostStatus{} }
+func (m *StorageHostStatus) String() string { return proto.CompactTextString(m) }
+func (*StorageHostStatus) ProtoMessage()    {}
+func (*StorageHostStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{9}
+}
+func (m *StorageHostStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StorageHostStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StorageHostStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StorageHostStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StorageHostStatus.Merge(m, src)
+}
+func (m *StorageHostStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *StorageHostStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_StorageHostStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StorageHostStatus proto.InternalMessageInfo
+
+type Store struct {
+	Metadata ObjectMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     StoreSpec      `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   StoreStatus    `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *Store) Reset()         { *m = Store{} }
+func (m *Store) String() string { return proto.CompactTextString(m) }
+func (*Store) ProtoMessage()    {}
+func (*Store) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{10}
+}
+func (m *Store) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Store) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Store.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Store) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Store.Merge(m, src)
+}
+func (m *Store) XXX_Size() int {
+	return m.Size()
+}
+func (m *Store) XXX_DiscardUnknown() {
+	xxx_messageInfo_Store.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Store proto.InternalMessageInfo
+
+type StoreSpec struct {
+	// A reference to the storage class that this store belongs
+	// to
+	StorageClass string `protobuf:"bytes,1,opt,name=storage_class,json=storageClass,proto3" json:"storage_class,omitempty"`
+	// How many replicas should each partition have
+	ReplicationFactor uint32 `protobuf:"varint,2,opt,name=replication_factor,json=replicationFactor,proto3" json:"replication_factor,omitempty"`
+}
+
+func (m *StoreSpec) Reset()         { *m = StoreSpec{} }
+func (m *StoreSpec) String() string { return proto.CompactTextString(m) }
+func (*StoreSpec) ProtoMessage()    {}
+func (*StoreSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{11}
+}
+func (m *StoreSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StoreSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StoreSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StoreSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StoreSpec.Merge(m, src)
+}
+func (m *StoreSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *StoreSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_StoreSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StoreSpec proto.InternalMessageInfo
+
+type StoreStatus struct {
+}
+
+func (m *StoreStatus) Reset()         { *m = StoreStatus{} }
+func (m *StoreStatus) String() string { return proto.CompactTextString(m) }
+func (*StoreStatus) ProtoMessage()    {}
+func (*StoreStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{12}
+}
+func (m *StoreStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StoreStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StoreStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StoreStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StoreStatus.Merge(m, src)
+}
+func (m *StoreStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *StoreStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_StoreStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StoreStatus proto.InternalMessageInfo
+
+type Partition struct {
+	Metadata ObjectMetadata  `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     PartitionSpec   `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   PartitionStatus `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *Partition) Reset()         { *m = Partition{} }
+func (m *Partition) String() string { return proto.CompactTextString(m) }
+func (*Partition) ProtoMessage()    {}
+func (*Partition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{13}
+}
+func (m *Partition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Partition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Partition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Partition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Partition.Merge(m, src)
+}
+func (m *Partition) XXX_Size() int {
+	return m.Size()
+}
+func (m *Partition) XXX_DiscardUnknown() {
+	xxx_messageInfo_Partition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Partition proto.InternalMessageInfo
+
+type PartitionSpec struct {
+	// A reference to the store that this belongs to
+	Store string `protobuf:"bytes,2,opt,name=store,proto3" json:"store,omitempty"`
+	// A reference to the raft group that this is linked to
+	RaftGroup string `protobuf:"bytes,3,opt,name=raft_group,json=raftGroup,proto3" json:"raft_group,omitempty"`
+	// The number of replicas for this partition.
+	ReplicationFactor uint32 `protobuf:"varint,4,opt,name=replication_factor,json=replicationFactor,proto3" json:"replication_factor,omitempty"`
+}
+
+func (m *PartitionSpec) Reset()         { *m = PartitionSpec{} }
+func (m *PartitionSpec) String() string { return proto.CompactTextString(m) }
+func (*PartitionSpec) ProtoMessage()    {}
+func (*PartitionSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{14}
+}
+func (m *PartitionSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PartitionSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PartitionSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PartitionSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PartitionSpec.Merge(m, src)
+}
+func (m *PartitionSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *PartitionSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_PartitionSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PartitionSpec proto.InternalMessageInfo
+
+type PartitionStatus struct {
+}
+
+func (m *PartitionStatus) Reset()         { *m = PartitionStatus{} }
+func (m *PartitionStatus) String() string { return proto.CompactTextString(m) }
+func (*PartitionStatus) ProtoMessage()    {}
+func (*PartitionStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{15}
+}
+func (m *PartitionStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PartitionStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PartitionStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PartitionStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PartitionStatus.Merge(m, src)
+}
+func (m *PartitionStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *PartitionStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_PartitionStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PartitionStatus proto.InternalMessageInfo
+
+type Replica struct {
+	Metadata ObjectMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     ReplicaSpec    `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   ReplicaStatus  `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *Replica) Reset()         { *m = Replica{} }
+func (m *Replica) String() string { return proto.CompactTextString(m) }
+func (*Replica) ProtoMessage()    {}
+func (*Replica) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{16}
+}
+func (m *Replica) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Replica) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Replica.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Replica) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Replica.Merge(m, src)
+}
+func (m *Replica) XXX_Size() int {
+	return m.Size()
+}
+func (m *Replica) XXX_DiscardUnknown() {
+	xxx_messageInfo_Replica.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Replica proto.InternalMessageInfo
+
+type ReplicaSpec struct {
+	// A reference to the partition that this belongs to
+	Partition string `protobuf:"bytes,1,opt,name=partition,proto3" json:"partition,omitempty"`
+	// A reference to the raft group replica that this is linked to
+	RaftGroupReplica string `protobuf:"bytes,2,opt,name=raft_group_replica,json=raftGroupReplica,proto3" json:"raft_group_replica,omitempty"`
+	// A reference to the storage host where this replica resides
+	StorageHost string `protobuf:"bytes,3,opt,name=storage_host,json=storageHost,proto3" json:"storage_host,omitempty"`
+}
+
+func (m *ReplicaSpec) Reset()         { *m = ReplicaSpec{} }
+func (m *ReplicaSpec) String() string { return proto.CompactTextString(m) }
+func (*ReplicaSpec) ProtoMessage()    {}
+func (*ReplicaSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{17}
+}
+func (m *ReplicaSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReplicaSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReplicaSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReplicaSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReplicaSpec.Merge(m, src)
+}
+func (m *ReplicaSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *ReplicaSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReplicaSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReplicaSpec proto.InternalMessageInfo
+
+type ReplicaStatus struct {
+}
+
+func (m *ReplicaStatus) Reset()         { *m = ReplicaStatus{} }
+func (m *ReplicaStatus) String() string { return proto.CompactTextString(m) }
+func (*ReplicaStatus) ProtoMessage()    {}
+func (*ReplicaStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{18}
+}
+func (m *ReplicaStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReplicaStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReplicaStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReplicaStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReplicaStatus.Merge(m, src)
+}
+func (m *ReplicaStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *ReplicaStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReplicaStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReplicaStatus proto.InternalMessageInfo
+
+type RaftGroup struct {
+	Metadata ObjectMetadata  `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     RaftGroupSpec   `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   RaftGroupStatus `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *RaftGroup) Reset()         { *m = RaftGroup{} }
+func (m *RaftGroup) String() string { return proto.CompactTextString(m) }
+func (*RaftGroup) ProtoMessage()    {}
+func (*RaftGroup) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{19}
+}
+func (m *RaftGroup) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftGroup) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftGroup.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftGroup) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftGroup.Merge(m, src)
+}
+func (m *RaftGroup) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftGroup) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftGroup.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftGroup proto.InternalMessageInfo
+
+type RaftGroupSpec struct {
+	// A reference to the partition that this raft group is linked to
+	Partition string `protobuf:"bytes,1,opt,name=partition,proto3" json:"partition,omitempty"`
+	// The number of replicas for this raft group
+	ReplicationFactor uint32 `protobuf:"varint,2,opt,name=replication_factor,json=replicationFactor,proto3" json:"replication_factor,omitempty"`
+}
+
+func (m *RaftGroupSpec) Reset()         { *m = RaftGroupSpec{} }
+func (m *RaftGroupSpec) String() string { return proto.CompactTextString(m) }
+func (*RaftGroupSpec) ProtoMessage()    {}
+func (*RaftGroupSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{20}
+}
+func (m *RaftGroupSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftGroupSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftGroupSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftGroupSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftGroupSpec.Merge(m, src)
+}
+func (m *RaftGroupSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftGroupSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftGroupSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftGroupSpec proto.InternalMessageInfo
+
+type RaftGroupStatus struct {
+}
+
+func (m *RaftGroupStatus) Reset()         { *m = RaftGroupStatus{} }
+func (m *RaftGroupStatus) String() string { return proto.CompactTextString(m) }
+func (*RaftGroupStatus) ProtoMessage()    {}
+func (*RaftGroupStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{21}
+}
+func (m *RaftGroupStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftGroupStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftGroupStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftGroupStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftGroupStatus.Merge(m, src)
+}
+func (m *RaftGroupStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftGroupStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftGroupStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftGroupStatus proto.InternalMessageInfo
+
+type RaftGroupReplica struct {
+	Metadata ObjectMetadata         `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
+	Spec     RaftGroupReplicaSpec   `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec"`
+	Status   RaftGroupReplicaStatus `protobuf:"bytes,3,opt,name=status,proto3" json:"status"`
+}
+
+func (m *RaftGroupReplica) Reset()         { *m = RaftGroupReplica{} }
+func (m *RaftGroupReplica) String() string { return proto.CompactTextString(m) }
+func (*RaftGroupReplica) ProtoMessage()    {}
+func (*RaftGroupReplica) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{22}
+}
+func (m *RaftGroupReplica) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftGroupReplica) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftGroupReplica.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftGroupReplica) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftGroupReplica.Merge(m, src)
+}
+func (m *RaftGroupReplica) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftGroupReplica) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftGroupReplica.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftGroupReplica proto.InternalMessageInfo
+
+type RaftGroupReplicaSpec struct {
+	// A reference to the raft group that this belongs to
+	RaftGroup string `protobuf:"bytes,1,opt,name=raft_group,json=raftGroup,proto3" json:"raft_group,omitempty"`
+	// A reference to the replica that this is linked to
+	Replica string `protobuf:"bytes,2,opt,name=replica,proto3" json:"replica,omitempty"`
+	// A reference to the storage host where this replica resides
+	StorageHost string `protobuf:"bytes,3,opt,name=storage_host,json=storageHost,proto3" json:"storage_host,omitempty"`
+}
+
+func (m *RaftGroupReplicaSpec) Reset()         { *m = RaftGroupReplicaSpec{} }
+func (m *RaftGroupReplicaSpec) String() string { return proto.CompactTextString(m) }
+func (*RaftGroupReplicaSpec) ProtoMessage()    {}
+func (*RaftGroupReplicaSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{23}
+}
+func (m *RaftGroupReplicaSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftGroupReplicaSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftGroupReplicaSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftGroupReplicaSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftGroupReplicaSpec.Merge(m, src)
+}
+func (m *RaftGroupReplicaSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftGroupReplicaSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftGroupReplicaSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftGroupReplicaSpec proto.InternalMessageInfo
+
+type RaftGroupReplicaStatus struct {
+}
+
+func (m *RaftGroupReplicaStatus) Reset()         { *m = RaftGroupReplicaStatus{} }
+func (m *RaftGroupReplicaStatus) String() string { return proto.CompactTextString(m) }
+func (*RaftGroupReplicaStatus) ProtoMessage()    {}
+func (*RaftGroupReplicaStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_92c36b33a96ae4b7, []int{24}
+}
+func (m *RaftGroupReplicaStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftGroupReplicaStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftGroupReplicaStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftGroupReplicaStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftGroupReplicaStatus.Merge(m, src)
+}
+func (m *RaftGroupReplicaStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftGroupReplicaStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftGroupReplicaStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftGroupReplicaStatus proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterEnum("ptarmiganpb.Error_ErrorCode", Error_ErrorCode_name, Error_ErrorCode_value)
 	proto.RegisterType((*Error)(nil), "ptarmiganpb.Error")
 	proto.RegisterType((*Chunk)(nil), "ptarmiganpb.Chunk")
+	proto.RegisterType((*RaftEntry)(nil), "ptarmiganpb.RaftEntry")
+	proto.RegisterType((*ObjectMetadata)(nil), "ptarmiganpb.ObjectMetadata")
+	proto.RegisterMapType((map[string]string)(nil), "ptarmiganpb.ObjectMetadata.LabelsEntry")
+	proto.RegisterType((*StorageClass)(nil), "ptarmiganpb.StorageClass")
+	proto.RegisterType((*StorageClassSpec)(nil), "ptarmiganpb.StorageClassSpec")
+	proto.RegisterType((*StorageClassStatus)(nil), "ptarmiganpb.StorageClassStatus")
+	proto.RegisterType((*StorageHost)(nil), "ptarmiganpb.StorageHost")
+	proto.RegisterType((*StorageHostSpec)(nil), "ptarmiganpb.StorageHostSpec")
+	proto.RegisterType((*StorageHostStatus)(nil), "ptarmiganpb.StorageHostStatus")
+	proto.RegisterType((*Store)(nil), "ptarmiganpb.Store")
+	proto.RegisterType((*StoreSpec)(nil), "ptarmiganpb.StoreSpec")
+	proto.RegisterType((*StoreStatus)(nil), "ptarmiganpb.StoreStatus")
+	proto.RegisterType((*Partition)(nil), "ptarmiganpb.Partition")
+	proto.RegisterType((*PartitionSpec)(nil), "ptarmiganpb.PartitionSpec")
+	proto.RegisterType((*PartitionStatus)(nil), "ptarmiganpb.PartitionStatus")
+	proto.RegisterType((*Replica)(nil), "ptarmiganpb.Replica")
+	proto.RegisterType((*ReplicaSpec)(nil), "ptarmiganpb.ReplicaSpec")
+	proto.RegisterType((*ReplicaStatus)(nil), "ptarmiganpb.ReplicaStatus")
+	proto.RegisterType((*RaftGroup)(nil), "ptarmiganpb.RaftGroup")
+	proto.RegisterType((*RaftGroupSpec)(nil), "ptarmiganpb.RaftGroupSpec")
+	proto.RegisterType((*RaftGroupStatus)(nil), "ptarmiganpb.RaftGroupStatus")
+	proto.RegisterType((*RaftGroupReplica)(nil), "ptarmiganpb.RaftGroupReplica")
+	proto.RegisterType((*RaftGroupReplicaSpec)(nil), "ptarmiganpb.RaftGroupReplicaSpec")
+	proto.RegisterType((*RaftGroupReplicaStatus)(nil), "ptarmiganpb.RaftGroupReplicaStatus")
 }
 
 func init() { proto.RegisterFile("ptarmigan.proto", fileDescriptor_92c36b33a96ae4b7) }
 
 var fileDescriptor_92c36b33a96ae4b7 = []byte{
-	// 311 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x50, 0xb1, 0x6e, 0xc2, 0x30,
-	0x10, 0xb5, 0x5b, 0x68, 0x8b, 0x41, 0x05, 0x59, 0x0c, 0x11, 0x42, 0x16, 0x62, 0x62, 0xa9, 0x8d,
-	0xe8, 0x1f, 0x14, 0x51, 0x31, 0x75, 0x48, 0xb7, 0x76, 0xa8, 0x9c, 0xc4, 0x04, 0x5a, 0x25, 0x67,
-	0x39, 0x66, 0xe8, 0x07, 0x74, 0xef, 0x67, 0x31, 0x32, 0x76, 0x2c, 0xf0, 0x23, 0x15, 0x17, 0x35,
-	0xca, 0x72, 0x7e, 0xef, 0xf9, 0xf9, 0xce, 0xf7, 0x58, 0xd7, 0x7a, 0xed, 0xb2, 0x4d, 0xaa, 0x73,
-	0x69, 0x1d, 0x78, 0xe0, 0xed, 0x4a, 0xb0, 0xd1, 0xe0, 0x2e, 0xdd, 0xf8, 0xf5, 0x36, 0x92, 0x31,
-	0x64, 0x2a, 0x06, 0x67, 0xa0, 0x50, 0xc6, 0xc7, 0x89, 0x72, 0x7a, 0xe5, 0xb1, 0xd8, 0x08, 0x8f,
-	0xf2, 0xed, 0xa0, 0x9f, 0x42, 0x0a, 0x08, 0xd5, 0x19, 0x95, 0xea, 0xf8, 0x8b, 0xb2, 0xe6, 0xc2,
-	0x39, 0x70, 0x7c, 0xca, 0x1a, 0x31, 0x24, 0x26, 0xa0, 0x23, 0x3a, 0xb9, 0x9d, 0x0d, 0x65, 0x6d,
-	0x94, 0x44, 0x47, 0x59, 0xe7, 0x90, 0x98, 0x10, 0x9d, 0x9c, 0xb3, 0x86, 0xff, 0xb4, 0x26, 0xb8,
-	0x18, 0xd1, 0x49, 0x2b, 0x44, 0xcc, 0x03, 0x76, 0x9d, 0x99, 0xa2, 0xd0, 0xa9, 0x09, 0x2e, 0x51,
-	0xfe, 0xa7, 0xe3, 0x21, 0x6b, 0x55, 0x0d, 0x78, 0x97, 0xb5, 0x17, 0xce, 0x3d, 0x81, 0x7f, 0x84,
-	0x6d, 0x9e, 0xf4, 0xc8, 0xf8, 0x95, 0x35, 0xe7, 0xeb, 0x6d, 0xfe, 0xc1, 0xfb, 0xac, 0x91, 0x68,
-	0xaf, 0xf1, 0x1b, 0x9d, 0x25, 0x09, 0x91, 0x71, 0xc9, 0x6e, 0x32, 0xe3, 0x35, 0xde, 0x9c, 0xc7,
-	0xb5, 0x67, 0x3d, 0x59, 0xae, 0x28, 0x9f, 0x73, 0x6d, 0x8b, 0x35, 0xf8, 0x25, 0x09, 0x2b, 0xcf,
-	0x43, 0x87, 0xb1, 0xf8, 0xdc, 0xee, 0x0d, 0x59, 0xb8, 0x3b, 0x08, 0xb2, 0x3f, 0x08, 0xb2, 0x3b,
-	0x0a, 0xba, 0x3f, 0x0a, 0xfa, 0x7b, 0x14, 0xf4, 0xfb, 0x24, 0xc8, 0xfe, 0x24, 0xc8, 0xcf, 0x49,
-	0x90, 0x97, 0x69, 0x2d, 0xcb, 0x77, 0xb7, 0x59, 0x19, 0x55, 0xad, 0xaf, 0xbc, 0xd3, 0x79, 0x61,
-	0xc1, 0x79, 0x55, 0x8b, 0x24, 0xba, 0xc2, 0xfc, 0xee, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x68,
-	0x8b, 0x71, 0xe9, 0xa4, 0x01, 0x00, 0x00,
+	// 943 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x96, 0x4d, 0x8f, 0xdb, 0x44,
+	0x18, 0xc7, 0x33, 0xbb, 0xd9, 0x17, 0x3f, 0xde, 0x6c, 0x92, 0x21, 0xaa, 0xac, 0x34, 0x75, 0xb7,
+	0xae, 0x50, 0x57, 0x82, 0x26, 0xab, 0x80, 0x4a, 0x29, 0x54, 0x88, 0xae, 0x76, 0x59, 0x24, 0xde,
+	0xe4, 0xbd, 0x15, 0xa4, 0x68, 0xe2, 0xcc, 0x66, 0xdd, 0x26, 0x1e, 0x6b, 0x66, 0x52, 0x29, 0x88,
+	0x23, 0xdc, 0xf9, 0x08, 0x7c, 0x04, 0x4e, 0x9c, 0x38, 0x21, 0x21, 0xed, 0x71, 0xb9, 0x71, 0x42,
+	0x74, 0xf7, 0x8b, 0x20, 0x8f, 0x27, 0x8e, 0xed, 0x38, 0x85, 0x2a, 0xe2, 0xe2, 0xcc, 0x3c, 0x33,
+	0xff, 0xe7, 0xe5, 0x97, 0xe7, 0xb1, 0x0c, 0xd5, 0x50, 0x12, 0x3e, 0xf6, 0x87, 0x24, 0x68, 0x87,
+	0x9c, 0x49, 0x86, 0xcd, 0xc4, 0x10, 0xf6, 0x9b, 0xf7, 0x87, 0xbe, 0x3c, 0x9f, 0xf4, 0xdb, 0x1e,
+	0x1b, 0x77, 0x3c, 0xc6, 0x29, 0x13, 0x1d, 0x2a, 0xbd, 0x41, 0x87, 0x93, 0x33, 0xa9, 0x1e, 0x61,
+	0x5f, 0xfd, 0xc4, 0xda, 0x66, 0x63, 0xc8, 0x86, 0x4c, 0x2d, 0x3b, 0xd1, 0x2a, 0xb6, 0x3a, 0x3f,
+	0x20, 0xd8, 0x38, 0xe2, 0x9c, 0x71, 0x7c, 0x00, 0x65, 0x8f, 0x0d, 0xa8, 0x85, 0xf6, 0xd0, 0xfe,
+	0x6e, 0xb7, 0xd5, 0x4e, 0x85, 0x6a, 0xab, 0x1b, 0xf1, 0xf3, 0x90, 0x0d, 0xa8, 0xab, 0x6e, 0x62,
+	0x0c, 0x65, 0x39, 0x0d, 0xa9, 0xb5, 0xb6, 0x87, 0xf6, 0x0d, 0x57, 0xad, 0xb1, 0x05, 0x5b, 0x63,
+	0x2a, 0x04, 0x19, 0x52, 0x6b, 0x5d, 0x99, 0x67, 0x5b, 0xa7, 0x05, 0x46, 0xe2, 0x00, 0x57, 0xc1,
+	0x3c, 0xe2, 0xfc, 0x0b, 0x26, 0x8f, 0xd9, 0x24, 0x18, 0xd4, 0x4a, 0xce, 0xd7, 0xb0, 0x71, 0x78,
+	0x3e, 0x09, 0x9e, 0xe3, 0x06, 0x94, 0x07, 0x44, 0x12, 0x95, 0xc6, 0xce, 0x49, 0xc9, 0x55, 0x3b,
+	0xdc, 0x86, 0xed, 0x31, 0x95, 0x44, 0x9d, 0x44, 0xe1, 0xcc, 0x6e, 0xad, 0x1d, 0x97, 0xd8, 0x3e,
+	0x0d, 0x48, 0x28, 0xce, 0x99, 0x3c, 0x29, 0xb9, 0xc9, 0x9d, 0x27, 0x3b, 0x00, 0x5e, 0xe4, 0xae,
+	0x17, 0xed, 0x9c, 0x63, 0x30, 0x5c, 0x72, 0x26, 0x8f, 0x02, 0xc9, 0xa7, 0x51, 0xd6, 0xf3, 0x00,
+	0xda, 0xfd, 0x9b, 0xb0, 0x4b, 0x84, 0x60, 0x9e, 0x4f, 0xa4, 0xcf, 0x82, 0x9e, 0x3f, 0xd0, 0x35,
+	0x55, 0x52, 0xd6, 0x4f, 0x07, 0xce, 0x4f, 0x08, 0x76, 0xbf, 0xec, 0x3f, 0xa3, 0x9e, 0xfc, 0x5c,
+	0x07, 0x8a, 0xbc, 0x05, 0x64, 0x1c, 0x53, 0x33, 0x5c, 0xb5, 0xc6, 0x1f, 0xc1, 0xe6, 0x88, 0xf4,
+	0xe9, 0x48, 0x58, 0x6b, 0x7b, 0xeb, 0xfb, 0x66, 0xf7, 0x5e, 0x86, 0x65, 0xd6, 0x41, 0xfb, 0x33,
+	0x75, 0x53, 0xa5, 0xe6, 0x6a, 0x59, 0xf3, 0x7d, 0x30, 0x53, 0x66, 0x5c, 0x83, 0xf5, 0xe7, 0x74,
+	0xaa, 0x43, 0x44, 0x4b, 0xdc, 0x80, 0x8d, 0x17, 0x64, 0x34, 0x99, 0xa1, 0x8f, 0x37, 0x8f, 0xd6,
+	0x1e, 0x22, 0xe7, 0x77, 0x04, 0x3b, 0xa7, 0x92, 0x71, 0x32, 0xa4, 0x87, 0x23, 0x22, 0x04, 0x7e,
+	0x9c, 0x22, 0x87, 0x14, 0xb9, 0x9b, 0xaf, 0x48, 0xe7, 0x49, 0xf9, 0xe2, 0xaf, 0xdb, 0x29, 0x90,
+	0xf8, 0x3d, 0x28, 0x8b, 0x90, 0x7a, 0x1a, 0xfa, 0xad, 0x8c, 0x34, 0x1d, 0xe7, 0x34, 0xa4, 0x9e,
+	0x16, 0x2b, 0x01, 0x7e, 0x0c, 0x9b, 0x42, 0x12, 0x39, 0x11, 0xaa, 0x0f, 0xcc, 0xee, 0xed, 0xe5,
+	0x52, 0x75, 0x4d, 0x8b, 0xb5, 0xc8, 0xc1, 0x50, 0xcb, 0xbb, 0x77, 0x1a, 0x80, 0x17, 0x75, 0xce,
+	0x6f, 0x08, 0x4c, 0x6d, 0x3e, 0x61, 0x42, 0xae, 0x5a, 0xf0, 0x83, 0x4c, 0xc1, 0xad, 0xa2, 0xac,
+	0xa3, 0x30, 0x0b, 0xf5, 0x7e, 0x98, 0xab, 0xd7, 0x5e, 0xaa, 0x2c, 0x2a, 0xf7, 0x7b, 0x04, 0xd5,
+	0x9c, 0x77, 0x7c, 0x0f, 0xaa, 0x22, 0x36, 0xf5, 0xbc, 0xa8, 0x5e, 0x2a, 0x2c, 0xb4, 0xb7, 0xbe,
+	0x6f, 0xb8, 0xbb, 0x22, 0x45, 0x81, 0x0a, 0x7c, 0x13, 0x8c, 0x68, 0x16, 0x7a, 0xe7, 0x4c, 0x48,
+	0x95, 0xf7, 0xb6, 0xbb, 0x1d, 0x19, 0x14, 0x8e, 0xb7, 0xa0, 0x4e, 0x5e, 0x10, 0x7f, 0x44, 0xfa,
+	0xfe, 0xc8, 0x97, 0xd3, 0xde, 0xb7, 0x2c, 0x98, 0x8d, 0x66, 0x2d, 0x7d, 0xf0, 0x94, 0x05, 0xd4,
+	0x79, 0x03, 0xea, 0x0b, 0x99, 0x3a, 0x3f, 0x23, 0xd8, 0x88, 0xac, 0x74, 0x55, 0xb4, 0x07, 0x19,
+	0xb4, 0x37, 0x16, 0x00, 0xd1, 0x05, 0xa8, 0x0f, 0x72, 0x50, 0xad, 0x02, 0x4d, 0x11, 0xce, 0x1e,
+	0x18, 0x89, 0x43, 0x7c, 0x17, 0x2a, 0x19, 0x8e, 0x7a, 0x90, 0x76, 0xd2, 0x14, 0xf1, 0x7d, 0xc0,
+	0x9c, 0x86, 0x23, 0xdf, 0x8b, 0xdf, 0x00, 0x67, 0xc4, 0x93, 0x8c, 0xab, 0x4c, 0x2b, 0x6e, 0x3d,
+	0x75, 0x72, 0xac, 0x0e, 0x9c, 0x4a, 0xdc, 0x73, 0x3a, 0xba, 0xf3, 0x2b, 0x02, 0xe3, 0x2b, 0xc2,
+	0xa5, 0x1f, 0x5d, 0x59, 0x15, 0xd3, 0xbb, 0x19, 0x4c, 0xcd, 0x8c, 0x34, 0x09, 0xb2, 0x80, 0xea,
+	0x51, 0x0e, 0x55, 0x6b, 0x89, 0xae, 0x08, 0x97, 0x80, 0x4a, 0xc6, 0x71, 0xf4, 0x7e, 0x89, 0xe8,
+	0x24, 0xef, 0x17, 0xb5, 0xc1, 0xb7, 0x00, 0x54, 0x9f, 0x0d, 0x39, 0x9b, 0x84, 0xba, 0x87, 0x54,
+	0xe7, 0x7d, 0x12, 0x19, 0x96, 0x20, 0x2c, 0x2f, 0x43, 0x58, 0x87, 0x6a, 0x2e, 0x2b, 0xe7, 0x17,
+	0x04, 0x5b, 0x6e, 0x7c, 0x71, 0x55, 0x88, 0xdd, 0x0c, 0xc4, 0x6c, 0xdf, 0xe8, 0x10, 0x0b, 0x08,
+	0x1f, 0xe6, 0x10, 0x36, 0x0b, 0x55, 0x45, 0x00, 0xbf, 0x03, 0x33, 0xe5, 0x14, 0xb7, 0xc0, 0x08,
+	0x67, 0xa5, 0xe9, 0x6e, 0x9b, 0x1b, 0xf0, 0xdb, 0x80, 0xe7, 0x18, 0x7b, 0x1a, 0x8c, 0x26, 0x5d,
+	0x4b, 0x70, 0xce, 0x38, 0xdc, 0x81, 0x59, 0xa3, 0xc6, 0xf3, 0x1d, 0x63, 0x37, 0xc5, 0x7c, 0x4c,
+	0x9d, 0x2a, 0x54, 0x32, 0xc9, 0xa9, 0x76, 0x74, 0x93, 0xff, 0xe5, 0x7f, 0x6c, 0xc7, 0x24, 0xc8,
+	0x6b, 0xb6, 0xe3, 0x5c, 0x57, 0x44, 0xf3, 0x1b, 0xa8, 0x64, 0x1c, 0xff, 0x0b, 0xcf, 0xd7, 0x1c,
+	0xdd, 0x3a, 0x54, 0x73, 0xe1, 0x9d, 0x3f, 0x10, 0xd4, 0xdc, 0x3c, 0xf8, 0x15, 0xb1, 0x7d, 0x90,
+	0xc1, 0x76, 0xa7, 0xb8, 0xfc, 0x65, 0x9d, 0xf8, 0x71, 0x8e, 0xde, 0xdd, 0x57, 0xcb, 0x8b, 0x20,
+	0x72, 0x68, 0x14, 0x85, 0xc9, 0x0d, 0x31, 0xca, 0x0f, 0xb1, 0x05, 0x5b, 0xd9, 0x8e, 0x9c, 0x6d,
+	0xff, 0x4b, 0x23, 0x5a, 0x70, 0x63, 0x49, 0x6e, 0xee, 0xc5, 0x4b, 0xbb, 0x74, 0xf9, 0xd2, 0x2e,
+	0x5d, 0x5c, 0xd9, 0xe8, 0xf2, 0xca, 0x46, 0x7f, 0x5f, 0xd9, 0xe8, 0xc7, 0x6b, 0xbb, 0x74, 0x79,
+	0x6d, 0x97, 0xfe, 0xbc, 0xb6, 0x4b, 0x4f, 0x0f, 0x52, 0x5f, 0xb3, 0xcf, 0xb8, 0x7f, 0x46, 0x3b,
+	0x49, 0xc9, 0x1d, 0xc9, 0x49, 0x20, 0x42, 0xc6, 0x65, 0x27, 0x85, 0xa1, 0xbf, 0xa9, 0xbe, 0x60,
+	0xdf, 0xf9, 0x27, 0x00, 0x00, 0xff, 0xff, 0x6b, 0x60, 0x62, 0x2d, 0x26, 0x0b, 0x00, 0x00,
 }
 
 func (m *Error) Marshal() (dAtA []byte, err error) {
@@ -313,6 +1265,896 @@ func (m *Chunk_Metadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
+func (m *RaftEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AssociationId) > 0 {
+		i -= len(m.AssociationId)
+		copy(dAtA[i:], m.AssociationId)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.AssociationId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ObjectMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ObjectMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ObjectMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Labels) > 0 {
+		for k := range m.Labels {
+			v := m.Labels[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintPtarmigan(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintPtarmigan(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintPtarmigan(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *StorageClass) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StorageClass) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StorageClass) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *StorageClassSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StorageClassSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StorageClassSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *StorageClassStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StorageClassStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StorageClassStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *StorageHost) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StorageHost) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StorageHost) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *StorageHostSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StorageHostSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StorageHostSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AvailabilityZone) > 0 {
+		i -= len(m.AvailabilityZone)
+		copy(dAtA[i:], m.AvailabilityZone)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.AvailabilityZone)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.RaftHost {
+		i--
+		if m.RaftHost {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.StorageClasses) > 0 {
+		for iNdEx := len(m.StorageClasses) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.StorageClasses[iNdEx])
+			copy(dAtA[i:], m.StorageClasses[iNdEx])
+			i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.StorageClasses[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *StorageHostStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StorageHostStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StorageHostStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *Store) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Store) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Store) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *StoreSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StoreSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StoreSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ReplicationFactor != 0 {
+		i = encodeVarintPtarmigan(dAtA, i, uint64(m.ReplicationFactor))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.StorageClass) > 0 {
+		i -= len(m.StorageClass)
+		copy(dAtA[i:], m.StorageClass)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.StorageClass)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *StoreStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StoreStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StoreStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *Partition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Partition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Partition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *PartitionSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PartitionSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PartitionSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ReplicationFactor != 0 {
+		i = encodeVarintPtarmigan(dAtA, i, uint64(m.ReplicationFactor))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.RaftGroup) > 0 {
+		i -= len(m.RaftGroup)
+		copy(dAtA[i:], m.RaftGroup)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.RaftGroup)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Store) > 0 {
+		i -= len(m.Store)
+		copy(dAtA[i:], m.Store)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.Store)))
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PartitionStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PartitionStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PartitionStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *Replica) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Replica) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Replica) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *ReplicaSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReplicaSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ReplicaSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.StorageHost) > 0 {
+		i -= len(m.StorageHost)
+		copy(dAtA[i:], m.StorageHost)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.StorageHost)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.RaftGroupReplica) > 0 {
+		i -= len(m.RaftGroupReplica)
+		copy(dAtA[i:], m.RaftGroupReplica)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.RaftGroupReplica)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Partition) > 0 {
+		i -= len(m.Partition)
+		copy(dAtA[i:], m.Partition)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.Partition)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ReplicaStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReplicaStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ReplicaStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftGroup) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftGroup) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftGroup) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftGroupSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftGroupSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftGroupSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ReplicationFactor != 0 {
+		i = encodeVarintPtarmigan(dAtA, i, uint64(m.ReplicationFactor))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Partition) > 0 {
+		i -= len(m.Partition)
+		copy(dAtA[i:], m.Partition)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.Partition)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftGroupStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftGroupStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftGroupStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftGroupReplica) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftGroupReplica) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftGroupReplica) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintPtarmigan(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftGroupReplicaSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftGroupReplicaSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftGroupReplicaSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.StorageHost) > 0 {
+		i -= len(m.StorageHost)
+		copy(dAtA[i:], m.StorageHost)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.StorageHost)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Replica) > 0 {
+		i -= len(m.Replica)
+		copy(dAtA[i:], m.Replica)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.Replica)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RaftGroup) > 0 {
+		i -= len(m.RaftGroup)
+		copy(dAtA[i:], m.RaftGroup)
+		i = encodeVarintPtarmigan(dAtA, i, uint64(len(m.RaftGroup)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftGroupReplicaStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftGroupReplicaStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftGroupReplicaStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintPtarmigan(dAtA []byte, offset int, v uint64) int {
 	offset -= sovPtarmigan(v)
 	base := offset
@@ -378,6 +2220,336 @@ func (m *Chunk_Metadata) Size() (n int) {
 		l = m.Metadata.Size()
 		n += 1 + l + sovPtarmigan(uint64(l))
 	}
+	return n
+}
+func (m *RaftEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Data)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	l = len(m.AssociationId)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	return n
+}
+
+func (m *ObjectMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	if len(m.Labels) > 0 {
+		for k, v := range m.Labels {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovPtarmigan(uint64(len(k))) + 1 + len(v) + sovPtarmigan(uint64(len(v)))
+			n += mapEntrySize + 1 + sovPtarmigan(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *StorageClass) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *StorageClassSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *StorageClassStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *StorageHost) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *StorageHostSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.StorageClasses) > 0 {
+		for _, s := range m.StorageClasses {
+			l = len(s)
+			n += 1 + l + sovPtarmigan(uint64(l))
+		}
+	}
+	if m.RaftHost {
+		n += 2
+	}
+	l = len(m.AvailabilityZone)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	return n
+}
+
+func (m *StorageHostStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *Store) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *StoreSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.StorageClass)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	if m.ReplicationFactor != 0 {
+		n += 1 + sovPtarmigan(uint64(m.ReplicationFactor))
+	}
+	return n
+}
+
+func (m *StoreStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *Partition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *PartitionSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Store)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	l = len(m.RaftGroup)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	if m.ReplicationFactor != 0 {
+		n += 1 + sovPtarmigan(uint64(m.ReplicationFactor))
+	}
+	return n
+}
+
+func (m *PartitionStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *Replica) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *ReplicaSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Partition)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	l = len(m.RaftGroupReplica)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	l = len(m.StorageHost)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	return n
+}
+
+func (m *ReplicaStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *RaftGroup) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *RaftGroupSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Partition)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	if m.ReplicationFactor != 0 {
+		n += 1 + sovPtarmigan(uint64(m.ReplicationFactor))
+	}
+	return n
+}
+
+func (m *RaftGroupStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *RaftGroupReplica) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Metadata.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovPtarmigan(uint64(l))
+	return n
+}
+
+func (m *RaftGroupReplicaSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RaftGroup)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	l = len(m.Replica)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	l = len(m.StorageHost)
+	if l > 0 {
+		n += 1 + l + sovPtarmigan(uint64(l))
+	}
+	return n
+}
+
+func (m *RaftGroupReplicaStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	return n
 }
 
@@ -620,6 +2792,2604 @@ func (m *Chunk) Unmarshal(dAtA []byte) error {
 			}
 			m.ChunkData = &Chunk_Metadata{v}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
+			if m.Data == nil {
+				m.Data = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AssociationId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AssociationId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ObjectMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ObjectMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ObjectMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Labels", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Labels == nil {
+				m.Labels = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowPtarmigan
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowPtarmigan
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthPtarmigan
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthPtarmigan
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowPtarmigan
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthPtarmigan
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthPtarmigan
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipPtarmigan(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthPtarmigan
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Labels[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StorageClass) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StorageClass: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StorageClass: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StorageClassSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StorageClassSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StorageClassSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StorageClassStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StorageClassStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StorageClassStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StorageHost) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StorageHost: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StorageHost: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StorageHostSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StorageHostSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StorageHostSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageClasses", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StorageClasses = append(m.StorageClasses, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RaftHost", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RaftHost = bool(v != 0)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AvailabilityZone", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AvailabilityZone = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StorageHostStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StorageHostStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StorageHostStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Store) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Store: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Store: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StoreSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StoreSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StoreSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageClass", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StorageClass = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicationFactor", wireType)
+			}
+			m.ReplicationFactor = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ReplicationFactor |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StoreStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StoreStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StoreStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Partition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Partition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Partition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PartitionSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PartitionSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PartitionSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Store", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Store = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RaftGroup", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RaftGroup = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicationFactor", wireType)
+			}
+			m.ReplicationFactor = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ReplicationFactor |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PartitionStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PartitionStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PartitionStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Replica) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Replica: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Replica: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ReplicaSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReplicaSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReplicaSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Partition", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Partition = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RaftGroupReplica", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RaftGroupReplica = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageHost", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StorageHost = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ReplicaStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReplicaStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReplicaStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftGroup) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftGroup: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftGroup: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftGroupSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftGroupSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftGroupSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Partition", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Partition = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicationFactor", wireType)
+			}
+			m.ReplicationFactor = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ReplicationFactor |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftGroupStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftGroupStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftGroupStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftGroupReplica) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftGroupReplica: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftGroupReplica: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftGroupReplicaSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftGroupReplicaSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftGroupReplicaSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RaftGroup", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RaftGroup = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Replica", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Replica = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageHost", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPtarmigan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StorageHost = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPtarmigan(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPtarmigan
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftGroupReplicaStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPtarmigan
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftGroupReplicaStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftGroupReplicaStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipPtarmigan(dAtA[iNdEx:])

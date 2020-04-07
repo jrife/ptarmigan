@@ -32,41 +32,20 @@ message Chunk {
     }
 }
 
-// Declarative object model for
-// describing deployments.
-// - Storage Class: The category of storage.
-// - Storage Host: The actual hosts providing one or more storage classes.
-//   Storage hosts add themselves to this collection when they start up. The master controller will
-//   further decide when to schedule things on this host.
-//   Graceful deletion of a storage host results in rearrangement of replicas
-//   Forced deletion results in the addition of replicas to meet replication requirements
-//   for affected stores.
-// - Store: A collection of partitions with the same replication settings.
-//   Users create stores through the tooling. Creation of a store does not result in any action.
-//   Editing a store, like changing the replication factor, results in coordination that changes the number
-//   of replicas of all partitions of this store.
-//   Deleting a store results in deletion of all partitions of this store.
-// - Partition: A slice of a store identified by a partition name that shares the same replication settings as other partitions in the store.
-//   Users create partitions through the tooling. Creation of a partition results in one or more replicas being created
-//   Deletion of a partition results in the deletion of its replicas
-//   Partitions cannot be edited directly. The parent store can be adjusted though.
-// - Replica: A replica of a partition that is hosted on a storage host that supports its storage class.
-//   Replicas aren't directly created or deleted by users
-// - RaftGroup: A group of raft replicas powering a partition
-//   Creation of a raft group results in the creation of multiple raft replicas
-// - RaftReplica: A raft replica inside a raft group. Tied to a replica
-//
-// Internal vs External storage classes
-// Raft Groups, Partitions, and Storage Hosts. Their relationships and similarities.
+message RaftEntry {
+    bytes data = 1;
+    string association_id = 2;
+}
+
 message ObjectMetadata {
     string name = 1;
     map<string, string> labels = 2;
 }
 
 message StorageClass {
-    ObjectMetadata metadata = 1;
-    StorageClassSpec spec = 2;
-    StorageClassStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    StorageClassSpec spec = 2 [(gogoproto.nullable) = false];
+    StorageClassStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message StorageClassSpec {
@@ -76,14 +55,17 @@ message StorageClassStatus {
 }
 
 message StorageHost {
-    ObjectMetadata metadata = 1;
-    StorageHostSpec spec = 2;
-    StorageHostStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    StorageHostSpec spec = 2 [(gogoproto.nullable) = false];
+    StorageHostStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message StorageHostSpec {
+    // A list of storage classes that this host provides
     repeated string storage_classes = 1;
+    // A flag indicating whether or not this host can host raft replicas
     bool raft_host = 2;
+    // Putting this here so I remember. We should use labels for availability zone indication
     string availability_zone = 3;
 }
 
@@ -91,13 +73,16 @@ message StorageHostStatus {
 }
 
 message Store {
-    ObjectMetadata metadata = 1;
-    StoreSpec spec = 2;
-    StoreStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    StoreSpec spec = 2 [(gogoproto.nullable) = false];
+    StoreStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message StoreSpec {
+    // A reference to the storage class that this store belongs
+    // to
     string storage_class = 1;
+    // How many replicas should each partition have
     uint32 replication_factor = 2;
 }
 
@@ -105,14 +90,17 @@ message StoreStatus {
 }
 
 message Partition {
-    ObjectMetadata metadata = 1;
-    PartitionSpec spec = 2;
-    PartitionStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    PartitionSpec spec = 2 [(gogoproto.nullable) = false];
+    PartitionStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message PartitionSpec {
+    // A reference to the store that this belongs to
     string store = 2;
+    // A reference to the raft group that this is linked to
     string raft_group = 3;
+    // The number of replicas for this partition.
     uint32 replication_factor = 4;
 }
 
@@ -120,14 +108,17 @@ message PartitionStatus {
 }
 
 message Replica {
-    ObjectMetadata metadata = 1;
-    ReplicaSpec spec = 2;
-    ReplicaStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    ReplicaSpec spec = 2 [(gogoproto.nullable) = false];
+    ReplicaStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message ReplicaSpec {
+    // A reference to the partition that this belongs to
     string partition = 1;
+    // A reference to the raft group replica that this is linked to
     string raft_group_replica = 2;
+    // A reference to the storage host where this replica resides
     string storage_host = 3;
 }
 
@@ -135,13 +126,15 @@ message ReplicaStatus {
 }
 
 message RaftGroup {
-    ObjectMetadata metadata = 1;
-    RaftGroupSpec spec = 2;
-    RaftGroupStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    RaftGroupSpec spec = 2 [(gogoproto.nullable) = false];
+    RaftGroupStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message RaftGroupSpec {
+    // A reference to the partition that this raft group is linked to
     string partition = 1;
+    // The number of replicas for this raft group
     uint32 replication_factor = 2;
 }
 
@@ -149,22 +142,19 @@ message RaftGroupStatus {
 }
 
 message RaftGroupReplica {
-    ObjectMetadata metadata = 1;
-    RaftGroupReplicaSpec spec = 2;
-    RaftGroupReplicaStatus status = 3;
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    RaftGroupReplicaSpec spec = 2 [(gogoproto.nullable) = false];
+    RaftGroupReplicaStatus status = 3 [(gogoproto.nullable) = false];
 }
 
 message RaftGroupReplicaSpec {
+    // A reference to the raft group that this belongs to
     string raft_group = 1;
+    // A reference to the replica that this is linked to
     string replica = 2;
+    // A reference to the storage host where this replica resides
     string storage_host = 3;
 }
 
 message RaftGroupReplicaStatus {
 }
-
-
-// 1:1 relationships -> both objects have references
-// 1:N relationships -> child references parent
-// ObjectMetadata.Name is globally unique per collection.
-// Concatenate parent names to make child entities unique

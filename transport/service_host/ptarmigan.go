@@ -1,5 +1,7 @@
 package service_host
 
+import "github.com/jrife/ptarmigan/stateful_services"
+
 // PtarmiganHost describes an interface
 // that will be passed to each type of
 // frontend. Each frontend provides support
@@ -10,5 +12,5 @@ package service_host
 type PtarmiganHost interface {
 	NodeServiceHost
 	RaftServiceHost
-	StatefulServiceProvidersHost
+	stateful_services.StatefulServiceHost
 }

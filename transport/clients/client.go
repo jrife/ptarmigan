@@ -15,5 +15,4 @@ type PtarmiganClient interface {
 type PtarmiganClientInternal interface {
 	PtarmiganClient
 	RaftServiceClient
-	StatefulServicesClient
 }
