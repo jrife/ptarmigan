@@ -118,11 +118,13 @@ message ReplicaSpec {
     string partition = 1;
     // A reference to the raft group replica that this is linked to
     string raft_group_replica = 2;
-    // A reference to the storage host where this replica resides
+    // A reference to the storage host where this replica should reside
     string storage_host = 3;
 }
 
 message ReplicaStatus {
+    // A reference to the storage host where this replica actually resides
+    string storage_host = 1;
 }
 
 message RaftGroup {
