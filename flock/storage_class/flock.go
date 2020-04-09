@@ -54,3 +54,7 @@ func (provider *FlockStorageClassProvider) Snapshot(replicaName string) (io.Read
 func (provider *FlockStorageClassProvider) LastAppliedIndex(replicaName string) (uint64, error) {
 	return 0, nil
 }
+
+// We write flock and make sure its tests pass using an in-memory raft group
+type FakeRaftGroup struct {
+}
