@@ -15,3 +15,4 @@ service Flock {
     rpc ApplySnapshot(stream ptarmiganpb.Chunk) returns (ptarmiganpb.Empty);
     rpc SendMessages(RaftMessages) returns (ptarmiganpb.Empty);
 }
+// HTTP+gRPC at the same time: https://github.com/grpc-ecosystem/grpc-gateway
