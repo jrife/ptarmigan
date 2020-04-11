@@ -11,15 +11,15 @@
     "application/json"
   ],
   "paths": {
-    "/v1/kv/compaction": {
+    "/v1/stores/{header.store}/partitions/{header.partition}/compactions": {
       "post": {
-        "summary": "Compact compacts the event history in the etcd key-value store. The key-value\nstore should be periodically compacted or the event history will continue to grow\nindefinitely.",
+        "summary": "Compact compacts the event history in the key-value store. The key-value\nstore should be periodically compacted or the event history will continue to grow\nindefinitely.",
         "operationId": "Compact",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/flockpbCompactionResponse"
+              "$ref": "#/definitions/flockpbKVCompactionResponse"
             }
           },
           "default": {
@@ -31,11 +31,23 @@
         },
         "parameters": [
           {
+            "name": "header.store",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/flockpbCompactionRequest"
+              "$ref": "#/definitions/flockpbKVCompactionRequest"
             }
           }
         ],
@@ -44,15 +56,15 @@
         ]
       }
     },
-    "/v1/kv/deleterange": {
-      "post": {
-        "summary": "DeleteRange deletes the given range from the key-value store.\nA delete request increments the revision of the key-value store\nand generates a delete event in the event history for every deleted key.",
-        "operationId": "DeleteRange",
+    "/v1/stores/{header.store}/partitions/{header.partition}/kvs": {
+      "get": {
+        "summary": "Query retrieves kvs from a partition",
+        "operationId": "Query",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/flockpbDeleteRangeResponse"
+              "$ref": "#/definitions/flockpbKVQueryResponse"
             }
           },
           "default": {
@@ -64,12 +76,192 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "header.store",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbDeleteRangeRequest"
-            }
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "selection.key_gt",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "selection.key_gte",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "selection.key_lt",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "selection.key_lte",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "selection.mod_revision_gt",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.mod_revision_gte",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.mod_revision_lt",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.mod_revision_lte",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.create_revision_gt",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.create_revision_gte",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.create_revision_lt",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.create_revision_lte",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "selection.key_starts_with",
+            "description": "Key must be prefixed with this value.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "selection.key",
+            "description": "Key must equal this value.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "selection.lease",
+            "description": "Must belong to this lease.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "limit is the limit on the number of keys returned in the result.\nIf limit is set to 0 the default limit is used.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "revision",
+            "description": "revision is the revision of the store to use for the query.\nIf revision is less or equal to zero, the range is over the newest key-value store.\nIf the revision has been compacted, ErrCompacted is returned as a response.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "sort_order",
+            "description": "sort_order is the order for returned sorted results.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "NONE",
+              "ASC",
+              "DESC"
+            ],
+            "default": "NONE"
+          },
+          {
+            "name": "sort_target",
+            "description": "sort_target is the key-value field to use for sorting.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "KEY",
+              "VERSION",
+              "CREATE",
+              "MOD",
+              "VALUE"
+            ],
+            "default": "KEY"
+          },
+          {
+            "name": "serializable",
+            "description": "serializable sets the range request to use serializable member-local reads.\nRange requests are linearizable by default; linearizable requests have higher\nlatency and lower throughput than serializable requests but reflect the current\nconsensus of the cluster. For better performance, in exchange for possible stale reads,\na serializable range request is served locally without needing to reach consensus\nwith other nodes in the cluster.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "exclude_values",
+            "description": "exclude_values when set excludes values from the resulting kvs.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "include_count",
+            "description": "include_count when set includes the total count of keys matching\nthe query constraints in the result.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -77,15 +269,15 @@
         ]
       }
     },
-    "/v1/kv/lease/leases": {
+    "/v1/stores/{header.store}/partitions/{header.partition}/lease-renewals": {
       "post": {
-        "summary": "LeaseLeases lists all existing leases.",
-        "operationId": "LeaseLeases2",
+        "summary": "Renew renews the lease so that it does not expire",
+        "operationId": "Renew",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/flockpbLeaseLeasesResponse"
+              "$ref": "#/definitions/flockpbLeaseRenewResponse"
             }
           },
           "default": {
@@ -97,11 +289,23 @@
         },
         "parameters": [
           {
+            "name": "header.store",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/flockpbLeaseLeasesRequest"
+              "$ref": "#/definitions/flockpbLeaseRenewRequest"
             }
           }
         ],
@@ -110,15 +314,14 @@
         ]
       }
     },
-    "/v1/kv/lease/revoke": {
-      "post": {
-        "summary": "LeaseRevoke revokes a lease. All keys attached to the lease will expire and be deleted.",
-        "operationId": "LeaseRevoke2",
+    "/v1/stores/{header.store}/partitions/{header.partition}/leases": {
+      "get": {
+        "operationId": "Query",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/flockpbLeaseRevokeResponse"
+              "$ref": "#/definitions/flockpbLeaseQueryResponse"
             }
           },
           "default": {
@@ -130,155 +333,25 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "header.store",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbLeaseRevokeRequest"
-            }
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
           "Lease"
         ]
-      }
-    },
-    "/v1/kv/lease/timetolive": {
+      },
       "post": {
-        "summary": "LeaseTimeToLive retrieves lease information.",
-        "operationId": "LeaseTimeToLive2",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/flockpbLeaseTimeToLiveResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbLeaseTimeToLiveRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Lease"
-        ]
-      }
-    },
-    "/v1/kv/put": {
-      "post": {
-        "summary": "Put puts the given key into the key-value store.\nA put request increments the revision of the key-value store\nand generates one event in the event history.",
-        "operationId": "Put",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/flockpbPutResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbPutRequest"
-            }
-          }
-        ],
-        "tags": [
-          "KV"
-        ]
-      }
-    },
-    "/v1/kv/range": {
-      "post": {
-        "summary": "Range gets the keys in the range from the key-value store.",
-        "operationId": "Range",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/flockpbRangeResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbRangeRequest"
-            }
-          }
-        ],
-        "tags": [
-          "KV"
-        ]
-      }
-    },
-    "/v1/kv/txn": {
-      "post": {
-        "summary": "Txn processes multiple requests in a single transaction.\nA txn request increments the revision of the key-value store\nand generates events with the same revision for every completed request.\nIt is not allowed to modify the same key several times within one txn.",
-        "operationId": "Txn",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/flockpbTxnResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbTxnRequest"
-            }
-          }
-        ],
-        "tags": [
-          "KV"
-        ]
-      }
-    },
-    "/v1/lease/grant": {
-      "post": {
-        "summary": "LeaseGrant creates a lease which expires if the server does not receive a keepAlive\nwithin a given time to live period. All keys attached to the lease will be expired and\ndeleted if the lease expires. Each expired key generates a delete event in the event history.",
-        "operationId": "LeaseGrant",
+        "summary": "Grant creates a lease which expires if the server does not receive a renewal\nwithin a given time to live period. All keys attached to the lease will be expired and\ndeleted if the lease expires. Each expired key generates a delete event in the event history.",
+        "operationId": "Grant",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -295,6 +368,18 @@
         },
         "parameters": [
           {
+            "name": "header.store",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
@@ -308,58 +393,15 @@
         ]
       }
     },
-    "/v1/lease/keepalive": {
-      "post": {
-        "summary": "LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client\nto the server and streaming keep alive responses from the server to the client.",
-        "operationId": "LeaseKeepAlive",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/flockpbLeaseKeepAliveResponse"
-                },
-                "error": {
-                  "$ref": "#/definitions/runtimeStreamError"
-                }
-              },
-              "title": "Stream result of flockpbLeaseKeepAliveResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/runtimeError"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "description": " (streaming inputs)",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbLeaseKeepAliveRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Lease"
-        ]
-      }
-    },
-    "/v1/lease/leases": {
-      "post": {
-        "summary": "LeaseLeases lists all existing leases.",
-        "operationId": "LeaseLeases",
+    "/v1/stores/{header.store}/partitions/{header.partition}/leases/{ID}": {
+      "get": {
+        "summary": "Get retrieves information on a lease.",
+        "operationId": "Get",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/flockpbLeaseLeasesResponse"
+              "$ref": "#/definitions/flockpbLeaseGetResponse"
             }
           },
           "default": {
@@ -371,23 +413,33 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "header.store",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbLeaseLeasesRequest"
-            }
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "ID",
+            "description": "ID is the lease ID for the lease.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
           "Lease"
         ]
-      }
-    },
-    "/v1/lease/revoke": {
-      "post": {
-        "summary": "LeaseRevoke revokes a lease. All keys attached to the lease will expire and be deleted.",
-        "operationId": "LeaseRevoke",
+      },
+      "delete": {
+        "summary": "Revoke revokes a lease. All keys attached to the lease will expire and be deleted.",
+        "operationId": "Revoke",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -404,12 +456,24 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "header.store",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/flockpbLeaseRevokeRequest"
-            }
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "ID",
+            "description": "ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -417,15 +481,15 @@
         ]
       }
     },
-    "/v1/lease/timetolive": {
+    "/v1/stores/{header.store}/partitions/{header.partition}/transactions": {
       "post": {
-        "summary": "LeaseTimeToLive retrieves lease information.",
-        "operationId": "LeaseTimeToLive",
+        "summary": "Txn processes multiple requests in a single transaction.\nA txn request increments the revision of the key-value store\nand generates events with the same revision for every completed request.\nIt is not allowed to modify the same key several times within one txn.",
+        "operationId": "Txn",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/flockpbLeaseTimeToLiveResponse"
+              "$ref": "#/definitions/flockpbKVTxnResponse"
             }
           },
           "default": {
@@ -437,22 +501,34 @@
         },
         "parameters": [
           {
+            "name": "header.store",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/flockpbLeaseTimeToLiveRequest"
+              "$ref": "#/definitions/flockpbKVTxnRequest"
             }
           }
         ],
         "tags": [
-          "Lease"
+          "KV"
         ]
       }
     },
-    "/v1/watch": {
+    "/v1/stores/{header.store}/partitions/{header.partition}/watchers": {
       "post": {
-        "summary": "Watch watches for events happening or that have happened. Both input and output\nare streams; the input stream is for creating and canceling watchers and the output\nstream sends events. One watch RPC can watch on multiple key ranges, streaming events\nfor several watches at once. The entire event history can be watched starting from the\nlast compaction revision.",
+        "summary": "Watch creates a watcher to watch for events happening or that have happened.\nThe entire event history can be watched starting from the last compaction revision.",
         "operationId": "Watch",
         "responses": {
           "200": {
@@ -461,13 +537,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/flockpbWatchResponse"
+                  "$ref": "#/definitions/flockpbKVWatchResponse"
                 },
                 "error": {
                   "$ref": "#/definitions/runtimeStreamError"
                 }
               },
-              "title": "Stream result of flockpbWatchResponse"
+              "title": "Stream result of flockpbKVWatchResponse"
             }
           },
           "default": {
@@ -479,23 +555,42 @@
         },
         "parameters": [
           {
+            "name": "header.store",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "header.partition",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
-            "description": " (streaming inputs)",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/flockpbWatchRequest"
+              "$ref": "#/definitions/flockpbKVWatchRequest"
             }
           }
         ],
         "tags": [
-          "Watch"
+          "KV"
         ]
       }
     }
   },
   "definitions": {
-    "CompareCompareResult": {
+    "EventEventType": {
+      "type": "string",
+      "enum": [
+        "PUT",
+        "DELETE"
+      ],
+      "default": "PUT"
+    },
+    "KVPredicateComparison": {
       "type": "string",
       "enum": [
         "EQUAL",
@@ -505,7 +600,7 @@
       ],
       "default": "EQUAL"
     },
-    "CompareCompareTarget": {
+    "KVPredicateTarget": {
       "type": "string",
       "enum": [
         "VERSION",
@@ -516,24 +611,16 @@
       ],
       "default": "VERSION"
     },
-    "EventEventType": {
-      "type": "string",
-      "enum": [
-        "PUT",
-        "DELETE"
-      ],
-      "default": "PUT"
-    },
-    "RangeRequestSortOrder": {
+    "KVQueryRequestSortOrder": {
       "type": "string",
       "enum": [
         "NONE",
-        "ASCEND",
-        "DESCEND"
+        "ASC",
+        "DESC"
       ],
       "default": "NONE"
     },
-    "RangeRequestSortTarget": {
+    "KVQueryRequestSortTarget": {
       "type": "string",
       "enum": [
         "KEY",
@@ -544,18 +631,51 @@
       ],
       "default": "KEY"
     },
-    "WatchCreateRequestFilterType": {
+    "KVWatchRequestFilterType": {
       "type": "string",
       "enum": [
-        "NOPUT",
-        "NODELETE"
+        "NO_PUT",
+        "NO_DELETE"
       ],
-      "default": "NOPUT",
-      "description": " - NOPUT: filter out put event.\n - NODELETE: filter out delete event."
+      "default": "NO_PUT",
+      "description": " - NO_PUT: filter out put event.\n - NO_DELETE: filter out delete event."
     },
-    "flockpbCompactionRequest": {
+    "flockpbCompare": {
       "type": "object",
       "properties": {
+        "selection": {
+          "$ref": "#/definitions/flockpbKVSelection",
+          "title": "Selection of keys to test"
+        },
+        "predicate": {
+          "$ref": "#/definitions/flockpbKVPredicate",
+          "title": "Condition to test"
+        }
+      }
+    },
+    "flockpbEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/EventEventType",
+          "description": "type is the kind of event. If type is a PUT, it indicates\nnew data has been stored to the key. If type is a DELETE,\nit indicates the key was deleted."
+        },
+        "kv": {
+          "$ref": "#/definitions/flockpbKeyValue",
+          "description": "kv holds the KeyValue for the event.\nA PUT event contains current kv pair.\nA PUT event with kv.Version=1 indicates the creation of a key.\nA DELETE/EXPIRE event contains the deleted key with\nits modification revision set to the revision of deletion."
+        },
+        "prev_kv": {
+          "$ref": "#/definitions/flockpbKeyValue",
+          "description": "prev_kv holds the key-value pair before the event happens."
+        }
+      }
+    },
+    "flockpbKVCompactionRequest": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
+        },
         "revision": {
           "type": "string",
           "format": "int64",
@@ -569,7 +689,7 @@
       },
       "description": "CompactionRequest compacts the key-value store up to a given revision. All superseded keys\nwith a revision less than the compaction revision will be removed."
     },
-    "flockpbCompactionResponse": {
+    "flockpbKVCompactionResponse": {
       "type": "object",
       "properties": {
         "header": {
@@ -577,21 +697,53 @@
         }
       }
     },
-    "flockpbCompare": {
+    "flockpbKVDeleteRequest": {
       "type": "object",
       "properties": {
-        "result": {
-          "$ref": "#/definitions/CompareCompareResult",
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
+        },
+        "selection": {
+          "$ref": "#/definitions/flockpbKVSelection",
+          "title": "Only keys matching the predicates in the selection will be deleted"
+        },
+        "prev_kv": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "If prev_kv is set, flock gets the previous key-value pairs before deleting it.\nThe previous key-value pairs will be returned in the delete response."
+        }
+      }
+    },
+    "flockpbKVDeleteResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
+        },
+        "deleted": {
+          "type": "string",
+          "format": "int64",
+          "description": "deleted is the number of keys deleted by the delete range request."
+        },
+        "prev_kvs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbKeyValue"
+          },
+          "description": "if prev_kv is set in the request, the previous key-value pairs will be returned."
+        }
+      }
+    },
+    "flockpbKVPredicate": {
+      "type": "object",
+      "properties": {
+        "comparison": {
+          "$ref": "#/definitions/KVPredicateComparison",
           "description": "result is logical comparison operation for this comparison."
         },
         "target": {
-          "$ref": "#/definitions/CompareCompareTarget",
+          "$ref": "#/definitions/KVPredicateTarget",
           "description": "target is the key-value field to inspect for the comparison."
-        },
-        "key": {
-          "type": "string",
-          "format": "byte",
-          "description": "key is the subject key for the comparison operation."
         },
         "version": {
           "type": "string",
@@ -617,44 +769,51 @@
           "type": "string",
           "format": "int64",
           "description": "lease is the lease id of the given key."
-        },
-        "range_end": {
-          "type": "string",
-          "format": "byte",
-          "description": "range_end compares the given target to all keys in the range [key, range_end).\nSee RangeRequest for more details on key ranges."
         }
       }
     },
-    "flockpbDeleteRangeRequest": {
+    "flockpbKVPutRequest": {
       "type": "object",
       "properties": {
-        "key": {
-          "type": "string",
-          "format": "byte",
-          "description": "key is the first key to delete in the range."
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
         },
-        "range_end": {
+        "selection": {
+          "$ref": "#/definitions/flockpbKVSelection",
+          "title": "Only keys matching the predicates in the selection will be updated"
+        },
+        "value": {
           "type": "string",
           "format": "byte",
-          "description": "range_end is the key following the last key to delete for the range [key, range_end).\nIf range_end is not given, the range is defined to contain only the key argument.\nIf range_end is one bit larger than the given key, then the range is all the keys\nwith the prefix (the given key).\nIf range_end is '\\0', the range is all keys greater than or equal to the key argument."
+          "description": "value is the value, in bytes, to associate with the key in the key-value store."
+        },
+        "lease": {
+          "type": "string",
+          "format": "int64",
+          "description": "lease is the lease ID to associate with the key in the key-value store. A lease\nvalue of 0 indicates no lease."
         },
         "prev_kv": {
           "type": "boolean",
           "format": "boolean",
-          "description": "If prev_kv is set, etcd gets the previous key-value pairs before deleting it.\nThe previous key-value pairs will be returned in the delete response."
+          "description": "If prev_kv is set, flock gets the previous key-value pair before changing it.\nThe previous key-value pair will be returned in the put response."
+        },
+        "ignore_value": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "If ignore_value is set, flock updates the key using its current value.\nReturns an error if the key does not exist."
+        },
+        "ignore_lease": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "If ignore_lease is set, flock updates the key using its current lease.\nReturns an error if the key does not exist."
         }
       }
     },
-    "flockpbDeleteRangeResponse": {
+    "flockpbKVPutResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
-        },
-        "deleted": {
-          "type": "string",
-          "format": "int64",
-          "description": "deleted is the number of keys deleted by the delete range request."
         },
         "prev_kvs": {
           "type": "array",
@@ -665,20 +824,293 @@
         }
       }
     },
-    "flockpbEvent": {
+    "flockpbKVQueryRequest": {
       "type": "object",
       "properties": {
-        "type": {
-          "$ref": "#/definitions/EventEventType",
-          "description": "type is the kind of event. If type is a PUT, it indicates\nnew data has been stored to the key. If type is a DELETE,\nit indicates the key was deleted."
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
         },
-        "kv": {
-          "$ref": "#/definitions/flockpbKeyValue",
-          "description": "kv holds the KeyValue for the event.\nA PUT event contains current kv pair.\nA PUT event with kv.Version=1 indicates the creation of a key.\nA DELETE/EXPIRE event contains the deleted key with\nits modification revision set to the revision of deletion."
+        "selection": {
+          "$ref": "#/definitions/flockpbKVSelection",
+          "title": "Only keys matching the predicates in the selection will be included in the result"
+        },
+        "limit": {
+          "type": "string",
+          "format": "int64",
+          "description": "limit is the limit on the number of keys returned in the result.\nIf limit is set to 0 the default limit is used."
+        },
+        "revision": {
+          "type": "string",
+          "format": "int64",
+          "description": "revision is the revision of the store to use for the query.\nIf revision is less or equal to zero, the range is over the newest key-value store.\nIf the revision has been compacted, ErrCompacted is returned as a response."
+        },
+        "sort_order": {
+          "$ref": "#/definitions/KVQueryRequestSortOrder",
+          "description": "sort_order is the order for returned sorted results."
+        },
+        "sort_target": {
+          "$ref": "#/definitions/KVQueryRequestSortTarget",
+          "description": "sort_target is the key-value field to use for sorting."
+        },
+        "serializable": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "serializable sets the range request to use serializable member-local reads.\nRange requests are linearizable by default; linearizable requests have higher\nlatency and lower throughput than serializable requests but reflect the current\nconsensus of the cluster. For better performance, in exchange for possible stale reads,\na serializable range request is served locally without needing to reach consensus\nwith other nodes in the cluster."
+        },
+        "exclude_values": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "exclude_values when set excludes values from the resulting kvs"
+        },
+        "include_count": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "include_count when set includes the total count of keys matching\nthe query constraints in the result"
+        }
+      }
+    },
+    "flockpbKVQueryResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
+        },
+        "kvs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbKeyValue"
+          },
+          "description": "kvs is the list of key-value pairs matched by the query."
+        },
+        "more": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "more indicates if there are more keys matching the query."
+        },
+        "count": {
+          "type": "string",
+          "format": "int64",
+          "description": "count is set to the total number of keys matching the query."
+        }
+      }
+    },
+    "flockpbKVRequestOp": {
+      "type": "object",
+      "properties": {
+        "request_query": {
+          "$ref": "#/definitions/flockpbKVQueryRequest"
+        },
+        "request_put": {
+          "$ref": "#/definitions/flockpbKVPutRequest"
+        },
+        "request_delete": {
+          "$ref": "#/definitions/flockpbKVDeleteRequest"
+        },
+        "request_txn": {
+          "$ref": "#/definitions/flockpbKVTxnRequest"
+        }
+      }
+    },
+    "flockpbKVResponseOp": {
+      "type": "object",
+      "properties": {
+        "response_query": {
+          "$ref": "#/definitions/flockpbKVQueryResponse"
+        },
+        "response_put": {
+          "$ref": "#/definitions/flockpbKVPutResponse"
+        },
+        "response_delete": {
+          "$ref": "#/definitions/flockpbKVDeleteResponse"
+        },
+        "response_txn": {
+          "$ref": "#/definitions/flockpbKVTxnResponse"
+        }
+      }
+    },
+    "flockpbKVSelection": {
+      "type": "object",
+      "properties": {
+        "key_gt": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_gte": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_lt": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_lte": {
+          "type": "string",
+          "format": "byte"
+        },
+        "mod_revision_gt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "mod_revision_gte": {
+          "type": "string",
+          "format": "int64"
+        },
+        "mod_revision_lt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "mod_revision_lte": {
+          "type": "string",
+          "format": "int64"
+        },
+        "create_revision_gt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "create_revision_gte": {
+          "type": "string",
+          "format": "int64"
+        },
+        "create_revision_lt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "create_revision_lte": {
+          "type": "string",
+          "format": "int64"
+        },
+        "key_starts_with": {
+          "type": "string",
+          "format": "byte",
+          "title": "Key must be prefixed with this value"
+        },
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "title": "Key must equal this value"
+        },
+        "lease": {
+          "type": "string",
+          "format": "int64",
+          "title": "Must belong to this lease"
+        }
+      },
+      "description": "KVSelection is a set of constraints\nthat must all be met for a kv to be\nincluded in a query result."
+    },
+    "flockpbKVTxnRequest": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
+        },
+        "compare": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbCompare"
+          },
+          "description": "compare is a list of predicates representing a conjunction of terms.\nIf the comparisons succeed, then the success requests will be processed in order,\nand the response will contain their respective responses in order.\nIf the comparisons fail, then the failure requests will be processed in order,\nand the response will contain their respective responses in order."
+        },
+        "success": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbKVRequestOp"
+          },
+          "description": "success is a list of requests which will be applied when compare evaluates to true."
+        },
+        "failure": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbKVRequestOp"
+          },
+          "description": "failure is a list of requests which will be applied when compare evaluates to false."
+        }
+      },
+      "description": "From google paxosdb paper:\nOur implementation hinges around a powerful primitive which we call MultiOp. All other database\noperations except for iteration are implemented as a single call to MultiOp. A MultiOp is applied atomically\nand consists of three components:\n1. A list of tests called guard. Each test in guard checks a single entry in the database. It may check\nfor the absence or presence of a value, or compare with a given value. Two different tests in the guard\nmay apply to the same or different entries in the database. All tests in the guard are applied and\nMultiOp returns the results. If all tests are true, MultiOp executes t op (see item 2 below), otherwise\nit executes f op (see item 3 below).\n2. A list of database operations called t op. Each operation in the list is either an insert, delete, or\nlookup operation, and applies to a single database entry. Two different operations in the list may apply\nto the same or different entries in the database. These operations are executed\nif guard evaluates to\ntrue.\n3. A list of database operations called f op. Like t op, but executed if guard evaluates to false."
+    },
+    "flockpbKVTxnResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
+        },
+        "succeeded": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "succeeded is set to true if the compare evaluated to true or false otherwise."
+        },
+        "responses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbKVResponseOp"
+          },
+          "description": "responses is a list of responses corresponding to the results from applying\nsuccess if succeeded is true or failure if succeeded is false."
+        }
+      }
+    },
+    "flockpbKVWatchRequest": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
+        },
+        "selection": {
+          "$ref": "#/definitions/flockpbKVSelection",
+          "title": "Selection of keys to watch"
+        },
+        "start_revision": {
+          "type": "string",
+          "format": "int64",
+          "description": "start_revision is an optional revision to watch from (inclusive). No start_revision is \"now\"."
+        },
+        "progress_notify": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "progress_notify is set so that the flock server will periodically send a WatchResponse with\nno events to the new watcher if there are no recent events. It is useful when clients\nwish to recover a disconnected watcher starting from a recent known revision.\nThe flock server may decide how often it will send notifications based on current load."
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KVWatchRequestFilterType"
+          },
+          "description": "filters filter the events at server side before it sends back to the watcher."
         },
         "prev_kv": {
-          "$ref": "#/definitions/flockpbKeyValue",
-          "description": "prev_kv holds the key-value pair before the event happens."
+          "type": "boolean",
+          "format": "boolean",
+          "description": "If prev_kv is set, created watcher gets the previous KV before the event happens.\nIf the previous KV is already compacted, nothing will be returned."
+        },
+        "fragment": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "fragment enables splitting large revisions into multiple watch responses."
+        }
+      }
+    },
+    "flockpbKVWatchResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
+        },
+        "compact_revision": {
+          "type": "string",
+          "format": "int64",
+          "description": "compact_revision is set to the minimum index if a watcher tries to watch\nat a compacted index.\n\nThis happens when creating a watcher at a compacted revision or the watcher cannot\ncatch up with the progress of the key-value store.\n\nThe client should treat the watcher as canceled and should not try to create any\nwatcher with the same start_revision again."
+        },
+        "cancel_reason": {
+          "type": "string",
+          "description": "cancel_reason indicates the reason for canceling the watcher."
+        },
+        "fragment": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "framgment is true if large watch response was split over multiple responses."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/flockpbEvent"
+          }
         }
       }
     },
@@ -717,130 +1149,7 @@
         }
       }
     },
-    "flockpbLeaseGrantRequest": {
-      "type": "object",
-      "properties": {
-        "TTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "TTL is the advisory time-to-live in seconds. Expired lease will return -1."
-        },
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the requested ID for the lease. If ID is set to 0, the lessor chooses an ID."
-        }
-      }
-    },
-    "flockpbLeaseGrantResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        },
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID for the granted lease."
-        },
-        "TTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "TTL is the server chosen lease time-to-live in seconds."
-        },
-        "error": {
-          "type": "string"
-        }
-      }
-    },
-    "flockpbLeaseKeepAliveRequest": {
-      "type": "object",
-      "properties": {
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID for the lease to keep alive."
-        }
-      }
-    },
-    "flockpbLeaseKeepAliveResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        },
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID from the keep alive request."
-        },
-        "TTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "TTL is the new time-to-live for the lease."
-        }
-      }
-    },
-    "flockpbLeaseLeasesRequest": {
-      "type": "object"
-    },
-    "flockpbLeaseLeasesResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        },
-        "leases": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/flockpbLeaseStatus"
-          }
-        }
-      }
-    },
-    "flockpbLeaseRevokeRequest": {
-      "type": "object",
-      "properties": {
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted."
-        }
-      }
-    },
-    "flockpbLeaseRevokeResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        }
-      }
-    },
-    "flockpbLeaseStatus": {
-      "type": "object",
-      "properties": {
-        "ID": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
-    "flockpbLeaseTimeToLiveRequest": {
-      "type": "object",
-      "properties": {
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID for the lease."
-        },
-        "keys": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "keys is true to query all the keys attached to this lease."
-        }
-      }
-    },
-    "flockpbLeaseTimeToLiveResponse": {
+    "flockpbLeaseGetResponse": {
       "type": "object",
       "properties": {
         "header": {
@@ -860,182 +1169,136 @@
           "type": "string",
           "format": "int64",
           "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
-        },
-        "keys": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          },
-          "description": "Keys is the list of keys attached to this lease."
         }
       }
     },
-    "flockpbPutRequest": {
+    "flockpbLeaseGrantRequest": {
       "type": "object",
       "properties": {
-        "key": {
-          "type": "string",
-          "format": "byte",
-          "description": "key is the key, in bytes, to put into the key-value store."
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
         },
-        "value": {
-          "type": "string",
-          "format": "byte",
-          "description": "value is the value, in bytes, to associate with the key in the key-value store."
-        },
-        "lease": {
+        "TTL": {
           "type": "string",
           "format": "int64",
-          "description": "lease is the lease ID to associate with the key in the key-value store. A lease\nvalue of 0 indicates no lease."
-        },
-        "prev_kv": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "If prev_kv is set, etcd gets the previous key-value pair before changing it.\nThe previous key-value pair will be returned in the put response."
-        },
-        "ignore_value": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "If ignore_value is set, etcd updates the key using its current value.\nReturns an error if the key does not exist."
-        },
-        "ignore_lease": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "If ignore_lease is set, etcd updates the key using its current lease.\nReturns an error if the key does not exist."
+          "description": "TTL is the advisory time-to-live in seconds. Expired lease will return -1."
         }
       }
     },
-    "flockpbPutResponse": {
+    "flockpbLeaseGrantResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
         },
-        "prev_kv": {
-          "$ref": "#/definitions/flockpbKeyValue",
-          "description": "if prev_kv is set in the request, the previous key-value pair will be returned."
+        "ID": {
+          "type": "string",
+          "format": "int64",
+          "description": "ID is the lease ID for the granted lease."
+        },
+        "TTL": {
+          "type": "string",
+          "format": "int64",
+          "description": "TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds."
+        },
+        "grantedTTL": {
+          "type": "string",
+          "format": "int64",
+          "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
         }
       }
     },
-    "flockpbRangeRequest": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string",
-          "format": "byte",
-          "description": "key is the first key for the range. If range_end is not given, the request only looks up key."
-        },
-        "range_end": {
-          "type": "string",
-          "format": "byte",
-          "description": "range_end is the upper bound on the requested range [key, range_end).\nIf range_end is '\\0', the range is all keys \u003e= key.\nIf range_end is key plus one (e.g., \"aa\"+1 == \"ab\", \"a\\xff\"+1 == \"b\"),\nthen the range request gets all keys prefixed with key.\nIf both key and range_end are '\\0', then the range request returns all keys."
-        },
-        "limit": {
-          "type": "string",
-          "format": "int64",
-          "description": "limit is a limit on the number of keys returned for the request. When limit is set to 0,\nit is treated as no limit."
-        },
-        "revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "revision is the point-in-time of the key-value store to use for the range.\nIf revision is less or equal to zero, the range is over the newest key-value store.\nIf the revision has been compacted, ErrCompacted is returned as a response."
-        },
-        "sort_order": {
-          "$ref": "#/definitions/RangeRequestSortOrder",
-          "description": "sort_order is the order for returned sorted results."
-        },
-        "sort_target": {
-          "$ref": "#/definitions/RangeRequestSortTarget",
-          "description": "sort_target is the key-value field to use for sorting."
-        },
-        "serializable": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "serializable sets the range request to use serializable member-local reads.\nRange requests are linearizable by default; linearizable requests have higher\nlatency and lower throughput than serializable requests but reflect the current\nconsensus of the cluster. For better performance, in exchange for possible stale reads,\na serializable range request is served locally without needing to reach consensus\nwith other nodes in the cluster."
-        },
-        "keys_only": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "keys_only when set returns only the keys and not the values."
-        },
-        "count_only": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "count_only when set returns only the count of the keys in the range."
-        },
-        "min_mod_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "min_mod_revision is the lower bound for returned key mod revisions; all keys with\nlesser mod revisions will be filtered away."
-        },
-        "max_mod_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "max_mod_revision is the upper bound for returned key mod revisions; all keys with\ngreater mod revisions will be filtered away."
-        },
-        "min_create_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "min_create_revision is the lower bound for returned key create revisions; all keys with\nlesser create revisions will be filtered away."
-        },
-        "max_create_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "max_create_revision is the upper bound for returned key create revisions; all keys with\ngreater create revisions will be filtered away."
-        }
-      }
-    },
-    "flockpbRangeResponse": {
+    "flockpbLeaseQueryResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
         },
-        "kvs": {
+        "leases": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/flockpbKeyValue"
-          },
-          "description": "kvs is the list of key-value pairs matched by the range request.\nkvs is empty when count is requested."
-        },
-        "more": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "more indicates if there are more keys to return in the requested range."
-        },
-        "count": {
-          "type": "string",
-          "format": "int64",
-          "description": "count is set to the number of keys within the range when requested."
+            "$ref": "#/definitions/flockpbLeaseStatus"
+          }
         }
       }
     },
-    "flockpbRequestOp": {
+    "flockpbLeaseRenewRequest": {
       "type": "object",
       "properties": {
-        "request_range": {
-          "$ref": "#/definitions/flockpbRangeRequest"
+        "header": {
+          "$ref": "#/definitions/flockpbPartitionRequestHeader"
         },
-        "request_put": {
-          "$ref": "#/definitions/flockpbPutRequest"
+        "ID": {
+          "type": "string",
+          "format": "int64",
+          "description": "ID is the lease ID for the lease to keep alive."
+        }
+      }
+    },
+    "flockpbLeaseRenewResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
         },
-        "request_delete_range": {
-          "$ref": "#/definitions/flockpbDeleteRangeRequest"
+        "ID": {
+          "type": "string",
+          "format": "int64",
+          "description": "ID is the lease ID from the keep alive request."
         },
-        "request_txn": {
-          "$ref": "#/definitions/flockpbTxnRequest"
+        "TTL": {
+          "type": "string",
+          "format": "int64",
+          "description": "TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds."
+        },
+        "grantedTTL": {
+          "type": "string",
+          "format": "int64",
+          "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
+        }
+      }
+    },
+    "flockpbLeaseRevokeResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
+        }
+      }
+    },
+    "flockpbLeaseStatus": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string",
+          "format": "int64"
+        },
+        "TTL": {
+          "type": "string",
+          "format": "int64",
+          "description": "TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds."
+        },
+        "grantedTTL": {
+          "type": "string",
+          "format": "int64",
+          "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
+        }
+      }
+    },
+    "flockpbPartitionRequestHeader": {
+      "type": "object",
+      "properties": {
+        "store": {
+          "type": "string"
+        },
+        "partition": {
+          "type": "string"
         }
       }
     },
     "flockpbResponseHeader": {
       "type": "object",
       "properties": {
-        "cluster_id": {
-          "type": "string",
-          "format": "uint64",
-          "description": "cluster_id is the ID of the cluster which sent the response."
-        },
         "member_id": {
           "type": "string",
           "format": "uint64",
@@ -1045,193 +1308,6 @@
           "type": "string",
           "format": "int64",
           "description": "revision is the key-value store revision when the request was applied.\nFor watch progress responses, the header.revision indicates progress. All future events\nrecieved in this stream are guaranteed to have a higher revision number than the\nheader.revision number."
-        },
-        "raft_term": {
-          "type": "string",
-          "format": "uint64",
-          "description": "raft_term is the raft term when the request was applied."
-        }
-      }
-    },
-    "flockpbResponseOp": {
-      "type": "object",
-      "properties": {
-        "response_range": {
-          "$ref": "#/definitions/flockpbRangeResponse"
-        },
-        "response_put": {
-          "$ref": "#/definitions/flockpbPutResponse"
-        },
-        "response_delete_range": {
-          "$ref": "#/definitions/flockpbDeleteRangeResponse"
-        },
-        "response_txn": {
-          "$ref": "#/definitions/flockpbTxnResponse"
-        }
-      }
-    },
-    "flockpbTxnRequest": {
-      "type": "object",
-      "properties": {
-        "compare": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/flockpbCompare"
-          },
-          "description": "compare is a list of predicates representing a conjunction of terms.\nIf the comparisons succeed, then the success requests will be processed in order,\nand the response will contain their respective responses in order.\nIf the comparisons fail, then the failure requests will be processed in order,\nand the response will contain their respective responses in order."
-        },
-        "success": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/flockpbRequestOp"
-          },
-          "description": "success is a list of requests which will be applied when compare evaluates to true."
-        },
-        "failure": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/flockpbRequestOp"
-          },
-          "description": "failure is a list of requests which will be applied when compare evaluates to false."
-        }
-      },
-      "description": "From google paxosdb paper:\nOur implementation hinges around a powerful primitive which we call MultiOp. All other database\noperations except for iteration are implemented as a single call to MultiOp. A MultiOp is applied atomically\nand consists of three components:\n1. A list of tests called guard. Each test in guard checks a single entry in the database. It may check\nfor the absence or presence of a value, or compare with a given value. Two different tests in the guard\nmay apply to the same or different entries in the database. All tests in the guard are applied and\nMultiOp returns the results. If all tests are true, MultiOp executes t op (see item 2 below), otherwise\nit executes f op (see item 3 below).\n2. A list of database operations called t op. Each operation in the list is either an insert, delete, or\nlookup operation, and applies to a single database entry. Two different operations in the list may apply\nto the same or different entries in the database. These operations are executed\nif guard evaluates to\ntrue.\n3. A list of database operations called f op. Like t op, but executed if guard evaluates to false."
-    },
-    "flockpbTxnResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        },
-        "succeeded": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "succeeded is set to true if the compare evaluated to true or false otherwise."
-        },
-        "responses": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/flockpbResponseOp"
-          },
-          "description": "responses is a list of responses corresponding to the results from applying\nsuccess if succeeded is true or failure if succeeded is false."
-        }
-      }
-    },
-    "flockpbWatchCancelRequest": {
-      "type": "object",
-      "properties": {
-        "watch_id": {
-          "type": "string",
-          "format": "int64",
-          "description": "watch_id is the watcher id to cancel so that no more events are transmitted."
-        }
-      }
-    },
-    "flockpbWatchCreateRequest": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string",
-          "format": "byte",
-          "description": "key is the key to register for watching."
-        },
-        "range_end": {
-          "type": "string",
-          "format": "byte",
-          "description": "range_end is the end of the range [key, range_end) to watch. If range_end is not given,\nonly the key argument is watched. If range_end is equal to '\\0', all keys greater than\nor equal to the key argument are watched.\nIf the range_end is one bit larger than the given key,\nthen all keys with the prefix (the given key) will be watched."
-        },
-        "start_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "start_revision is an optional revision to watch from (inclusive). No start_revision is \"now\"."
-        },
-        "progress_notify": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "progress_notify is set so that the etcd server will periodically send a WatchResponse with\nno events to the new watcher if there are no recent events. It is useful when clients\nwish to recover a disconnected watcher starting from a recent known revision.\nThe etcd server may decide how often it will send notifications based on current load."
-        },
-        "filters": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/WatchCreateRequestFilterType"
-          },
-          "description": "filters filter the events at server side before it sends back to the watcher."
-        },
-        "prev_kv": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "If prev_kv is set, created watcher gets the previous KV before the event happens.\nIf the previous KV is already compacted, nothing will be returned."
-        },
-        "watch_id": {
-          "type": "string",
-          "format": "int64",
-          "description": "If watch_id is provided and non-zero, it will be assigned to this watcher.\nSince creating a watcher in etcd is not a synchronous operation,\nthis can be used ensure that ordering is correct when creating multiple\nwatchers on the same stream. Creating a watcher with an ID already in\nuse on the stream will cause an error to be returned."
-        },
-        "fragment": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "fragment enables splitting large revisions into multiple watch responses."
-        }
-      }
-    },
-    "flockpbWatchProgressRequest": {
-      "type": "object",
-      "description": "Requests the a watch stream progress status be sent in the watch response stream as soon as\npossible."
-    },
-    "flockpbWatchRequest": {
-      "type": "object",
-      "properties": {
-        "create_request": {
-          "$ref": "#/definitions/flockpbWatchCreateRequest"
-        },
-        "cancel_request": {
-          "$ref": "#/definitions/flockpbWatchCancelRequest"
-        },
-        "progress_request": {
-          "$ref": "#/definitions/flockpbWatchProgressRequest"
-        }
-      }
-    },
-    "flockpbWatchResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        },
-        "watch_id": {
-          "type": "string",
-          "format": "int64",
-          "description": "watch_id is the ID of the watcher that corresponds to the response."
-        },
-        "created": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "created is set to true if the response is for a create watch request.\nThe client should record the watch_id and expect to receive events for\nthe created watcher from the same stream.\nAll events sent to the created watcher will attach with the same watch_id."
-        },
-        "canceled": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "canceled is set to true if the response is for a cancel watch request.\nNo further events will be sent to the canceled watcher."
-        },
-        "compact_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "compact_revision is set to the minimum index if a watcher tries to watch\nat a compacted index.\n\nThis happens when creating a watcher at a compacted revision or the watcher cannot\ncatch up with the progress of the key-value store.\n\nThe client should treat the watcher as canceled and should not try to create any\nwatcher with the same start_revision again."
-        },
-        "cancel_reason": {
-          "type": "string",
-          "description": "cancel_reason indicates the reason for canceling the watcher."
-        },
-        "fragment": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "framgment is true if large watch response was split over multiple responses."
-        },
-        "events": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/flockpbEvent"
-          }
         }
       }
     },

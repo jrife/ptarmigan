@@ -28,45 +28,45 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type RangeRequest_SortOrder int32
+type KVQueryRequest_SortOrder int32
 
 const (
-	RangeRequest_NONE    RangeRequest_SortOrder = 0
-	RangeRequest_ASCEND  RangeRequest_SortOrder = 1
-	RangeRequest_DESCEND RangeRequest_SortOrder = 2
+	KVQueryRequest_NONE KVQueryRequest_SortOrder = 0
+	KVQueryRequest_ASC  KVQueryRequest_SortOrder = 1
+	KVQueryRequest_DESC KVQueryRequest_SortOrder = 2
 )
 
-var RangeRequest_SortOrder_name = map[int32]string{
+var KVQueryRequest_SortOrder_name = map[int32]string{
 	0: "NONE",
-	1: "ASCEND",
-	2: "DESCEND",
+	1: "ASC",
+	2: "DESC",
 }
 
-var RangeRequest_SortOrder_value = map[string]int32{
-	"NONE":    0,
-	"ASCEND":  1,
-	"DESCEND": 2,
+var KVQueryRequest_SortOrder_value = map[string]int32{
+	"NONE": 0,
+	"ASC":  1,
+	"DESC": 2,
 }
 
-func (x RangeRequest_SortOrder) String() string {
-	return proto.EnumName(RangeRequest_SortOrder_name, int32(x))
+func (x KVQueryRequest_SortOrder) String() string {
+	return proto.EnumName(KVQueryRequest_SortOrder_name, int32(x))
 }
 
-func (RangeRequest_SortOrder) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{1, 0}
+func (KVQueryRequest_SortOrder) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{3, 0}
 }
 
-type RangeRequest_SortTarget int32
+type KVQueryRequest_SortTarget int32
 
 const (
-	RangeRequest_KEY     RangeRequest_SortTarget = 0
-	RangeRequest_VERSION RangeRequest_SortTarget = 1
-	RangeRequest_CREATE  RangeRequest_SortTarget = 2
-	RangeRequest_MOD     RangeRequest_SortTarget = 3
-	RangeRequest_VALUE   RangeRequest_SortTarget = 4
+	KVQueryRequest_KEY     KVQueryRequest_SortTarget = 0
+	KVQueryRequest_VERSION KVQueryRequest_SortTarget = 1
+	KVQueryRequest_CREATE  KVQueryRequest_SortTarget = 2
+	KVQueryRequest_MOD     KVQueryRequest_SortTarget = 3
+	KVQueryRequest_VALUE   KVQueryRequest_SortTarget = 4
 )
 
-var RangeRequest_SortTarget_name = map[int32]string{
+var KVQueryRequest_SortTarget_name = map[int32]string{
 	0: "KEY",
 	1: "VERSION",
 	2: "CREATE",
@@ -74,7 +74,7 @@ var RangeRequest_SortTarget_name = map[int32]string{
 	4: "VALUE",
 }
 
-var RangeRequest_SortTarget_value = map[string]int32{
+var KVQueryRequest_SortTarget_value = map[string]int32{
 	"KEY":     0,
 	"VERSION": 1,
 	"CREATE":  2,
@@ -82,56 +82,56 @@ var RangeRequest_SortTarget_value = map[string]int32{
 	"VALUE":   4,
 }
 
-func (x RangeRequest_SortTarget) String() string {
-	return proto.EnumName(RangeRequest_SortTarget_name, int32(x))
+func (x KVQueryRequest_SortTarget) String() string {
+	return proto.EnumName(KVQueryRequest_SortTarget_name, int32(x))
 }
 
-func (RangeRequest_SortTarget) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{1, 1}
+func (KVQueryRequest_SortTarget) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{3, 1}
 }
 
-type Compare_CompareResult int32
+type KVPredicate_Comparison int32
 
 const (
-	Compare_EQUAL     Compare_CompareResult = 0
-	Compare_GREATER   Compare_CompareResult = 1
-	Compare_LESS      Compare_CompareResult = 2
-	Compare_NOT_EQUAL Compare_CompareResult = 3
+	KVPredicate_EQUAL     KVPredicate_Comparison = 0
+	KVPredicate_GREATER   KVPredicate_Comparison = 1
+	KVPredicate_LESS      KVPredicate_Comparison = 2
+	KVPredicate_NOT_EQUAL KVPredicate_Comparison = 3
 )
 
-var Compare_CompareResult_name = map[int32]string{
+var KVPredicate_Comparison_name = map[int32]string{
 	0: "EQUAL",
 	1: "GREATER",
 	2: "LESS",
 	3: "NOT_EQUAL",
 }
 
-var Compare_CompareResult_value = map[string]int32{
+var KVPredicate_Comparison_value = map[string]int32{
 	"EQUAL":     0,
 	"GREATER":   1,
 	"LESS":      2,
 	"NOT_EQUAL": 3,
 }
 
-func (x Compare_CompareResult) String() string {
-	return proto.EnumName(Compare_CompareResult_name, int32(x))
+func (x KVPredicate_Comparison) String() string {
+	return proto.EnumName(KVPredicate_Comparison_name, int32(x))
 }
 
-func (Compare_CompareResult) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{9, 0}
+func (KVPredicate_Comparison) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{11, 0}
 }
 
-type Compare_CompareTarget int32
+type KVPredicate_Target int32
 
 const (
-	Compare_VERSION Compare_CompareTarget = 0
-	Compare_CREATE  Compare_CompareTarget = 1
-	Compare_MOD     Compare_CompareTarget = 2
-	Compare_VALUE   Compare_CompareTarget = 3
-	Compare_LEASE   Compare_CompareTarget = 4
+	KVPredicate_VERSION KVPredicate_Target = 0
+	KVPredicate_CREATE  KVPredicate_Target = 1
+	KVPredicate_MOD     KVPredicate_Target = 2
+	KVPredicate_VALUE   KVPredicate_Target = 3
+	KVPredicate_LEASE   KVPredicate_Target = 4
 )
 
-var Compare_CompareTarget_name = map[int32]string{
+var KVPredicate_Target_name = map[int32]string{
 	0: "VERSION",
 	1: "CREATE",
 	2: "MOD",
@@ -139,7 +139,7 @@ var Compare_CompareTarget_name = map[int32]string{
 	4: "LEASE",
 }
 
-var Compare_CompareTarget_value = map[string]int32{
+var KVPredicate_Target_value = map[string]int32{
 	"VERSION": 0,
 	"CREATE":  1,
 	"MOD":     2,
@@ -147,39 +147,39 @@ var Compare_CompareTarget_value = map[string]int32{
 	"LEASE":   4,
 }
 
-func (x Compare_CompareTarget) String() string {
-	return proto.EnumName(Compare_CompareTarget_name, int32(x))
+func (x KVPredicate_Target) String() string {
+	return proto.EnumName(KVPredicate_Target_name, int32(x))
 }
 
-func (Compare_CompareTarget) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{9, 1}
+func (KVPredicate_Target) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{11, 1}
 }
 
-type WatchCreateRequest_FilterType int32
+type KVWatchRequest_FilterType int32
 
 const (
 	// filter out put event.
-	WatchCreateRequest_NOPUT WatchCreateRequest_FilterType = 0
+	KVWatchRequest_NO_PUT KVWatchRequest_FilterType = 0
 	// filter out delete event.
-	WatchCreateRequest_NODELETE WatchCreateRequest_FilterType = 1
+	KVWatchRequest_NO_DELETE KVWatchRequest_FilterType = 1
 )
 
-var WatchCreateRequest_FilterType_name = map[int32]string{
-	0: "NOPUT",
-	1: "NODELETE",
+var KVWatchRequest_FilterType_name = map[int32]string{
+	0: "NO_PUT",
+	1: "NO_DELETE",
 }
 
-var WatchCreateRequest_FilterType_value = map[string]int32{
-	"NOPUT":    0,
-	"NODELETE": 1,
+var KVWatchRequest_FilterType_value = map[string]int32{
+	"NO_PUT":    0,
+	"NO_DELETE": 1,
 }
 
-func (x WatchCreateRequest_FilterType) String() string {
-	return proto.EnumName(WatchCreateRequest_FilterType_name, int32(x))
+func (x KVWatchRequest_FilterType) String() string {
+	return proto.EnumName(KVWatchRequest_FilterType_name, int32(x))
 }
 
-func (WatchCreateRequest_FilterType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{15, 0}
+func (KVWatchRequest_FilterType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{17, 0}
 }
 
 type Event_EventType int32
@@ -204,28 +204,76 @@ func (x Event_EventType) String() string {
 }
 
 func (Event_EventType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{34, 0}
+	return fileDescriptor_77a6da22d6a3feb1, []int{31, 0}
+}
+
+type PartitionRequestHeader struct {
+	Store     string `protobuf:"bytes,1,opt,name=store,proto3" json:"store,omitempty"`
+	Partition string `protobuf:"bytes,2,opt,name=partition,proto3" json:"partition,omitempty"`
+}
+
+func (m *PartitionRequestHeader) Reset()         { *m = PartitionRequestHeader{} }
+func (m *PartitionRequestHeader) String() string { return proto.CompactTextString(m) }
+func (*PartitionRequestHeader) ProtoMessage()    {}
+func (*PartitionRequestHeader) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{0}
+}
+func (m *PartitionRequestHeader) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PartitionRequestHeader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PartitionRequestHeader.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PartitionRequestHeader) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PartitionRequestHeader.Merge(m, src)
+}
+func (m *PartitionRequestHeader) XXX_Size() int {
+	return m.Size()
+}
+func (m *PartitionRequestHeader) XXX_DiscardUnknown() {
+	xxx_messageInfo_PartitionRequestHeader.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PartitionRequestHeader proto.InternalMessageInfo
+
+func (m *PartitionRequestHeader) GetStore() string {
+	if m != nil {
+		return m.Store
+	}
+	return ""
+}
+
+func (m *PartitionRequestHeader) GetPartition() string {
+	if m != nil {
+		return m.Partition
+	}
+	return ""
 }
 
 type ResponseHeader struct {
-	// cluster_id is the ID of the cluster which sent the response.
-	ClusterId uint64 `protobuf:"varint,1,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
 	// member_id is the ID of the member which sent the response.
-	MemberId uint64 `protobuf:"varint,2,opt,name=member_id,json=memberId,proto3" json:"member_id,omitempty"`
+	MemberId uint64 `protobuf:"varint,1,opt,name=member_id,json=memberId,proto3" json:"member_id,omitempty"`
 	// revision is the key-value store revision when the request was applied.
 	// For watch progress responses, the header.revision indicates progress. All future events
 	// recieved in this stream are guaranteed to have a higher revision number than the
 	// header.revision number.
-	Revision int64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
-	// raft_term is the raft term when the request was applied.
-	RaftTerm uint64 `protobuf:"varint,4,opt,name=raft_term,json=raftTerm,proto3" json:"raft_term,omitempty"`
+	Revision int64 `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
 }
 
 func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{0}
+	return fileDescriptor_77a6da22d6a3feb1, []int{1}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -254,13 +302,6 @@ func (m *ResponseHeader) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ResponseHeader proto.InternalMessageInfo
 
-func (m *ResponseHeader) GetClusterId() uint64 {
-	if m != nil {
-		return m.ClusterId
-	}
-	return 0
-}
-
 func (m *ResponseHeader) GetMemberId() uint64 {
 	if m != nil {
 		return m.MemberId
@@ -275,33 +316,343 @@ func (m *ResponseHeader) GetRevision() int64 {
 	return 0
 }
 
-func (m *ResponseHeader) GetRaftTerm() uint64 {
+// KVSelection is a set of constraints
+// that must all be met for a kv to be
+// included in a query result.
+type KVSelection struct {
+	// Key must be > or >= this value
+	//
+	// Types that are valid to be assigned to KeyRangeMin:
+	//	*KVSelection_KeyGt
+	//	*KVSelection_KeyGte
+	KeyRangeMin isKVSelection_KeyRangeMin `protobuf_oneof:"key_range_min"`
+	// Key must be < or <= this value
+	//
+	// Types that are valid to be assigned to KeyRangeMax:
+	//	*KVSelection_KeyLt
+	//	*KVSelection_KeyLte
+	KeyRangeMax isKVSelection_KeyRangeMax `protobuf_oneof:"key_range_max"`
+	// KV mod revision must be > or >= this value
+	//
+	// Types that are valid to be assigned to ModRevisionStart:
+	//	*KVSelection_ModRevisionGt
+	//	*KVSelection_ModRevisionGte
+	ModRevisionStart isKVSelection_ModRevisionStart `protobuf_oneof:"mod_revision_start"`
+	// KV mod revision must be < or <= this value
+	//
+	// Types that are valid to be assigned to ModRevisionEnd:
+	//	*KVSelection_ModRevisionLt
+	//	*KVSelection_ModRevisionLte
+	ModRevisionEnd isKVSelection_ModRevisionEnd `protobuf_oneof:"mod_revision_end"`
+	// KV create revision must be > or >= this value
+	//
+	// Types that are valid to be assigned to CreateRevisionStart:
+	//	*KVSelection_CreateRevisionGt
+	//	*KVSelection_CreateRevisionGte
+	CreateRevisionStart isKVSelection_CreateRevisionStart `protobuf_oneof:"create_revision_start"`
+	// KV create revision must be < or <= this value
+	//
+	// Types that are valid to be assigned to CreateRevisionEnd:
+	//	*KVSelection_CreateRevisionLt
+	//	*KVSelection_CreateRevisionLte
+	CreateRevisionEnd isKVSelection_CreateRevisionEnd `protobuf_oneof:"create_revision_end"`
+	// Key must be prefixed with this value
+	KeyStartsWith []byte `protobuf:"bytes,64,opt,name=key_starts_with,json=keyStartsWith,proto3" json:"key_starts_with,omitempty"`
+	// Key must equal this value
+	Key []byte `protobuf:"bytes,65,opt,name=key,proto3" json:"key,omitempty"`
+	// Must belong to this lease
+	Lease int64 `protobuf:"varint,66,opt,name=lease,proto3" json:"lease,omitempty"`
+}
+
+func (m *KVSelection) Reset()         { *m = KVSelection{} }
+func (m *KVSelection) String() string { return proto.CompactTextString(m) }
+func (*KVSelection) ProtoMessage()    {}
+func (*KVSelection) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{2}
+}
+func (m *KVSelection) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KVSelection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KVSelection.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *KVSelection) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVSelection.Merge(m, src)
+}
+func (m *KVSelection) XXX_Size() int {
+	return m.Size()
+}
+func (m *KVSelection) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVSelection.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KVSelection proto.InternalMessageInfo
+
+type isKVSelection_KeyRangeMin interface {
+	isKVSelection_KeyRangeMin()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isKVSelection_KeyRangeMax interface {
+	isKVSelection_KeyRangeMax()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isKVSelection_ModRevisionStart interface {
+	isKVSelection_ModRevisionStart()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isKVSelection_ModRevisionEnd interface {
+	isKVSelection_ModRevisionEnd()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isKVSelection_CreateRevisionStart interface {
+	isKVSelection_CreateRevisionStart()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isKVSelection_CreateRevisionEnd interface {
+	isKVSelection_CreateRevisionEnd()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type KVSelection_KeyGt struct {
+	KeyGt []byte `protobuf:"bytes,1,opt,name=key_gt,json=keyGt,proto3,oneof" json:"key_gt,omitempty"`
+}
+type KVSelection_KeyGte struct {
+	KeyGte []byte `protobuf:"bytes,2,opt,name=key_gte,json=keyGte,proto3,oneof" json:"key_gte,omitempty"`
+}
+type KVSelection_KeyLt struct {
+	KeyLt []byte `protobuf:"bytes,3,opt,name=key_lt,json=keyLt,proto3,oneof" json:"key_lt,omitempty"`
+}
+type KVSelection_KeyLte struct {
+	KeyLte []byte `protobuf:"bytes,4,opt,name=key_lte,json=keyLte,proto3,oneof" json:"key_lte,omitempty"`
+}
+type KVSelection_ModRevisionGt struct {
+	ModRevisionGt int64 `protobuf:"varint,5,opt,name=mod_revision_gt,json=modRevisionGt,proto3,oneof" json:"mod_revision_gt,omitempty"`
+}
+type KVSelection_ModRevisionGte struct {
+	ModRevisionGte int64 `protobuf:"varint,6,opt,name=mod_revision_gte,json=modRevisionGte,proto3,oneof" json:"mod_revision_gte,omitempty"`
+}
+type KVSelection_ModRevisionLt struct {
+	ModRevisionLt int64 `protobuf:"varint,7,opt,name=mod_revision_lt,json=modRevisionLt,proto3,oneof" json:"mod_revision_lt,omitempty"`
+}
+type KVSelection_ModRevisionLte struct {
+	ModRevisionLte int64 `protobuf:"varint,8,opt,name=mod_revision_lte,json=modRevisionLte,proto3,oneof" json:"mod_revision_lte,omitempty"`
+}
+type KVSelection_CreateRevisionGt struct {
+	CreateRevisionGt int64 `protobuf:"varint,9,opt,name=create_revision_gt,json=createRevisionGt,proto3,oneof" json:"create_revision_gt,omitempty"`
+}
+type KVSelection_CreateRevisionGte struct {
+	CreateRevisionGte int64 `protobuf:"varint,10,opt,name=create_revision_gte,json=createRevisionGte,proto3,oneof" json:"create_revision_gte,omitempty"`
+}
+type KVSelection_CreateRevisionLt struct {
+	CreateRevisionLt int64 `protobuf:"varint,11,opt,name=create_revision_lt,json=createRevisionLt,proto3,oneof" json:"create_revision_lt,omitempty"`
+}
+type KVSelection_CreateRevisionLte struct {
+	CreateRevisionLte int64 `protobuf:"varint,12,opt,name=create_revision_lte,json=createRevisionLte,proto3,oneof" json:"create_revision_lte,omitempty"`
+}
+
+func (*KVSelection_KeyGt) isKVSelection_KeyRangeMin()                     {}
+func (*KVSelection_KeyGte) isKVSelection_KeyRangeMin()                    {}
+func (*KVSelection_KeyLt) isKVSelection_KeyRangeMax()                     {}
+func (*KVSelection_KeyLte) isKVSelection_KeyRangeMax()                    {}
+func (*KVSelection_ModRevisionGt) isKVSelection_ModRevisionStart()        {}
+func (*KVSelection_ModRevisionGte) isKVSelection_ModRevisionStart()       {}
+func (*KVSelection_ModRevisionLt) isKVSelection_ModRevisionEnd()          {}
+func (*KVSelection_ModRevisionLte) isKVSelection_ModRevisionEnd()         {}
+func (*KVSelection_CreateRevisionGt) isKVSelection_CreateRevisionStart()  {}
+func (*KVSelection_CreateRevisionGte) isKVSelection_CreateRevisionStart() {}
+func (*KVSelection_CreateRevisionLt) isKVSelection_CreateRevisionEnd()    {}
+func (*KVSelection_CreateRevisionLte) isKVSelection_CreateRevisionEnd()   {}
+
+func (m *KVSelection) GetKeyRangeMin() isKVSelection_KeyRangeMin {
 	if m != nil {
-		return m.RaftTerm
+		return m.KeyRangeMin
+	}
+	return nil
+}
+func (m *KVSelection) GetKeyRangeMax() isKVSelection_KeyRangeMax {
+	if m != nil {
+		return m.KeyRangeMax
+	}
+	return nil
+}
+func (m *KVSelection) GetModRevisionStart() isKVSelection_ModRevisionStart {
+	if m != nil {
+		return m.ModRevisionStart
+	}
+	return nil
+}
+func (m *KVSelection) GetModRevisionEnd() isKVSelection_ModRevisionEnd {
+	if m != nil {
+		return m.ModRevisionEnd
+	}
+	return nil
+}
+func (m *KVSelection) GetCreateRevisionStart() isKVSelection_CreateRevisionStart {
+	if m != nil {
+		return m.CreateRevisionStart
+	}
+	return nil
+}
+func (m *KVSelection) GetCreateRevisionEnd() isKVSelection_CreateRevisionEnd {
+	if m != nil {
+		return m.CreateRevisionEnd
+	}
+	return nil
+}
+
+func (m *KVSelection) GetKeyGt() []byte {
+	if x, ok := m.GetKeyRangeMin().(*KVSelection_KeyGt); ok {
+		return x.KeyGt
+	}
+	return nil
+}
+
+func (m *KVSelection) GetKeyGte() []byte {
+	if x, ok := m.GetKeyRangeMin().(*KVSelection_KeyGte); ok {
+		return x.KeyGte
+	}
+	return nil
+}
+
+func (m *KVSelection) GetKeyLt() []byte {
+	if x, ok := m.GetKeyRangeMax().(*KVSelection_KeyLt); ok {
+		return x.KeyLt
+	}
+	return nil
+}
+
+func (m *KVSelection) GetKeyLte() []byte {
+	if x, ok := m.GetKeyRangeMax().(*KVSelection_KeyLte); ok {
+		return x.KeyLte
+	}
+	return nil
+}
+
+func (m *KVSelection) GetModRevisionGt() int64 {
+	if x, ok := m.GetModRevisionStart().(*KVSelection_ModRevisionGt); ok {
+		return x.ModRevisionGt
 	}
 	return 0
 }
 
-type RangeRequest struct {
-	// key is the first key for the range. If range_end is not given, the request only looks up key.
-	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	// range_end is the upper bound on the requested range [key, range_end).
-	// If range_end is '\0', the range is all keys >= key.
-	// If range_end is key plus one (e.g., "aa"+1 == "ab", "a\xff"+1 == "b"),
-	// then the range request gets all keys prefixed with key.
-	// If both key and range_end are '\0', then the range request returns all keys.
-	RangeEnd []byte `protobuf:"bytes,2,opt,name=range_end,json=rangeEnd,proto3" json:"range_end,omitempty"`
-	// limit is a limit on the number of keys returned for the request. When limit is set to 0,
-	// it is treated as no limit.
+func (m *KVSelection) GetModRevisionGte() int64 {
+	if x, ok := m.GetModRevisionStart().(*KVSelection_ModRevisionGte); ok {
+		return x.ModRevisionGte
+	}
+	return 0
+}
+
+func (m *KVSelection) GetModRevisionLt() int64 {
+	if x, ok := m.GetModRevisionEnd().(*KVSelection_ModRevisionLt); ok {
+		return x.ModRevisionLt
+	}
+	return 0
+}
+
+func (m *KVSelection) GetModRevisionLte() int64 {
+	if x, ok := m.GetModRevisionEnd().(*KVSelection_ModRevisionLte); ok {
+		return x.ModRevisionLte
+	}
+	return 0
+}
+
+func (m *KVSelection) GetCreateRevisionGt() int64 {
+	if x, ok := m.GetCreateRevisionStart().(*KVSelection_CreateRevisionGt); ok {
+		return x.CreateRevisionGt
+	}
+	return 0
+}
+
+func (m *KVSelection) GetCreateRevisionGte() int64 {
+	if x, ok := m.GetCreateRevisionStart().(*KVSelection_CreateRevisionGte); ok {
+		return x.CreateRevisionGte
+	}
+	return 0
+}
+
+func (m *KVSelection) GetCreateRevisionLt() int64 {
+	if x, ok := m.GetCreateRevisionEnd().(*KVSelection_CreateRevisionLt); ok {
+		return x.CreateRevisionLt
+	}
+	return 0
+}
+
+func (m *KVSelection) GetCreateRevisionLte() int64 {
+	if x, ok := m.GetCreateRevisionEnd().(*KVSelection_CreateRevisionLte); ok {
+		return x.CreateRevisionLte
+	}
+	return 0
+}
+
+func (m *KVSelection) GetKeyStartsWith() []byte {
+	if m != nil {
+		return m.KeyStartsWith
+	}
+	return nil
+}
+
+func (m *KVSelection) GetKey() []byte {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+func (m *KVSelection) GetLease() int64 {
+	if m != nil {
+		return m.Lease
+	}
+	return 0
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*KVSelection) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*KVSelection_KeyGt)(nil),
+		(*KVSelection_KeyGte)(nil),
+		(*KVSelection_KeyLt)(nil),
+		(*KVSelection_KeyLte)(nil),
+		(*KVSelection_ModRevisionGt)(nil),
+		(*KVSelection_ModRevisionGte)(nil),
+		(*KVSelection_ModRevisionLt)(nil),
+		(*KVSelection_ModRevisionLte)(nil),
+		(*KVSelection_CreateRevisionGt)(nil),
+		(*KVSelection_CreateRevisionGte)(nil),
+		(*KVSelection_CreateRevisionLt)(nil),
+		(*KVSelection_CreateRevisionLte)(nil),
+	}
+}
+
+type KVQueryRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// Only keys matching the predicates in the selection will be included in the result
+	Selection *KVSelection `protobuf:"bytes,2,opt,name=selection,proto3" json:"selection,omitempty"`
+	// limit is the limit on the number of keys returned in the result.
+	// If limit is set to 0 the default limit is used.
 	Limit int64 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	// revision is the point-in-time of the key-value store to use for the range.
+	// revision is the revision of the store to use for the query.
 	// If revision is less or equal to zero, the range is over the newest key-value store.
 	// If the revision has been compacted, ErrCompacted is returned as a response.
 	Revision int64 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	// sort_order is the order for returned sorted results.
-	SortOrder RangeRequest_SortOrder `protobuf:"varint,5,opt,name=sort_order,json=sortOrder,proto3,enum=flockpb.RangeRequest_SortOrder" json:"sort_order,omitempty"`
+	SortOrder KVQueryRequest_SortOrder `protobuf:"varint,5,opt,name=sort_order,json=sortOrder,proto3,enum=flockpb.KVQueryRequest_SortOrder" json:"sort_order,omitempty"`
 	// sort_target is the key-value field to use for sorting.
-	SortTarget RangeRequest_SortTarget `protobuf:"varint,6,opt,name=sort_target,json=sortTarget,proto3,enum=flockpb.RangeRequest_SortTarget" json:"sort_target,omitempty"`
+	SortTarget KVQueryRequest_SortTarget `protobuf:"varint,6,opt,name=sort_target,json=sortTarget,proto3,enum=flockpb.KVQueryRequest_SortTarget" json:"sort_target,omitempty"`
 	// serializable sets the range request to use serializable member-local reads.
 	// Range requests are linearizable by default; linearizable requests have higher
 	// latency and lower throughput than serializable requests but reflect the current
@@ -309,36 +660,25 @@ type RangeRequest struct {
 	// a serializable range request is served locally without needing to reach consensus
 	// with other nodes in the cluster.
 	Serializable bool `protobuf:"varint,7,opt,name=serializable,proto3" json:"serializable,omitempty"`
-	// keys_only when set returns only the keys and not the values.
-	KeysOnly bool `protobuf:"varint,8,opt,name=keys_only,json=keysOnly,proto3" json:"keys_only,omitempty"`
-	// count_only when set returns only the count of the keys in the range.
-	CountOnly bool `protobuf:"varint,9,opt,name=count_only,json=countOnly,proto3" json:"count_only,omitempty"`
-	// min_mod_revision is the lower bound for returned key mod revisions; all keys with
-	// lesser mod revisions will be filtered away.
-	MinModRevision int64 `protobuf:"varint,10,opt,name=min_mod_revision,json=minModRevision,proto3" json:"min_mod_revision,omitempty"`
-	// max_mod_revision is the upper bound for returned key mod revisions; all keys with
-	// greater mod revisions will be filtered away.
-	MaxModRevision int64 `protobuf:"varint,11,opt,name=max_mod_revision,json=maxModRevision,proto3" json:"max_mod_revision,omitempty"`
-	// min_create_revision is the lower bound for returned key create revisions; all keys with
-	// lesser create revisions will be filtered away.
-	MinCreateRevision int64 `protobuf:"varint,12,opt,name=min_create_revision,json=minCreateRevision,proto3" json:"min_create_revision,omitempty"`
-	// max_create_revision is the upper bound for returned key create revisions; all keys with
-	// greater create revisions will be filtered away.
-	MaxCreateRevision int64 `protobuf:"varint,13,opt,name=max_create_revision,json=maxCreateRevision,proto3" json:"max_create_revision,omitempty"`
+	// exclude_values when set excludes values from the resulting kvs
+	ExcludeValues bool `protobuf:"varint,8,opt,name=exclude_values,json=excludeValues,proto3" json:"exclude_values,omitempty"`
+	// include_count when set includes the total count of keys matching
+	// the query constraints in the result
+	IncludeCount bool `protobuf:"varint,9,opt,name=include_count,json=includeCount,proto3" json:"include_count,omitempty"`
 }
 
-func (m *RangeRequest) Reset()         { *m = RangeRequest{} }
-func (m *RangeRequest) String() string { return proto.CompactTextString(m) }
-func (*RangeRequest) ProtoMessage()    {}
-func (*RangeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{1}
+func (m *KVQueryRequest) Reset()         { *m = KVQueryRequest{} }
+func (m *KVQueryRequest) String() string { return proto.CompactTextString(m) }
+func (*KVQueryRequest) ProtoMessage()    {}
+func (*KVQueryRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{3}
 }
-func (m *RangeRequest) XXX_Unmarshal(b []byte) error {
+func (m *KVQueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *RangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVQueryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_RangeRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVQueryRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -348,132 +688,103 @@ func (m *RangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *RangeRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RangeRequest.Merge(m, src)
+func (m *KVQueryRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVQueryRequest.Merge(m, src)
 }
-func (m *RangeRequest) XXX_Size() int {
+func (m *KVQueryRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *RangeRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RangeRequest.DiscardUnknown(m)
+func (m *KVQueryRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVQueryRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RangeRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVQueryRequest proto.InternalMessageInfo
 
-func (m *RangeRequest) GetKey() []byte {
+func (m *KVQueryRequest) GetHeader() *PartitionRequestHeader {
 	if m != nil {
-		return m.Key
+		return m.Header
 	}
 	return nil
 }
 
-func (m *RangeRequest) GetRangeEnd() []byte {
+func (m *KVQueryRequest) GetSelection() *KVSelection {
 	if m != nil {
-		return m.RangeEnd
+		return m.Selection
 	}
 	return nil
 }
 
-func (m *RangeRequest) GetLimit() int64 {
+func (m *KVQueryRequest) GetLimit() int64 {
 	if m != nil {
 		return m.Limit
 	}
 	return 0
 }
 
-func (m *RangeRequest) GetRevision() int64 {
+func (m *KVQueryRequest) GetRevision() int64 {
 	if m != nil {
 		return m.Revision
 	}
 	return 0
 }
 
-func (m *RangeRequest) GetSortOrder() RangeRequest_SortOrder {
+func (m *KVQueryRequest) GetSortOrder() KVQueryRequest_SortOrder {
 	if m != nil {
 		return m.SortOrder
 	}
-	return RangeRequest_NONE
+	return KVQueryRequest_NONE
 }
 
-func (m *RangeRequest) GetSortTarget() RangeRequest_SortTarget {
+func (m *KVQueryRequest) GetSortTarget() KVQueryRequest_SortTarget {
 	if m != nil {
 		return m.SortTarget
 	}
-	return RangeRequest_KEY
+	return KVQueryRequest_KEY
 }
 
-func (m *RangeRequest) GetSerializable() bool {
+func (m *KVQueryRequest) GetSerializable() bool {
 	if m != nil {
 		return m.Serializable
 	}
 	return false
 }
 
-func (m *RangeRequest) GetKeysOnly() bool {
+func (m *KVQueryRequest) GetExcludeValues() bool {
 	if m != nil {
-		return m.KeysOnly
+		return m.ExcludeValues
 	}
 	return false
 }
 
-func (m *RangeRequest) GetCountOnly() bool {
+func (m *KVQueryRequest) GetIncludeCount() bool {
 	if m != nil {
-		return m.CountOnly
+		return m.IncludeCount
 	}
 	return false
 }
 
-func (m *RangeRequest) GetMinModRevision() int64 {
-	if m != nil {
-		return m.MinModRevision
-	}
-	return 0
-}
-
-func (m *RangeRequest) GetMaxModRevision() int64 {
-	if m != nil {
-		return m.MaxModRevision
-	}
-	return 0
-}
-
-func (m *RangeRequest) GetMinCreateRevision() int64 {
-	if m != nil {
-		return m.MinCreateRevision
-	}
-	return 0
-}
-
-func (m *RangeRequest) GetMaxCreateRevision() int64 {
-	if m != nil {
-		return m.MaxCreateRevision
-	}
-	return 0
-}
-
-type RangeResponse struct {
+type KVQueryResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// kvs is the list of key-value pairs matched by the range request.
-	// kvs is empty when count is requested.
+	// kvs is the list of key-value pairs matched by the query.
 	Kvs []*KeyValue `protobuf:"bytes,2,rep,name=kvs,proto3" json:"kvs,omitempty"`
-	// more indicates if there are more keys to return in the requested range.
+	// more indicates if there are more keys matching the query.
 	More bool `protobuf:"varint,3,opt,name=more,proto3" json:"more,omitempty"`
-	// count is set to the number of keys within the range when requested.
+	// count is set to the total number of keys matching the query.
 	Count int64 `protobuf:"varint,4,opt,name=count,proto3" json:"count,omitempty"`
 }
 
-func (m *RangeResponse) Reset()         { *m = RangeResponse{} }
-func (m *RangeResponse) String() string { return proto.CompactTextString(m) }
-func (*RangeResponse) ProtoMessage()    {}
-func (*RangeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{2}
+func (m *KVQueryResponse) Reset()         { *m = KVQueryResponse{} }
+func (m *KVQueryResponse) String() string { return proto.CompactTextString(m) }
+func (*KVQueryResponse) ProtoMessage()    {}
+func (*KVQueryResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{4}
 }
-func (m *RangeResponse) XXX_Unmarshal(b []byte) error {
+func (m *KVQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *RangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVQueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_RangeResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVQueryResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -483,77 +794,78 @@ func (m *RangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *RangeResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RangeResponse.Merge(m, src)
+func (m *KVQueryResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVQueryResponse.Merge(m, src)
 }
-func (m *RangeResponse) XXX_Size() int {
+func (m *KVQueryResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *RangeResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RangeResponse.DiscardUnknown(m)
+func (m *KVQueryResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVQueryResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RangeResponse proto.InternalMessageInfo
+var xxx_messageInfo_KVQueryResponse proto.InternalMessageInfo
 
-func (m *RangeResponse) GetHeader() *ResponseHeader {
+func (m *KVQueryResponse) GetHeader() *ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *RangeResponse) GetKvs() []*KeyValue {
+func (m *KVQueryResponse) GetKvs() []*KeyValue {
 	if m != nil {
 		return m.Kvs
 	}
 	return nil
 }
 
-func (m *RangeResponse) GetMore() bool {
+func (m *KVQueryResponse) GetMore() bool {
 	if m != nil {
 		return m.More
 	}
 	return false
 }
 
-func (m *RangeResponse) GetCount() int64 {
+func (m *KVQueryResponse) GetCount() int64 {
 	if m != nil {
 		return m.Count
 	}
 	return 0
 }
 
-type PutRequest struct {
-	// key is the key, in bytes, to put into the key-value store.
-	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+type KVPutRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// Only keys matching the predicates in the selection will be updated
+	Selection *KVSelection `protobuf:"bytes,2,opt,name=selection,proto3" json:"selection,omitempty"`
 	// value is the value, in bytes, to associate with the key in the key-value store.
-	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value []byte `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
 	// lease is the lease ID to associate with the key in the key-value store. A lease
 	// value of 0 indicates no lease.
-	Lease int64 `protobuf:"varint,3,opt,name=lease,proto3" json:"lease,omitempty"`
-	// If prev_kv is set, etcd gets the previous key-value pair before changing it.
+	Lease int64 `protobuf:"varint,4,opt,name=lease,proto3" json:"lease,omitempty"`
+	// If prev_kv is set, flock gets the previous key-value pair before changing it.
 	// The previous key-value pair will be returned in the put response.
-	PrevKv bool `protobuf:"varint,4,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
-	// If ignore_value is set, etcd updates the key using its current value.
+	PrevKv bool `protobuf:"varint,5,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
+	// If ignore_value is set, flock updates the key using its current value.
 	// Returns an error if the key does not exist.
-	IgnoreValue bool `protobuf:"varint,5,opt,name=ignore_value,json=ignoreValue,proto3" json:"ignore_value,omitempty"`
-	// If ignore_lease is set, etcd updates the key using its current lease.
+	IgnoreValue bool `protobuf:"varint,6,opt,name=ignore_value,json=ignoreValue,proto3" json:"ignore_value,omitempty"`
+	// If ignore_lease is set, flock updates the key using its current lease.
 	// Returns an error if the key does not exist.
-	IgnoreLease bool `protobuf:"varint,6,opt,name=ignore_lease,json=ignoreLease,proto3" json:"ignore_lease,omitempty"`
+	IgnoreLease bool `protobuf:"varint,7,opt,name=ignore_lease,json=ignoreLease,proto3" json:"ignore_lease,omitempty"`
 }
 
-func (m *PutRequest) Reset()         { *m = PutRequest{} }
-func (m *PutRequest) String() string { return proto.CompactTextString(m) }
-func (*PutRequest) ProtoMessage()    {}
-func (*PutRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{3}
+func (m *KVPutRequest) Reset()         { *m = KVPutRequest{} }
+func (m *KVPutRequest) String() string { return proto.CompactTextString(m) }
+func (*KVPutRequest) ProtoMessage()    {}
+func (*KVPutRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{5}
 }
-func (m *PutRequest) XXX_Unmarshal(b []byte) error {
+func (m *KVPutRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *PutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVPutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_PutRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVPutRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -563,139 +875,85 @@ func (m *PutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *PutRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PutRequest.Merge(m, src)
+func (m *KVPutRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVPutRequest.Merge(m, src)
 }
-func (m *PutRequest) XXX_Size() int {
+func (m *KVPutRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *PutRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_PutRequest.DiscardUnknown(m)
+func (m *KVPutRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVPutRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_PutRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVPutRequest proto.InternalMessageInfo
 
-func (m *PutRequest) GetKey() []byte {
-	if m != nil {
-		return m.Key
-	}
-	return nil
-}
-
-func (m *PutRequest) GetValue() []byte {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-func (m *PutRequest) GetLease() int64 {
-	if m != nil {
-		return m.Lease
-	}
-	return 0
-}
-
-func (m *PutRequest) GetPrevKv() bool {
-	if m != nil {
-		return m.PrevKv
-	}
-	return false
-}
-
-func (m *PutRequest) GetIgnoreValue() bool {
-	if m != nil {
-		return m.IgnoreValue
-	}
-	return false
-}
-
-func (m *PutRequest) GetIgnoreLease() bool {
-	if m != nil {
-		return m.IgnoreLease
-	}
-	return false
-}
-
-type PutResponse struct {
-	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// if prev_kv is set in the request, the previous key-value pair will be returned.
-	PrevKv *KeyValue `protobuf:"bytes,2,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
-}
-
-func (m *PutResponse) Reset()         { *m = PutResponse{} }
-func (m *PutResponse) String() string { return proto.CompactTextString(m) }
-func (*PutResponse) ProtoMessage()    {}
-func (*PutResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{4}
-}
-func (m *PutResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *PutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_PutResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *PutResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PutResponse.Merge(m, src)
-}
-func (m *PutResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *PutResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_PutResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_PutResponse proto.InternalMessageInfo
-
-func (m *PutResponse) GetHeader() *ResponseHeader {
+func (m *KVPutRequest) GetHeader() *PartitionRequestHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *PutResponse) GetPrevKv() *KeyValue {
+func (m *KVPutRequest) GetSelection() *KVSelection {
 	if m != nil {
-		return m.PrevKv
+		return m.Selection
 	}
 	return nil
 }
 
-type DeleteRangeRequest struct {
-	// key is the first key to delete in the range.
-	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	// range_end is the key following the last key to delete for the range [key, range_end).
-	// If range_end is not given, the range is defined to contain only the key argument.
-	// If range_end is one bit larger than the given key, then the range is all the keys
-	// with the prefix (the given key).
-	// If range_end is '\0', the range is all keys greater than or equal to the key argument.
-	RangeEnd []byte `protobuf:"bytes,2,opt,name=range_end,json=rangeEnd,proto3" json:"range_end,omitempty"`
-	// If prev_kv is set, etcd gets the previous key-value pairs before deleting it.
-	// The previous key-value pairs will be returned in the delete response.
-	PrevKv bool `protobuf:"varint,3,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
+func (m *KVPutRequest) GetValue() []byte {
+	if m != nil {
+		return m.Value
+	}
+	return nil
 }
 
-func (m *DeleteRangeRequest) Reset()         { *m = DeleteRangeRequest{} }
-func (m *DeleteRangeRequest) String() string { return proto.CompactTextString(m) }
-func (*DeleteRangeRequest) ProtoMessage()    {}
-func (*DeleteRangeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{5}
+func (m *KVPutRequest) GetLease() int64 {
+	if m != nil {
+		return m.Lease
+	}
+	return 0
 }
-func (m *DeleteRangeRequest) XXX_Unmarshal(b []byte) error {
+
+func (m *KVPutRequest) GetPrevKv() bool {
+	if m != nil {
+		return m.PrevKv
+	}
+	return false
+}
+
+func (m *KVPutRequest) GetIgnoreValue() bool {
+	if m != nil {
+		return m.IgnoreValue
+	}
+	return false
+}
+
+func (m *KVPutRequest) GetIgnoreLease() bool {
+	if m != nil {
+		return m.IgnoreLease
+	}
+	return false
+}
+
+type KVPutResponse struct {
+	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// if prev_kv is set in the request, the previous key-value pairs will be returned.
+	PrevKvs []*KeyValue `protobuf:"bytes,2,rep,name=prev_kvs,json=prevKvs,proto3" json:"prev_kvs,omitempty"`
+}
+
+func (m *KVPutResponse) Reset()         { *m = KVPutResponse{} }
+func (m *KVPutResponse) String() string { return proto.CompactTextString(m) }
+func (*KVPutResponse) ProtoMessage()    {}
+func (*KVPutResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{6}
+}
+func (m *KVPutResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *DeleteRangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVPutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_DeleteRangeRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVPutResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -705,40 +963,96 @@ func (m *DeleteRangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *DeleteRangeRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteRangeRequest.Merge(m, src)
+func (m *KVPutResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVPutResponse.Merge(m, src)
 }
-func (m *DeleteRangeRequest) XXX_Size() int {
+func (m *KVPutResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *DeleteRangeRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeleteRangeRequest.DiscardUnknown(m)
+func (m *KVPutResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVPutResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DeleteRangeRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVPutResponse proto.InternalMessageInfo
 
-func (m *DeleteRangeRequest) GetKey() []byte {
+func (m *KVPutResponse) GetHeader() *ResponseHeader {
 	if m != nil {
-		return m.Key
+		return m.Header
 	}
 	return nil
 }
 
-func (m *DeleteRangeRequest) GetRangeEnd() []byte {
+func (m *KVPutResponse) GetPrevKvs() []*KeyValue {
 	if m != nil {
-		return m.RangeEnd
+		return m.PrevKvs
 	}
 	return nil
 }
 
-func (m *DeleteRangeRequest) GetPrevKv() bool {
+type KVDeleteRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// Only keys matching the predicates in the selection will be deleted
+	Selection *KVSelection `protobuf:"bytes,2,opt,name=selection,proto3" json:"selection,omitempty"`
+	// If prev_kv is set, flock gets the previous key-value pairs before deleting it.
+	// The previous key-value pairs will be returned in the delete response.
+	PrevKv bool `protobuf:"varint,3,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
+}
+
+func (m *KVDeleteRequest) Reset()         { *m = KVDeleteRequest{} }
+func (m *KVDeleteRequest) String() string { return proto.CompactTextString(m) }
+func (*KVDeleteRequest) ProtoMessage()    {}
+func (*KVDeleteRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{7}
+}
+func (m *KVDeleteRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KVDeleteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KVDeleteRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *KVDeleteRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVDeleteRequest.Merge(m, src)
+}
+func (m *KVDeleteRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *KVDeleteRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVDeleteRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KVDeleteRequest proto.InternalMessageInfo
+
+func (m *KVDeleteRequest) GetHeader() *PartitionRequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
+func (m *KVDeleteRequest) GetSelection() *KVSelection {
+	if m != nil {
+		return m.Selection
+	}
+	return nil
+}
+
+func (m *KVDeleteRequest) GetPrevKv() bool {
 	if m != nil {
 		return m.PrevKv
 	}
 	return false
 }
 
-type DeleteRangeResponse struct {
+type KVDeleteResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// deleted is the number of keys deleted by the delete range request.
 	Deleted int64 `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
@@ -746,18 +1060,18 @@ type DeleteRangeResponse struct {
 	PrevKvs []*KeyValue `protobuf:"bytes,3,rep,name=prev_kvs,json=prevKvs,proto3" json:"prev_kvs,omitempty"`
 }
 
-func (m *DeleteRangeResponse) Reset()         { *m = DeleteRangeResponse{} }
-func (m *DeleteRangeResponse) String() string { return proto.CompactTextString(m) }
-func (*DeleteRangeResponse) ProtoMessage()    {}
-func (*DeleteRangeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{6}
+func (m *KVDeleteResponse) Reset()         { *m = KVDeleteResponse{} }
+func (m *KVDeleteResponse) String() string { return proto.CompactTextString(m) }
+func (*KVDeleteResponse) ProtoMessage()    {}
+func (*KVDeleteResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{8}
 }
-func (m *DeleteRangeResponse) XXX_Unmarshal(b []byte) error {
+func (m *KVDeleteResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *DeleteRangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVDeleteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_DeleteRangeResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVDeleteResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -767,62 +1081,62 @@ func (m *DeleteRangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *DeleteRangeResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteRangeResponse.Merge(m, src)
+func (m *KVDeleteResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVDeleteResponse.Merge(m, src)
 }
-func (m *DeleteRangeResponse) XXX_Size() int {
+func (m *KVDeleteResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *DeleteRangeResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeleteRangeResponse.DiscardUnknown(m)
+func (m *KVDeleteResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVDeleteResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DeleteRangeResponse proto.InternalMessageInfo
+var xxx_messageInfo_KVDeleteResponse proto.InternalMessageInfo
 
-func (m *DeleteRangeResponse) GetHeader() *ResponseHeader {
+func (m *KVDeleteResponse) GetHeader() *ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *DeleteRangeResponse) GetDeleted() int64 {
+func (m *KVDeleteResponse) GetDeleted() int64 {
 	if m != nil {
 		return m.Deleted
 	}
 	return 0
 }
 
-func (m *DeleteRangeResponse) GetPrevKvs() []*KeyValue {
+func (m *KVDeleteResponse) GetPrevKvs() []*KeyValue {
 	if m != nil {
 		return m.PrevKvs
 	}
 	return nil
 }
 
-type RequestOp struct {
+type KVRequestOp struct {
 	// request is a union of request types accepted by a transaction.
 	//
 	// Types that are valid to be assigned to Request:
-	//	*RequestOp_RequestRange
-	//	*RequestOp_RequestPut
-	//	*RequestOp_RequestDeleteRange
-	//	*RequestOp_RequestTxn
-	Request isRequestOp_Request `protobuf_oneof:"request"`
+	//	*KVRequestOp_RequestQuery
+	//	*KVRequestOp_RequestPut
+	//	*KVRequestOp_RequestDelete
+	//	*KVRequestOp_RequestTxn
+	Request isKVRequestOp_Request `protobuf_oneof:"request"`
 }
 
-func (m *RequestOp) Reset()         { *m = RequestOp{} }
-func (m *RequestOp) String() string { return proto.CompactTextString(m) }
-func (*RequestOp) ProtoMessage()    {}
-func (*RequestOp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{7}
+func (m *KVRequestOp) Reset()         { *m = KVRequestOp{} }
+func (m *KVRequestOp) String() string { return proto.CompactTextString(m) }
+func (*KVRequestOp) ProtoMessage()    {}
+func (*KVRequestOp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{9}
 }
-func (m *RequestOp) XXX_Unmarshal(b []byte) error {
+func (m *KVRequestOp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *RequestOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVRequestOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_RequestOp.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVRequestOp.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -832,110 +1146,110 @@ func (m *RequestOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *RequestOp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RequestOp.Merge(m, src)
+func (m *KVRequestOp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVRequestOp.Merge(m, src)
 }
-func (m *RequestOp) XXX_Size() int {
+func (m *KVRequestOp) XXX_Size() int {
 	return m.Size()
 }
-func (m *RequestOp) XXX_DiscardUnknown() {
-	xxx_messageInfo_RequestOp.DiscardUnknown(m)
+func (m *KVRequestOp) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVRequestOp.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RequestOp proto.InternalMessageInfo
+var xxx_messageInfo_KVRequestOp proto.InternalMessageInfo
 
-type isRequestOp_Request interface {
-	isRequestOp_Request()
+type isKVRequestOp_Request interface {
+	isKVRequestOp_Request()
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type RequestOp_RequestRange struct {
-	RequestRange *RangeRequest `protobuf:"bytes,1,opt,name=request_range,json=requestRange,proto3,oneof" json:"request_range,omitempty"`
+type KVRequestOp_RequestQuery struct {
+	RequestQuery *KVQueryRequest `protobuf:"bytes,1,opt,name=request_query,json=requestQuery,proto3,oneof" json:"request_query,omitempty"`
 }
-type RequestOp_RequestPut struct {
-	RequestPut *PutRequest `protobuf:"bytes,2,opt,name=request_put,json=requestPut,proto3,oneof" json:"request_put,omitempty"`
+type KVRequestOp_RequestPut struct {
+	RequestPut *KVPutRequest `protobuf:"bytes,2,opt,name=request_put,json=requestPut,proto3,oneof" json:"request_put,omitempty"`
 }
-type RequestOp_RequestDeleteRange struct {
-	RequestDeleteRange *DeleteRangeRequest `protobuf:"bytes,3,opt,name=request_delete_range,json=requestDeleteRange,proto3,oneof" json:"request_delete_range,omitempty"`
+type KVRequestOp_RequestDelete struct {
+	RequestDelete *KVDeleteRequest `protobuf:"bytes,3,opt,name=request_delete,json=requestDelete,proto3,oneof" json:"request_delete,omitempty"`
 }
-type RequestOp_RequestTxn struct {
-	RequestTxn *TxnRequest `protobuf:"bytes,4,opt,name=request_txn,json=requestTxn,proto3,oneof" json:"request_txn,omitempty"`
+type KVRequestOp_RequestTxn struct {
+	RequestTxn *KVTxnRequest `protobuf:"bytes,4,opt,name=request_txn,json=requestTxn,proto3,oneof" json:"request_txn,omitempty"`
 }
 
-func (*RequestOp_RequestRange) isRequestOp_Request()       {}
-func (*RequestOp_RequestPut) isRequestOp_Request()         {}
-func (*RequestOp_RequestDeleteRange) isRequestOp_Request() {}
-func (*RequestOp_RequestTxn) isRequestOp_Request()         {}
+func (*KVRequestOp_RequestQuery) isKVRequestOp_Request()  {}
+func (*KVRequestOp_RequestPut) isKVRequestOp_Request()    {}
+func (*KVRequestOp_RequestDelete) isKVRequestOp_Request() {}
+func (*KVRequestOp_RequestTxn) isKVRequestOp_Request()    {}
 
-func (m *RequestOp) GetRequest() isRequestOp_Request {
+func (m *KVRequestOp) GetRequest() isKVRequestOp_Request {
 	if m != nil {
 		return m.Request
 	}
 	return nil
 }
 
-func (m *RequestOp) GetRequestRange() *RangeRequest {
-	if x, ok := m.GetRequest().(*RequestOp_RequestRange); ok {
-		return x.RequestRange
+func (m *KVRequestOp) GetRequestQuery() *KVQueryRequest {
+	if x, ok := m.GetRequest().(*KVRequestOp_RequestQuery); ok {
+		return x.RequestQuery
 	}
 	return nil
 }
 
-func (m *RequestOp) GetRequestPut() *PutRequest {
-	if x, ok := m.GetRequest().(*RequestOp_RequestPut); ok {
+func (m *KVRequestOp) GetRequestPut() *KVPutRequest {
+	if x, ok := m.GetRequest().(*KVRequestOp_RequestPut); ok {
 		return x.RequestPut
 	}
 	return nil
 }
 
-func (m *RequestOp) GetRequestDeleteRange() *DeleteRangeRequest {
-	if x, ok := m.GetRequest().(*RequestOp_RequestDeleteRange); ok {
-		return x.RequestDeleteRange
+func (m *KVRequestOp) GetRequestDelete() *KVDeleteRequest {
+	if x, ok := m.GetRequest().(*KVRequestOp_RequestDelete); ok {
+		return x.RequestDelete
 	}
 	return nil
 }
 
-func (m *RequestOp) GetRequestTxn() *TxnRequest {
-	if x, ok := m.GetRequest().(*RequestOp_RequestTxn); ok {
+func (m *KVRequestOp) GetRequestTxn() *KVTxnRequest {
+	if x, ok := m.GetRequest().(*KVRequestOp_RequestTxn); ok {
 		return x.RequestTxn
 	}
 	return nil
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*RequestOp) XXX_OneofWrappers() []interface{} {
+func (*KVRequestOp) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*RequestOp_RequestRange)(nil),
-		(*RequestOp_RequestPut)(nil),
-		(*RequestOp_RequestDeleteRange)(nil),
-		(*RequestOp_RequestTxn)(nil),
+		(*KVRequestOp_RequestQuery)(nil),
+		(*KVRequestOp_RequestPut)(nil),
+		(*KVRequestOp_RequestDelete)(nil),
+		(*KVRequestOp_RequestTxn)(nil),
 	}
 }
 
-type ResponseOp struct {
+type KVResponseOp struct {
 	// response is a union of response types returned by a transaction.
 	//
 	// Types that are valid to be assigned to Response:
-	//	*ResponseOp_ResponseRange
-	//	*ResponseOp_ResponsePut
-	//	*ResponseOp_ResponseDeleteRange
-	//	*ResponseOp_ResponseTxn
-	Response isResponseOp_Response `protobuf_oneof:"response"`
+	//	*KVResponseOp_ResponseQuery
+	//	*KVResponseOp_ResponsePut
+	//	*KVResponseOp_ResponseDelete
+	//	*KVResponseOp_ResponseTxn
+	Response isKVResponseOp_Response `protobuf_oneof:"response"`
 }
 
-func (m *ResponseOp) Reset()         { *m = ResponseOp{} }
-func (m *ResponseOp) String() string { return proto.CompactTextString(m) }
-func (*ResponseOp) ProtoMessage()    {}
-func (*ResponseOp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{8}
+func (m *KVResponseOp) Reset()         { *m = KVResponseOp{} }
+func (m *KVResponseOp) String() string { return proto.CompactTextString(m) }
+func (*KVResponseOp) ProtoMessage()    {}
+func (*KVResponseOp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{10}
 }
-func (m *ResponseOp) XXX_Unmarshal(b []byte) error {
+func (m *KVResponseOp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ResponseOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVResponseOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ResponseOp.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVResponseOp.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -945,111 +1259,241 @@ func (m *ResponseOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *ResponseOp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ResponseOp.Merge(m, src)
+func (m *KVResponseOp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVResponseOp.Merge(m, src)
 }
-func (m *ResponseOp) XXX_Size() int {
+func (m *KVResponseOp) XXX_Size() int {
 	return m.Size()
 }
-func (m *ResponseOp) XXX_DiscardUnknown() {
-	xxx_messageInfo_ResponseOp.DiscardUnknown(m)
+func (m *KVResponseOp) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVResponseOp.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ResponseOp proto.InternalMessageInfo
+var xxx_messageInfo_KVResponseOp proto.InternalMessageInfo
 
-type isResponseOp_Response interface {
-	isResponseOp_Response()
+type isKVResponseOp_Response interface {
+	isKVResponseOp_Response()
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type ResponseOp_ResponseRange struct {
-	ResponseRange *RangeResponse `protobuf:"bytes,1,opt,name=response_range,json=responseRange,proto3,oneof" json:"response_range,omitempty"`
+type KVResponseOp_ResponseQuery struct {
+	ResponseQuery *KVQueryResponse `protobuf:"bytes,1,opt,name=response_query,json=responseQuery,proto3,oneof" json:"response_query,omitempty"`
 }
-type ResponseOp_ResponsePut struct {
-	ResponsePut *PutResponse `protobuf:"bytes,2,opt,name=response_put,json=responsePut,proto3,oneof" json:"response_put,omitempty"`
+type KVResponseOp_ResponsePut struct {
+	ResponsePut *KVPutResponse `protobuf:"bytes,2,opt,name=response_put,json=responsePut,proto3,oneof" json:"response_put,omitempty"`
 }
-type ResponseOp_ResponseDeleteRange struct {
-	ResponseDeleteRange *DeleteRangeResponse `protobuf:"bytes,3,opt,name=response_delete_range,json=responseDeleteRange,proto3,oneof" json:"response_delete_range,omitempty"`
+type KVResponseOp_ResponseDelete struct {
+	ResponseDelete *KVDeleteResponse `protobuf:"bytes,3,opt,name=response_delete,json=responseDelete,proto3,oneof" json:"response_delete,omitempty"`
 }
-type ResponseOp_ResponseTxn struct {
-	ResponseTxn *TxnResponse `protobuf:"bytes,4,opt,name=response_txn,json=responseTxn,proto3,oneof" json:"response_txn,omitempty"`
+type KVResponseOp_ResponseTxn struct {
+	ResponseTxn *KVTxnResponse `protobuf:"bytes,4,opt,name=response_txn,json=responseTxn,proto3,oneof" json:"response_txn,omitempty"`
 }
 
-func (*ResponseOp_ResponseRange) isResponseOp_Response()       {}
-func (*ResponseOp_ResponsePut) isResponseOp_Response()         {}
-func (*ResponseOp_ResponseDeleteRange) isResponseOp_Response() {}
-func (*ResponseOp_ResponseTxn) isResponseOp_Response()         {}
+func (*KVResponseOp_ResponseQuery) isKVResponseOp_Response()  {}
+func (*KVResponseOp_ResponsePut) isKVResponseOp_Response()    {}
+func (*KVResponseOp_ResponseDelete) isKVResponseOp_Response() {}
+func (*KVResponseOp_ResponseTxn) isKVResponseOp_Response()    {}
 
-func (m *ResponseOp) GetResponse() isResponseOp_Response {
+func (m *KVResponseOp) GetResponse() isKVResponseOp_Response {
 	if m != nil {
 		return m.Response
 	}
 	return nil
 }
 
-func (m *ResponseOp) GetResponseRange() *RangeResponse {
-	if x, ok := m.GetResponse().(*ResponseOp_ResponseRange); ok {
-		return x.ResponseRange
+func (m *KVResponseOp) GetResponseQuery() *KVQueryResponse {
+	if x, ok := m.GetResponse().(*KVResponseOp_ResponseQuery); ok {
+		return x.ResponseQuery
 	}
 	return nil
 }
 
-func (m *ResponseOp) GetResponsePut() *PutResponse {
-	if x, ok := m.GetResponse().(*ResponseOp_ResponsePut); ok {
+func (m *KVResponseOp) GetResponsePut() *KVPutResponse {
+	if x, ok := m.GetResponse().(*KVResponseOp_ResponsePut); ok {
 		return x.ResponsePut
 	}
 	return nil
 }
 
-func (m *ResponseOp) GetResponseDeleteRange() *DeleteRangeResponse {
-	if x, ok := m.GetResponse().(*ResponseOp_ResponseDeleteRange); ok {
-		return x.ResponseDeleteRange
+func (m *KVResponseOp) GetResponseDelete() *KVDeleteResponse {
+	if x, ok := m.GetResponse().(*KVResponseOp_ResponseDelete); ok {
+		return x.ResponseDelete
 	}
 	return nil
 }
 
-func (m *ResponseOp) GetResponseTxn() *TxnResponse {
-	if x, ok := m.GetResponse().(*ResponseOp_ResponseTxn); ok {
+func (m *KVResponseOp) GetResponseTxn() *KVTxnResponse {
+	if x, ok := m.GetResponse().(*KVResponseOp_ResponseTxn); ok {
 		return x.ResponseTxn
 	}
 	return nil
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*ResponseOp) XXX_OneofWrappers() []interface{} {
+func (*KVResponseOp) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*ResponseOp_ResponseRange)(nil),
-		(*ResponseOp_ResponsePut)(nil),
-		(*ResponseOp_ResponseDeleteRange)(nil),
-		(*ResponseOp_ResponseTxn)(nil),
+		(*KVResponseOp_ResponseQuery)(nil),
+		(*KVResponseOp_ResponsePut)(nil),
+		(*KVResponseOp_ResponseDelete)(nil),
+		(*KVResponseOp_ResponseTxn)(nil),
+	}
+}
+
+type KVPredicate struct {
+	// result is logical comparison operation for this comparison.
+	Comparison KVPredicate_Comparison `protobuf:"varint,1,opt,name=comparison,proto3,enum=flockpb.KVPredicate_Comparison" json:"comparison,omitempty"`
+	// target is the key-value field to inspect for the comparison.
+	Target KVPredicate_Target `protobuf:"varint,2,opt,name=target,proto3,enum=flockpb.KVPredicate_Target" json:"target,omitempty"`
+	// Types that are valid to be assigned to TargetUnion:
+	//	*KVPredicate_Version
+	//	*KVPredicate_CreateRevision
+	//	*KVPredicate_ModRevision
+	//	*KVPredicate_Value
+	//	*KVPredicate_Lease
+	TargetUnion isKVPredicate_TargetUnion `protobuf_oneof:"target_union"`
+}
+
+func (m *KVPredicate) Reset()         { *m = KVPredicate{} }
+func (m *KVPredicate) String() string { return proto.CompactTextString(m) }
+func (*KVPredicate) ProtoMessage()    {}
+func (*KVPredicate) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{11}
+}
+func (m *KVPredicate) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KVPredicate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KVPredicate.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *KVPredicate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVPredicate.Merge(m, src)
+}
+func (m *KVPredicate) XXX_Size() int {
+	return m.Size()
+}
+func (m *KVPredicate) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVPredicate.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KVPredicate proto.InternalMessageInfo
+
+type isKVPredicate_TargetUnion interface {
+	isKVPredicate_TargetUnion()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type KVPredicate_Version struct {
+	Version int64 `protobuf:"varint,3,opt,name=version,proto3,oneof" json:"version,omitempty"`
+}
+type KVPredicate_CreateRevision struct {
+	CreateRevision int64 `protobuf:"varint,4,opt,name=create_revision,json=createRevision,proto3,oneof" json:"create_revision,omitempty"`
+}
+type KVPredicate_ModRevision struct {
+	ModRevision int64 `protobuf:"varint,5,opt,name=mod_revision,json=modRevision,proto3,oneof" json:"mod_revision,omitempty"`
+}
+type KVPredicate_Value struct {
+	Value []byte `protobuf:"bytes,6,opt,name=value,proto3,oneof" json:"value,omitempty"`
+}
+type KVPredicate_Lease struct {
+	Lease int64 `protobuf:"varint,7,opt,name=lease,proto3,oneof" json:"lease,omitempty"`
+}
+
+func (*KVPredicate_Version) isKVPredicate_TargetUnion()        {}
+func (*KVPredicate_CreateRevision) isKVPredicate_TargetUnion() {}
+func (*KVPredicate_ModRevision) isKVPredicate_TargetUnion()    {}
+func (*KVPredicate_Value) isKVPredicate_TargetUnion()          {}
+func (*KVPredicate_Lease) isKVPredicate_TargetUnion()          {}
+
+func (m *KVPredicate) GetTargetUnion() isKVPredicate_TargetUnion {
+	if m != nil {
+		return m.TargetUnion
+	}
+	return nil
+}
+
+func (m *KVPredicate) GetComparison() KVPredicate_Comparison {
+	if m != nil {
+		return m.Comparison
+	}
+	return KVPredicate_EQUAL
+}
+
+func (m *KVPredicate) GetTarget() KVPredicate_Target {
+	if m != nil {
+		return m.Target
+	}
+	return KVPredicate_VERSION
+}
+
+func (m *KVPredicate) GetVersion() int64 {
+	if x, ok := m.GetTargetUnion().(*KVPredicate_Version); ok {
+		return x.Version
+	}
+	return 0
+}
+
+func (m *KVPredicate) GetCreateRevision() int64 {
+	if x, ok := m.GetTargetUnion().(*KVPredicate_CreateRevision); ok {
+		return x.CreateRevision
+	}
+	return 0
+}
+
+func (m *KVPredicate) GetModRevision() int64 {
+	if x, ok := m.GetTargetUnion().(*KVPredicate_ModRevision); ok {
+		return x.ModRevision
+	}
+	return 0
+}
+
+func (m *KVPredicate) GetValue() []byte {
+	if x, ok := m.GetTargetUnion().(*KVPredicate_Value); ok {
+		return x.Value
+	}
+	return nil
+}
+
+func (m *KVPredicate) GetLease() int64 {
+	if x, ok := m.GetTargetUnion().(*KVPredicate_Lease); ok {
+		return x.Lease
+	}
+	return 0
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*KVPredicate) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*KVPredicate_Version)(nil),
+		(*KVPredicate_CreateRevision)(nil),
+		(*KVPredicate_ModRevision)(nil),
+		(*KVPredicate_Value)(nil),
+		(*KVPredicate_Lease)(nil),
 	}
 }
 
 type Compare struct {
-	// result is logical comparison operation for this comparison.
-	Result Compare_CompareResult `protobuf:"varint,1,opt,name=result,proto3,enum=flockpb.Compare_CompareResult" json:"result,omitempty"`
-	// target is the key-value field to inspect for the comparison.
-	Target Compare_CompareTarget `protobuf:"varint,2,opt,name=target,proto3,enum=flockpb.Compare_CompareTarget" json:"target,omitempty"`
-	// key is the subject key for the comparison operation.
-	Key []byte `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
-	// Types that are valid to be assigned to TargetUnion:
-	//	*Compare_Version
-	//	*Compare_CreateRevision
-	//	*Compare_ModRevision
-	//	*Compare_Value
-	//	*Compare_Lease
-	TargetUnion isCompare_TargetUnion `protobuf_oneof:"target_union"`
-	// range_end compares the given target to all keys in the range [key, range_end).
-	// See RangeRequest for more details on key ranges.
-	RangeEnd []byte `protobuf:"bytes,64,opt,name=range_end,json=rangeEnd,proto3" json:"range_end,omitempty"`
+	// Selection of keys to test
+	Selection *KVSelection `protobuf:"bytes,1,opt,name=selection,proto3" json:"selection,omitempty"`
+	// Condition to test
+	Predicate *KVPredicate `protobuf:"bytes,2,opt,name=predicate,proto3" json:"predicate,omitempty"`
 }
 
 func (m *Compare) Reset()         { *m = Compare{} }
 func (m *Compare) String() string { return proto.CompactTextString(m) }
 func (*Compare) ProtoMessage()    {}
 func (*Compare) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{9}
+	return fileDescriptor_77a6da22d6a3feb1, []int{12}
 }
 func (m *Compare) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1078,113 +1522,18 @@ func (m *Compare) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Compare proto.InternalMessageInfo
 
-type isCompare_TargetUnion interface {
-	isCompare_TargetUnion()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type Compare_Version struct {
-	Version int64 `protobuf:"varint,4,opt,name=version,proto3,oneof" json:"version,omitempty"`
-}
-type Compare_CreateRevision struct {
-	CreateRevision int64 `protobuf:"varint,5,opt,name=create_revision,json=createRevision,proto3,oneof" json:"create_revision,omitempty"`
-}
-type Compare_ModRevision struct {
-	ModRevision int64 `protobuf:"varint,6,opt,name=mod_revision,json=modRevision,proto3,oneof" json:"mod_revision,omitempty"`
-}
-type Compare_Value struct {
-	Value []byte `protobuf:"bytes,7,opt,name=value,proto3,oneof" json:"value,omitempty"`
-}
-type Compare_Lease struct {
-	Lease int64 `protobuf:"varint,8,opt,name=lease,proto3,oneof" json:"lease,omitempty"`
-}
-
-func (*Compare_Version) isCompare_TargetUnion()        {}
-func (*Compare_CreateRevision) isCompare_TargetUnion() {}
-func (*Compare_ModRevision) isCompare_TargetUnion()    {}
-func (*Compare_Value) isCompare_TargetUnion()          {}
-func (*Compare_Lease) isCompare_TargetUnion()          {}
-
-func (m *Compare) GetTargetUnion() isCompare_TargetUnion {
+func (m *Compare) GetSelection() *KVSelection {
 	if m != nil {
-		return m.TargetUnion
+		return m.Selection
 	}
 	return nil
 }
 
-func (m *Compare) GetResult() Compare_CompareResult {
+func (m *Compare) GetPredicate() *KVPredicate {
 	if m != nil {
-		return m.Result
-	}
-	return Compare_EQUAL
-}
-
-func (m *Compare) GetTarget() Compare_CompareTarget {
-	if m != nil {
-		return m.Target
-	}
-	return Compare_VERSION
-}
-
-func (m *Compare) GetKey() []byte {
-	if m != nil {
-		return m.Key
+		return m.Predicate
 	}
 	return nil
-}
-
-func (m *Compare) GetVersion() int64 {
-	if x, ok := m.GetTargetUnion().(*Compare_Version); ok {
-		return x.Version
-	}
-	return 0
-}
-
-func (m *Compare) GetCreateRevision() int64 {
-	if x, ok := m.GetTargetUnion().(*Compare_CreateRevision); ok {
-		return x.CreateRevision
-	}
-	return 0
-}
-
-func (m *Compare) GetModRevision() int64 {
-	if x, ok := m.GetTargetUnion().(*Compare_ModRevision); ok {
-		return x.ModRevision
-	}
-	return 0
-}
-
-func (m *Compare) GetValue() []byte {
-	if x, ok := m.GetTargetUnion().(*Compare_Value); ok {
-		return x.Value
-	}
-	return nil
-}
-
-func (m *Compare) GetLease() int64 {
-	if x, ok := m.GetTargetUnion().(*Compare_Lease); ok {
-		return x.Lease
-	}
-	return 0
-}
-
-func (m *Compare) GetRangeEnd() []byte {
-	if m != nil {
-		return m.RangeEnd
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*Compare) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*Compare_Version)(nil),
-		(*Compare_CreateRevision)(nil),
-		(*Compare_ModRevision)(nil),
-		(*Compare_Value)(nil),
-		(*Compare_Lease)(nil),
-	}
 }
 
 // From google paxosdb paper:
@@ -1202,31 +1551,32 @@ func (*Compare) XXX_OneofWrappers() []interface{} {
 // if guard evaluates to
 // true.
 // 3. A list of database operations called f op. Like t op, but executed if guard evaluates to false.
-type TxnRequest struct {
+type KVTxnRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// compare is a list of predicates representing a conjunction of terms.
 	// If the comparisons succeed, then the success requests will be processed in order,
 	// and the response will contain their respective responses in order.
 	// If the comparisons fail, then the failure requests will be processed in order,
 	// and the response will contain their respective responses in order.
-	Compare []*Compare `protobuf:"bytes,1,rep,name=compare,proto3" json:"compare,omitempty"`
+	Compare []*Compare `protobuf:"bytes,2,rep,name=compare,proto3" json:"compare,omitempty"`
 	// success is a list of requests which will be applied when compare evaluates to true.
-	Success []*RequestOp `protobuf:"bytes,2,rep,name=success,proto3" json:"success,omitempty"`
+	Success []*KVRequestOp `protobuf:"bytes,3,rep,name=success,proto3" json:"success,omitempty"`
 	// failure is a list of requests which will be applied when compare evaluates to false.
-	Failure []*RequestOp `protobuf:"bytes,3,rep,name=failure,proto3" json:"failure,omitempty"`
+	Failure []*KVRequestOp `protobuf:"bytes,4,rep,name=failure,proto3" json:"failure,omitempty"`
 }
 
-func (m *TxnRequest) Reset()         { *m = TxnRequest{} }
-func (m *TxnRequest) String() string { return proto.CompactTextString(m) }
-func (*TxnRequest) ProtoMessage()    {}
-func (*TxnRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{10}
+func (m *KVTxnRequest) Reset()         { *m = KVTxnRequest{} }
+func (m *KVTxnRequest) String() string { return proto.CompactTextString(m) }
+func (*KVTxnRequest) ProtoMessage()    {}
+func (*KVTxnRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{13}
 }
-func (m *TxnRequest) XXX_Unmarshal(b []byte) error {
+func (m *KVTxnRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *TxnRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVTxnRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_TxnRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVTxnRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1236,96 +1586,103 @@ func (m *TxnRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *TxnRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TxnRequest.Merge(m, src)
+func (m *KVTxnRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVTxnRequest.Merge(m, src)
 }
-func (m *TxnRequest) XXX_Size() int {
+func (m *KVTxnRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *TxnRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_TxnRequest.DiscardUnknown(m)
+func (m *KVTxnRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVTxnRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_TxnRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVTxnRequest proto.InternalMessageInfo
 
-func (m *TxnRequest) GetCompare() []*Compare {
-	if m != nil {
-		return m.Compare
-	}
-	return nil
-}
-
-func (m *TxnRequest) GetSuccess() []*RequestOp {
-	if m != nil {
-		return m.Success
-	}
-	return nil
-}
-
-func (m *TxnRequest) GetFailure() []*RequestOp {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
-
-type TxnResponse struct {
-	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// succeeded is set to true if the compare evaluated to true or false otherwise.
-	Succeeded bool `protobuf:"varint,2,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
-	// responses is a list of responses corresponding to the results from applying
-	// success if succeeded is true or failure if succeeded is false.
-	Responses []*ResponseOp `protobuf:"bytes,3,rep,name=responses,proto3" json:"responses,omitempty"`
-}
-
-func (m *TxnResponse) Reset()         { *m = TxnResponse{} }
-func (m *TxnResponse) String() string { return proto.CompactTextString(m) }
-func (*TxnResponse) ProtoMessage()    {}
-func (*TxnResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{11}
-}
-func (m *TxnResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *TxnResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TxnResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *TxnResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TxnResponse.Merge(m, src)
-}
-func (m *TxnResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *TxnResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_TxnResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TxnResponse proto.InternalMessageInfo
-
-func (m *TxnResponse) GetHeader() *ResponseHeader {
+func (m *KVTxnRequest) GetHeader() *PartitionRequestHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *TxnResponse) GetSucceeded() bool {
+func (m *KVTxnRequest) GetCompare() []*Compare {
+	if m != nil {
+		return m.Compare
+	}
+	return nil
+}
+
+func (m *KVTxnRequest) GetSuccess() []*KVRequestOp {
+	if m != nil {
+		return m.Success
+	}
+	return nil
+}
+
+func (m *KVTxnRequest) GetFailure() []*KVRequestOp {
+	if m != nil {
+		return m.Failure
+	}
+	return nil
+}
+
+type KVTxnResponse struct {
+	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// succeeded is set to true if the compare evaluated to true or false otherwise.
+	Succeeded bool `protobuf:"varint,2,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
+	// responses is a list of responses corresponding to the results from applying
+	// success if succeeded is true or failure if succeeded is false.
+	Responses []*KVResponseOp `protobuf:"bytes,3,rep,name=responses,proto3" json:"responses,omitempty"`
+}
+
+func (m *KVTxnResponse) Reset()         { *m = KVTxnResponse{} }
+func (m *KVTxnResponse) String() string { return proto.CompactTextString(m) }
+func (*KVTxnResponse) ProtoMessage()    {}
+func (*KVTxnResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{14}
+}
+func (m *KVTxnResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KVTxnResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KVTxnResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *KVTxnResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVTxnResponse.Merge(m, src)
+}
+func (m *KVTxnResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *KVTxnResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVTxnResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KVTxnResponse proto.InternalMessageInfo
+
+func (m *KVTxnResponse) GetHeader() *ResponseHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
+func (m *KVTxnResponse) GetSucceeded() bool {
 	if m != nil {
 		return m.Succeeded
 	}
 	return false
 }
 
-func (m *TxnResponse) GetResponses() []*ResponseOp {
+func (m *KVTxnResponse) GetResponses() []*KVResponseOp {
 	if m != nil {
 		return m.Responses
 	}
@@ -1334,27 +1691,28 @@ func (m *TxnResponse) GetResponses() []*ResponseOp {
 
 // CompactionRequest compacts the key-value store up to a given revision. All superseded keys
 // with a revision less than the compaction revision will be removed.
-type CompactionRequest struct {
+type KVCompactionRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// revision is the key-value store revision for the compaction operation.
-	Revision int64 `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	Revision int64 `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
 	// physical is set so the RPC will wait until the compaction is physically
 	// applied to the local database such that compacted entries are totally
 	// removed from the backend database.
-	Physical bool `protobuf:"varint,2,opt,name=physical,proto3" json:"physical,omitempty"`
+	Physical bool `protobuf:"varint,3,opt,name=physical,proto3" json:"physical,omitempty"`
 }
 
-func (m *CompactionRequest) Reset()         { *m = CompactionRequest{} }
-func (m *CompactionRequest) String() string { return proto.CompactTextString(m) }
-func (*CompactionRequest) ProtoMessage()    {}
-func (*CompactionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{12}
+func (m *KVCompactionRequest) Reset()         { *m = KVCompactionRequest{} }
+func (m *KVCompactionRequest) String() string { return proto.CompactTextString(m) }
+func (*KVCompactionRequest) ProtoMessage()    {}
+func (*KVCompactionRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{15}
 }
-func (m *CompactionRequest) XXX_Unmarshal(b []byte) error {
+func (m *KVCompactionRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CompactionRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVCompactionRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_CompactionRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVCompactionRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1364,98 +1722,55 @@ func (m *CompactionRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *CompactionRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompactionRequest.Merge(m, src)
+func (m *KVCompactionRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVCompactionRequest.Merge(m, src)
 }
-func (m *CompactionRequest) XXX_Size() int {
+func (m *KVCompactionRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *CompactionRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CompactionRequest.DiscardUnknown(m)
+func (m *KVCompactionRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVCompactionRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CompactionRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVCompactionRequest proto.InternalMessageInfo
 
-func (m *CompactionRequest) GetRevision() int64 {
-	if m != nil {
-		return m.Revision
-	}
-	return 0
-}
-
-func (m *CompactionRequest) GetPhysical() bool {
-	if m != nil {
-		return m.Physical
-	}
-	return false
-}
-
-type CompactionResponse struct {
-	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-}
-
-func (m *CompactionResponse) Reset()         { *m = CompactionResponse{} }
-func (m *CompactionResponse) String() string { return proto.CompactTextString(m) }
-func (*CompactionResponse) ProtoMessage()    {}
-func (*CompactionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{13}
-}
-func (m *CompactionResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CompactionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CompactionResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *CompactionResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompactionResponse.Merge(m, src)
-}
-func (m *CompactionResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *CompactionResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_CompactionResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CompactionResponse proto.InternalMessageInfo
-
-func (m *CompactionResponse) GetHeader() *ResponseHeader {
+func (m *KVCompactionRequest) GetHeader() *PartitionRequestHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-type WatchRequest struct {
-	// request_union is a request to either create a new watcher or cancel an existing watcher.
-	//
-	// Types that are valid to be assigned to RequestUnion:
-	//	*WatchRequest_CreateRequest
-	//	*WatchRequest_CancelRequest
-	//	*WatchRequest_ProgressRequest
-	RequestUnion isWatchRequest_RequestUnion `protobuf_oneof:"request_union"`
+func (m *KVCompactionRequest) GetRevision() int64 {
+	if m != nil {
+		return m.Revision
+	}
+	return 0
 }
 
-func (m *WatchRequest) Reset()         { *m = WatchRequest{} }
-func (m *WatchRequest) String() string { return proto.CompactTextString(m) }
-func (*WatchRequest) ProtoMessage()    {}
-func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{14}
+func (m *KVCompactionRequest) GetPhysical() bool {
+	if m != nil {
+		return m.Physical
+	}
+	return false
 }
-func (m *WatchRequest) XXX_Unmarshal(b []byte) error {
+
+type KVCompactionResponse struct {
+	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+}
+
+func (m *KVCompactionResponse) Reset()         { *m = KVCompactionResponse{} }
+func (m *KVCompactionResponse) String() string { return proto.CompactTextString(m) }
+func (*KVCompactionResponse) ProtoMessage()    {}
+func (*KVCompactionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{16}
+}
+func (m *KVCompactionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WatchRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVCompactionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WatchRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVCompactionResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1465,118 +1780,57 @@ func (m *WatchRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *WatchRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WatchRequest.Merge(m, src)
+func (m *KVCompactionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVCompactionResponse.Merge(m, src)
 }
-func (m *WatchRequest) XXX_Size() int {
+func (m *KVCompactionResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *WatchRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_WatchRequest.DiscardUnknown(m)
+func (m *KVCompactionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVCompactionResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WatchRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVCompactionResponse proto.InternalMessageInfo
 
-type isWatchRequest_RequestUnion interface {
-	isWatchRequest_RequestUnion()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type WatchRequest_CreateRequest struct {
-	CreateRequest *WatchCreateRequest `protobuf:"bytes,1,opt,name=create_request,json=createRequest,proto3,oneof" json:"create_request,omitempty"`
-}
-type WatchRequest_CancelRequest struct {
-	CancelRequest *WatchCancelRequest `protobuf:"bytes,2,opt,name=cancel_request,json=cancelRequest,proto3,oneof" json:"cancel_request,omitempty"`
-}
-type WatchRequest_ProgressRequest struct {
-	ProgressRequest *WatchProgressRequest `protobuf:"bytes,3,opt,name=progress_request,json=progressRequest,proto3,oneof" json:"progress_request,omitempty"`
-}
-
-func (*WatchRequest_CreateRequest) isWatchRequest_RequestUnion()   {}
-func (*WatchRequest_CancelRequest) isWatchRequest_RequestUnion()   {}
-func (*WatchRequest_ProgressRequest) isWatchRequest_RequestUnion() {}
-
-func (m *WatchRequest) GetRequestUnion() isWatchRequest_RequestUnion {
+func (m *KVCompactionResponse) GetHeader() *ResponseHeader {
 	if m != nil {
-		return m.RequestUnion
+		return m.Header
 	}
 	return nil
 }
 
-func (m *WatchRequest) GetCreateRequest() *WatchCreateRequest {
-	if x, ok := m.GetRequestUnion().(*WatchRequest_CreateRequest); ok {
-		return x.CreateRequest
-	}
-	return nil
-}
-
-func (m *WatchRequest) GetCancelRequest() *WatchCancelRequest {
-	if x, ok := m.GetRequestUnion().(*WatchRequest_CancelRequest); ok {
-		return x.CancelRequest
-	}
-	return nil
-}
-
-func (m *WatchRequest) GetProgressRequest() *WatchProgressRequest {
-	if x, ok := m.GetRequestUnion().(*WatchRequest_ProgressRequest); ok {
-		return x.ProgressRequest
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*WatchRequest) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*WatchRequest_CreateRequest)(nil),
-		(*WatchRequest_CancelRequest)(nil),
-		(*WatchRequest_ProgressRequest)(nil),
-	}
-}
-
-type WatchCreateRequest struct {
-	// key is the key to register for watching.
-	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	// range_end is the end of the range [key, range_end) to watch. If range_end is not given,
-	// only the key argument is watched. If range_end is equal to '\0', all keys greater than
-	// or equal to the key argument are watched.
-	// If the range_end is one bit larger than the given key,
-	// then all keys with the prefix (the given key) will be watched.
-	RangeEnd []byte `protobuf:"bytes,2,opt,name=range_end,json=rangeEnd,proto3" json:"range_end,omitempty"`
+type KVWatchRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// Selection of keys to watch
+	Selection *KVSelection `protobuf:"bytes,2,opt,name=selection,proto3" json:"selection,omitempty"`
 	// start_revision is an optional revision to watch from (inclusive). No start_revision is "now".
 	StartRevision int64 `protobuf:"varint,3,opt,name=start_revision,json=startRevision,proto3" json:"start_revision,omitempty"`
-	// progress_notify is set so that the etcd server will periodically send a WatchResponse with
+	// progress_notify is set so that the flock server will periodically send a WatchResponse with
 	// no events to the new watcher if there are no recent events. It is useful when clients
 	// wish to recover a disconnected watcher starting from a recent known revision.
-	// The etcd server may decide how often it will send notifications based on current load.
+	// The flock server may decide how often it will send notifications based on current load.
 	ProgressNotify bool `protobuf:"varint,4,opt,name=progress_notify,json=progressNotify,proto3" json:"progress_notify,omitempty"`
 	// filters filter the events at server side before it sends back to the watcher.
-	Filters []WatchCreateRequest_FilterType `protobuf:"varint,5,rep,packed,name=filters,proto3,enum=flockpb.WatchCreateRequest_FilterType" json:"filters,omitempty"`
+	Filters []KVWatchRequest_FilterType `protobuf:"varint,5,rep,packed,name=filters,proto3,enum=flockpb.KVWatchRequest_FilterType" json:"filters,omitempty"`
 	// If prev_kv is set, created watcher gets the previous KV before the event happens.
 	// If the previous KV is already compacted, nothing will be returned.
 	PrevKv bool `protobuf:"varint,6,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
-	// If watch_id is provided and non-zero, it will be assigned to this watcher.
-	// Since creating a watcher in etcd is not a synchronous operation,
-	// this can be used ensure that ordering is correct when creating multiple
-	// watchers on the same stream. Creating a watcher with an ID already in
-	// use on the stream will cause an error to be returned.
-	WatchId int64 `protobuf:"varint,7,opt,name=watch_id,json=watchId,proto3" json:"watch_id,omitempty"`
 	// fragment enables splitting large revisions into multiple watch responses.
 	Fragment bool `protobuf:"varint,8,opt,name=fragment,proto3" json:"fragment,omitempty"`
 }
 
-func (m *WatchCreateRequest) Reset()         { *m = WatchCreateRequest{} }
-func (m *WatchCreateRequest) String() string { return proto.CompactTextString(m) }
-func (*WatchCreateRequest) ProtoMessage()    {}
-func (*WatchCreateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{15}
+func (m *KVWatchRequest) Reset()         { *m = KVWatchRequest{} }
+func (m *KVWatchRequest) String() string { return proto.CompactTextString(m) }
+func (*KVWatchRequest) ProtoMessage()    {}
+func (*KVWatchRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{17}
 }
-func (m *WatchCreateRequest) XXX_Unmarshal(b []byte) error {
+func (m *KVWatchRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WatchCreateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVWatchRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WatchCreateRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVWatchRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1586,169 +1840,69 @@ func (m *WatchCreateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *WatchCreateRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WatchCreateRequest.Merge(m, src)
+func (m *KVWatchRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVWatchRequest.Merge(m, src)
 }
-func (m *WatchCreateRequest) XXX_Size() int {
+func (m *KVWatchRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *WatchCreateRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_WatchCreateRequest.DiscardUnknown(m)
+func (m *KVWatchRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVWatchRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WatchCreateRequest proto.InternalMessageInfo
+var xxx_messageInfo_KVWatchRequest proto.InternalMessageInfo
 
-func (m *WatchCreateRequest) GetKey() []byte {
+func (m *KVWatchRequest) GetHeader() *PartitionRequestHeader {
 	if m != nil {
-		return m.Key
+		return m.Header
 	}
 	return nil
 }
 
-func (m *WatchCreateRequest) GetRangeEnd() []byte {
+func (m *KVWatchRequest) GetSelection() *KVSelection {
 	if m != nil {
-		return m.RangeEnd
+		return m.Selection
 	}
 	return nil
 }
 
-func (m *WatchCreateRequest) GetStartRevision() int64 {
+func (m *KVWatchRequest) GetStartRevision() int64 {
 	if m != nil {
 		return m.StartRevision
 	}
 	return 0
 }
 
-func (m *WatchCreateRequest) GetProgressNotify() bool {
+func (m *KVWatchRequest) GetProgressNotify() bool {
 	if m != nil {
 		return m.ProgressNotify
 	}
 	return false
 }
 
-func (m *WatchCreateRequest) GetFilters() []WatchCreateRequest_FilterType {
+func (m *KVWatchRequest) GetFilters() []KVWatchRequest_FilterType {
 	if m != nil {
 		return m.Filters
 	}
 	return nil
 }
 
-func (m *WatchCreateRequest) GetPrevKv() bool {
+func (m *KVWatchRequest) GetPrevKv() bool {
 	if m != nil {
 		return m.PrevKv
 	}
 	return false
 }
 
-func (m *WatchCreateRequest) GetWatchId() int64 {
-	if m != nil {
-		return m.WatchId
-	}
-	return 0
-}
-
-func (m *WatchCreateRequest) GetFragment() bool {
+func (m *KVWatchRequest) GetFragment() bool {
 	if m != nil {
 		return m.Fragment
 	}
 	return false
 }
 
-type WatchCancelRequest struct {
-	// watch_id is the watcher id to cancel so that no more events are transmitted.
-	WatchId int64 `protobuf:"varint,1,opt,name=watch_id,json=watchId,proto3" json:"watch_id,omitempty"`
-}
-
-func (m *WatchCancelRequest) Reset()         { *m = WatchCancelRequest{} }
-func (m *WatchCancelRequest) String() string { return proto.CompactTextString(m) }
-func (*WatchCancelRequest) ProtoMessage()    {}
-func (*WatchCancelRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{16}
-}
-func (m *WatchCancelRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *WatchCancelRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WatchCancelRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *WatchCancelRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WatchCancelRequest.Merge(m, src)
-}
-func (m *WatchCancelRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *WatchCancelRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_WatchCancelRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WatchCancelRequest proto.InternalMessageInfo
-
-func (m *WatchCancelRequest) GetWatchId() int64 {
-	if m != nil {
-		return m.WatchId
-	}
-	return 0
-}
-
-// Requests the a watch stream progress status be sent in the watch response stream as soon as
-// possible.
-type WatchProgressRequest struct {
-}
-
-func (m *WatchProgressRequest) Reset()         { *m = WatchProgressRequest{} }
-func (m *WatchProgressRequest) String() string { return proto.CompactTextString(m) }
-func (*WatchProgressRequest) ProtoMessage()    {}
-func (*WatchProgressRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{17}
-}
-func (m *WatchProgressRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *WatchProgressRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WatchProgressRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *WatchProgressRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WatchProgressRequest.Merge(m, src)
-}
-func (m *WatchProgressRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *WatchProgressRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_WatchProgressRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WatchProgressRequest proto.InternalMessageInfo
-
-type WatchResponse struct {
+type KVWatchResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// watch_id is the ID of the watcher that corresponds to the response.
-	WatchId int64 `protobuf:"varint,2,opt,name=watch_id,json=watchId,proto3" json:"watch_id,omitempty"`
-	// created is set to true if the response is for a create watch request.
-	// The client should record the watch_id and expect to receive events for
-	// the created watcher from the same stream.
-	// All events sent to the created watcher will attach with the same watch_id.
-	Created bool `protobuf:"varint,3,opt,name=created,proto3" json:"created,omitempty"`
-	// canceled is set to true if the response is for a cancel watch request.
-	// No further events will be sent to the canceled watcher.
-	Canceled bool `protobuf:"varint,4,opt,name=canceled,proto3" json:"canceled,omitempty"`
 	// compact_revision is set to the minimum index if a watcher tries to watch
 	// at a compacted index.
 	//
@@ -1757,26 +1911,26 @@ type WatchResponse struct {
 	//
 	// The client should treat the watcher as canceled and should not try to create any
 	// watcher with the same start_revision again.
-	CompactRevision int64 `protobuf:"varint,5,opt,name=compact_revision,json=compactRevision,proto3" json:"compact_revision,omitempty"`
+	CompactRevision int64 `protobuf:"varint,2,opt,name=compact_revision,json=compactRevision,proto3" json:"compact_revision,omitempty"`
 	// cancel_reason indicates the reason for canceling the watcher.
-	CancelReason string `protobuf:"bytes,6,opt,name=cancel_reason,json=cancelReason,proto3" json:"cancel_reason,omitempty"`
+	CancelReason string `protobuf:"bytes,3,opt,name=cancel_reason,json=cancelReason,proto3" json:"cancel_reason,omitempty"`
 	// framgment is true if large watch response was split over multiple responses.
-	Fragment bool     `protobuf:"varint,7,opt,name=fragment,proto3" json:"fragment,omitempty"`
+	Fragment bool     `protobuf:"varint,4,opt,name=fragment,proto3" json:"fragment,omitempty"`
 	Events   []*Event `protobuf:"bytes,11,rep,name=events,proto3" json:"events,omitempty"`
 }
 
-func (m *WatchResponse) Reset()         { *m = WatchResponse{} }
-func (m *WatchResponse) String() string { return proto.CompactTextString(m) }
-func (*WatchResponse) ProtoMessage()    {}
-func (*WatchResponse) Descriptor() ([]byte, []int) {
+func (m *KVWatchResponse) Reset()         { *m = KVWatchResponse{} }
+func (m *KVWatchResponse) String() string { return proto.CompactTextString(m) }
+func (*KVWatchResponse) ProtoMessage()    {}
+func (*KVWatchResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_77a6da22d6a3feb1, []int{18}
 }
-func (m *WatchResponse) XXX_Unmarshal(b []byte) error {
+func (m *KVWatchResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WatchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *KVWatchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WatchResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_KVWatchResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1786,68 +1940,47 @@ func (m *WatchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *WatchResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WatchResponse.Merge(m, src)
+func (m *KVWatchResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVWatchResponse.Merge(m, src)
 }
-func (m *WatchResponse) XXX_Size() int {
+func (m *KVWatchResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *WatchResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_WatchResponse.DiscardUnknown(m)
+func (m *KVWatchResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVWatchResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WatchResponse proto.InternalMessageInfo
+var xxx_messageInfo_KVWatchResponse proto.InternalMessageInfo
 
-func (m *WatchResponse) GetHeader() *ResponseHeader {
+func (m *KVWatchResponse) GetHeader() *ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *WatchResponse) GetWatchId() int64 {
-	if m != nil {
-		return m.WatchId
-	}
-	return 0
-}
-
-func (m *WatchResponse) GetCreated() bool {
-	if m != nil {
-		return m.Created
-	}
-	return false
-}
-
-func (m *WatchResponse) GetCanceled() bool {
-	if m != nil {
-		return m.Canceled
-	}
-	return false
-}
-
-func (m *WatchResponse) GetCompactRevision() int64 {
+func (m *KVWatchResponse) GetCompactRevision() int64 {
 	if m != nil {
 		return m.CompactRevision
 	}
 	return 0
 }
 
-func (m *WatchResponse) GetCancelReason() string {
+func (m *KVWatchResponse) GetCancelReason() string {
 	if m != nil {
 		return m.CancelReason
 	}
 	return ""
 }
 
-func (m *WatchResponse) GetFragment() bool {
+func (m *KVWatchResponse) GetFragment() bool {
 	if m != nil {
 		return m.Fragment
 	}
 	return false
 }
 
-func (m *WatchResponse) GetEvents() []*Event {
+func (m *KVWatchResponse) GetEvents() []*Event {
 	if m != nil {
 		return m.Events
 	}
@@ -1855,10 +1988,9 @@ func (m *WatchResponse) GetEvents() []*Event {
 }
 
 type LeaseGrantRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// TTL is the advisory time-to-live in seconds. Expired lease will return -1.
-	TTL int64 `protobuf:"varint,1,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-	// ID is the requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
-	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
+	TTL int64 `protobuf:"varint,2,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
 }
 
 func (m *LeaseGrantRequest) Reset()         { *m = LeaseGrantRequest{} }
@@ -1894,16 +2026,16 @@ func (m *LeaseGrantRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_LeaseGrantRequest proto.InternalMessageInfo
 
+func (m *LeaseGrantRequest) GetHeader() *PartitionRequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
 func (m *LeaseGrantRequest) GetTTL() int64 {
 	if m != nil {
 		return m.TTL
-	}
-	return 0
-}
-
-func (m *LeaseGrantRequest) GetID() int64 {
-	if m != nil {
-		return m.ID
 	}
 	return 0
 }
@@ -1912,9 +2044,10 @@ type LeaseGrantResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// ID is the lease ID for the granted lease.
 	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// TTL is the server chosen lease time-to-live in seconds.
-	TTL   int64  `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-	Error string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
+	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
+	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
+	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
 }
 
 func (m *LeaseGrantResponse) Reset()         { *m = LeaseGrantResponse{} }
@@ -1971,16 +2104,17 @@ func (m *LeaseGrantResponse) GetTTL() int64 {
 	return 0
 }
 
-func (m *LeaseGrantResponse) GetError() string {
+func (m *LeaseGrantResponse) GetGrantedTTL() int64 {
 	if m != nil {
-		return m.Error
+		return m.GrantedTTL
 	}
-	return ""
+	return 0
 }
 
 type LeaseRevokeRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
-	ID int64 `protobuf:"varint,1,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
+	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
 }
 
 func (m *LeaseRevokeRequest) Reset()         { *m = LeaseRevokeRequest{} }
@@ -2015,6 +2149,13 @@ func (m *LeaseRevokeRequest) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_LeaseRevokeRequest proto.InternalMessageInfo
+
+func (m *LeaseRevokeRequest) GetHeader() *PartitionRequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
 
 func (m *LeaseRevokeRequest) GetID() int64 {
 	if m != nil {
@@ -2067,25 +2208,24 @@ func (m *LeaseRevokeResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-type LeaseCheckpoint struct {
-	// ID is the lease ID to checkpoint.
-	ID int64 `protobuf:"varint,1,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// Remaining_TTL is the remaining time until expiry of the lease.
-	Remaining_TTL int64 `protobuf:"varint,2,opt,name=remaining_TTL,json=remainingTTL,proto3" json:"remaining_TTL,omitempty"`
+type LeaseRenewRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// ID is the lease ID for the lease to keep alive.
+	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
 }
 
-func (m *LeaseCheckpoint) Reset()         { *m = LeaseCheckpoint{} }
-func (m *LeaseCheckpoint) String() string { return proto.CompactTextString(m) }
-func (*LeaseCheckpoint) ProtoMessage()    {}
-func (*LeaseCheckpoint) Descriptor() ([]byte, []int) {
+func (m *LeaseRenewRequest) Reset()         { *m = LeaseRenewRequest{} }
+func (m *LeaseRenewRequest) String() string { return proto.CompactTextString(m) }
+func (*LeaseRenewRequest) ProtoMessage()    {}
+func (*LeaseRenewRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_77a6da22d6a3feb1, []int{23}
 }
-func (m *LeaseCheckpoint) XXX_Unmarshal(b []byte) error {
+func (m *LeaseRenewRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *LeaseCheckpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *LeaseRenewRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_LeaseCheckpoint.Marshal(b, m, deterministic)
+		return xxx_messageInfo_LeaseRenewRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -2095,282 +2235,33 @@ func (m *LeaseCheckpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *LeaseCheckpoint) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseCheckpoint.Merge(m, src)
+func (m *LeaseRenewRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaseRenewRequest.Merge(m, src)
 }
-func (m *LeaseCheckpoint) XXX_Size() int {
+func (m *LeaseRenewRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *LeaseCheckpoint) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseCheckpoint.DiscardUnknown(m)
+func (m *LeaseRenewRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaseRenewRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LeaseCheckpoint proto.InternalMessageInfo
+var xxx_messageInfo_LeaseRenewRequest proto.InternalMessageInfo
 
-func (m *LeaseCheckpoint) GetID() int64 {
-	if m != nil {
-		return m.ID
-	}
-	return 0
-}
-
-func (m *LeaseCheckpoint) GetRemaining_TTL() int64 {
-	if m != nil {
-		return m.Remaining_TTL
-	}
-	return 0
-}
-
-type LeaseCheckpointRequest struct {
-	Checkpoints []*LeaseCheckpoint `protobuf:"bytes,1,rep,name=checkpoints,proto3" json:"checkpoints,omitempty"`
-}
-
-func (m *LeaseCheckpointRequest) Reset()         { *m = LeaseCheckpointRequest{} }
-func (m *LeaseCheckpointRequest) String() string { return proto.CompactTextString(m) }
-func (*LeaseCheckpointRequest) ProtoMessage()    {}
-func (*LeaseCheckpointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{24}
-}
-func (m *LeaseCheckpointRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LeaseCheckpointRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LeaseCheckpointRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LeaseCheckpointRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseCheckpointRequest.Merge(m, src)
-}
-func (m *LeaseCheckpointRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *LeaseCheckpointRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseCheckpointRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LeaseCheckpointRequest proto.InternalMessageInfo
-
-func (m *LeaseCheckpointRequest) GetCheckpoints() []*LeaseCheckpoint {
-	if m != nil {
-		return m.Checkpoints
-	}
-	return nil
-}
-
-type LeaseCheckpointResponse struct {
-	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-}
-
-func (m *LeaseCheckpointResponse) Reset()         { *m = LeaseCheckpointResponse{} }
-func (m *LeaseCheckpointResponse) String() string { return proto.CompactTextString(m) }
-func (*LeaseCheckpointResponse) ProtoMessage()    {}
-func (*LeaseCheckpointResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{25}
-}
-func (m *LeaseCheckpointResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LeaseCheckpointResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LeaseCheckpointResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LeaseCheckpointResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseCheckpointResponse.Merge(m, src)
-}
-func (m *LeaseCheckpointResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *LeaseCheckpointResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseCheckpointResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LeaseCheckpointResponse proto.InternalMessageInfo
-
-func (m *LeaseCheckpointResponse) GetHeader() *ResponseHeader {
+func (m *LeaseRenewRequest) GetHeader() *PartitionRequestHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-type LeaseKeepAliveRequest struct {
-	// ID is the lease ID for the lease to keep alive.
-	ID int64 `protobuf:"varint,1,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-}
-
-func (m *LeaseKeepAliveRequest) Reset()         { *m = LeaseKeepAliveRequest{} }
-func (m *LeaseKeepAliveRequest) String() string { return proto.CompactTextString(m) }
-func (*LeaseKeepAliveRequest) ProtoMessage()    {}
-func (*LeaseKeepAliveRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{26}
-}
-func (m *LeaseKeepAliveRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LeaseKeepAliveRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LeaseKeepAliveRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LeaseKeepAliveRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseKeepAliveRequest.Merge(m, src)
-}
-func (m *LeaseKeepAliveRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *LeaseKeepAliveRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseKeepAliveRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LeaseKeepAliveRequest proto.InternalMessageInfo
-
-func (m *LeaseKeepAliveRequest) GetID() int64 {
+func (m *LeaseRenewRequest) GetID() int64 {
 	if m != nil {
 		return m.ID
 	}
 	return 0
 }
 
-type LeaseKeepAliveResponse struct {
-	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// ID is the lease ID from the keep alive request.
-	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// TTL is the new time-to-live for the lease.
-	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-}
-
-func (m *LeaseKeepAliveResponse) Reset()         { *m = LeaseKeepAliveResponse{} }
-func (m *LeaseKeepAliveResponse) String() string { return proto.CompactTextString(m) }
-func (*LeaseKeepAliveResponse) ProtoMessage()    {}
-func (*LeaseKeepAliveResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{27}
-}
-func (m *LeaseKeepAliveResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LeaseKeepAliveResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LeaseKeepAliveResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LeaseKeepAliveResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseKeepAliveResponse.Merge(m, src)
-}
-func (m *LeaseKeepAliveResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *LeaseKeepAliveResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseKeepAliveResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LeaseKeepAliveResponse proto.InternalMessageInfo
-
-func (m *LeaseKeepAliveResponse) GetHeader() *ResponseHeader {
-	if m != nil {
-		return m.Header
-	}
-	return nil
-}
-
-func (m *LeaseKeepAliveResponse) GetID() int64 {
-	if m != nil {
-		return m.ID
-	}
-	return 0
-}
-
-func (m *LeaseKeepAliveResponse) GetTTL() int64 {
-	if m != nil {
-		return m.TTL
-	}
-	return 0
-}
-
-type LeaseTimeToLiveRequest struct {
-	// ID is the lease ID for the lease.
-	ID int64 `protobuf:"varint,1,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// keys is true to query all the keys attached to this lease.
-	Keys bool `protobuf:"varint,2,opt,name=keys,proto3" json:"keys,omitempty"`
-}
-
-func (m *LeaseTimeToLiveRequest) Reset()         { *m = LeaseTimeToLiveRequest{} }
-func (m *LeaseTimeToLiveRequest) String() string { return proto.CompactTextString(m) }
-func (*LeaseTimeToLiveRequest) ProtoMessage()    {}
-func (*LeaseTimeToLiveRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{28}
-}
-func (m *LeaseTimeToLiveRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LeaseTimeToLiveRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LeaseTimeToLiveRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LeaseTimeToLiveRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseTimeToLiveRequest.Merge(m, src)
-}
-func (m *LeaseTimeToLiveRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *LeaseTimeToLiveRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseTimeToLiveRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LeaseTimeToLiveRequest proto.InternalMessageInfo
-
-func (m *LeaseTimeToLiveRequest) GetID() int64 {
-	if m != nil {
-		return m.ID
-	}
-	return 0
-}
-
-func (m *LeaseTimeToLiveRequest) GetKeys() bool {
-	if m != nil {
-		return m.Keys
-	}
-	return false
-}
-
-type LeaseTimeToLiveResponse struct {
+type LeaseRenewResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// ID is the lease ID from the keep alive request.
 	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
@@ -2378,22 +2269,20 @@ type LeaseTimeToLiveResponse struct {
 	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
 	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
 	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
-	// Keys is the list of keys attached to this lease.
-	Keys [][]byte `protobuf:"bytes,5,rep,name=keys,proto3" json:"keys,omitempty"`
 }
 
-func (m *LeaseTimeToLiveResponse) Reset()         { *m = LeaseTimeToLiveResponse{} }
-func (m *LeaseTimeToLiveResponse) String() string { return proto.CompactTextString(m) }
-func (*LeaseTimeToLiveResponse) ProtoMessage()    {}
-func (*LeaseTimeToLiveResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{29}
+func (m *LeaseRenewResponse) Reset()         { *m = LeaseRenewResponse{} }
+func (m *LeaseRenewResponse) String() string { return proto.CompactTextString(m) }
+func (*LeaseRenewResponse) ProtoMessage()    {}
+func (*LeaseRenewResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{24}
 }
-func (m *LeaseTimeToLiveResponse) XXX_Unmarshal(b []byte) error {
+func (m *LeaseRenewResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *LeaseTimeToLiveResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *LeaseRenewResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_LeaseTimeToLiveResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_LeaseRenewResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -2403,68 +2292,64 @@ func (m *LeaseTimeToLiveResponse) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return b[:n], nil
 	}
 }
-func (m *LeaseTimeToLiveResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseTimeToLiveResponse.Merge(m, src)
+func (m *LeaseRenewResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaseRenewResponse.Merge(m, src)
 }
-func (m *LeaseTimeToLiveResponse) XXX_Size() int {
+func (m *LeaseRenewResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *LeaseTimeToLiveResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseTimeToLiveResponse.DiscardUnknown(m)
+func (m *LeaseRenewResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaseRenewResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LeaseTimeToLiveResponse proto.InternalMessageInfo
+var xxx_messageInfo_LeaseRenewResponse proto.InternalMessageInfo
 
-func (m *LeaseTimeToLiveResponse) GetHeader() *ResponseHeader {
+func (m *LeaseRenewResponse) GetHeader() *ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *LeaseTimeToLiveResponse) GetID() int64 {
+func (m *LeaseRenewResponse) GetID() int64 {
 	if m != nil {
 		return m.ID
 	}
 	return 0
 }
 
-func (m *LeaseTimeToLiveResponse) GetTTL() int64 {
+func (m *LeaseRenewResponse) GetTTL() int64 {
 	if m != nil {
 		return m.TTL
 	}
 	return 0
 }
 
-func (m *LeaseTimeToLiveResponse) GetGrantedTTL() int64 {
+func (m *LeaseRenewResponse) GetGrantedTTL() int64 {
 	if m != nil {
 		return m.GrantedTTL
 	}
 	return 0
 }
 
-func (m *LeaseTimeToLiveResponse) GetKeys() [][]byte {
-	if m != nil {
-		return m.Keys
-	}
-	return nil
+type LeaseGetRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// ID is the lease ID for the lease.
+	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
 }
 
-type LeaseLeasesRequest struct {
+func (m *LeaseGetRequest) Reset()         { *m = LeaseGetRequest{} }
+func (m *LeaseGetRequest) String() string { return proto.CompactTextString(m) }
+func (*LeaseGetRequest) ProtoMessage()    {}
+func (*LeaseGetRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{25}
 }
-
-func (m *LeaseLeasesRequest) Reset()         { *m = LeaseLeasesRequest{} }
-func (m *LeaseLeasesRequest) String() string { return proto.CompactTextString(m) }
-func (*LeaseLeasesRequest) ProtoMessage()    {}
-func (*LeaseLeasesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{30}
-}
-func (m *LeaseLeasesRequest) XXX_Unmarshal(b []byte) error {
+func (m *LeaseGetRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *LeaseLeasesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *LeaseGetRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_LeaseLeasesRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_LeaseGetRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -2474,27 +2359,160 @@ func (m *LeaseLeasesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *LeaseLeasesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseLeasesRequest.Merge(m, src)
+func (m *LeaseGetRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaseGetRequest.Merge(m, src)
 }
-func (m *LeaseLeasesRequest) XXX_Size() int {
+func (m *LeaseGetRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *LeaseLeasesRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseLeasesRequest.DiscardUnknown(m)
+func (m *LeaseGetRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaseGetRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LeaseLeasesRequest proto.InternalMessageInfo
+var xxx_messageInfo_LeaseGetRequest proto.InternalMessageInfo
+
+func (m *LeaseGetRequest) GetHeader() *PartitionRequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
+func (m *LeaseGetRequest) GetID() int64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type LeaseGetResponse struct {
+	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	// ID is the lease ID from the keep alive request.
+	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
+	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
+	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
+	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
+	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
+}
+
+func (m *LeaseGetResponse) Reset()         { *m = LeaseGetResponse{} }
+func (m *LeaseGetResponse) String() string { return proto.CompactTextString(m) }
+func (*LeaseGetResponse) ProtoMessage()    {}
+func (*LeaseGetResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{26}
+}
+func (m *LeaseGetResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LeaseGetResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LeaseGetResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LeaseGetResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaseGetResponse.Merge(m, src)
+}
+func (m *LeaseGetResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *LeaseGetResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaseGetResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LeaseGetResponse proto.InternalMessageInfo
+
+func (m *LeaseGetResponse) GetHeader() *ResponseHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
+
+func (m *LeaseGetResponse) GetID() int64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+func (m *LeaseGetResponse) GetTTL() int64 {
+	if m != nil {
+		return m.TTL
+	}
+	return 0
+}
+
+func (m *LeaseGetResponse) GetGrantedTTL() int64 {
+	if m != nil {
+		return m.GrantedTTL
+	}
+	return 0
+}
+
+type LeaseQueryRequest struct {
+	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+}
+
+func (m *LeaseQueryRequest) Reset()         { *m = LeaseQueryRequest{} }
+func (m *LeaseQueryRequest) String() string { return proto.CompactTextString(m) }
+func (*LeaseQueryRequest) ProtoMessage()    {}
+func (*LeaseQueryRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{27}
+}
+func (m *LeaseQueryRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LeaseQueryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LeaseQueryRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LeaseQueryRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaseQueryRequest.Merge(m, src)
+}
+func (m *LeaseQueryRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *LeaseQueryRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaseQueryRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LeaseQueryRequest proto.InternalMessageInfo
+
+func (m *LeaseQueryRequest) GetHeader() *PartitionRequestHeader {
+	if m != nil {
+		return m.Header
+	}
+	return nil
+}
 
 type LeaseStatus struct {
 	ID int64 `protobuf:"varint,1,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
+	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
+	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
+	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
+	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
 }
 
 func (m *LeaseStatus) Reset()         { *m = LeaseStatus{} }
 func (m *LeaseStatus) String() string { return proto.CompactTextString(m) }
 func (*LeaseStatus) ProtoMessage()    {}
 func (*LeaseStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{31}
+	return fileDescriptor_77a6da22d6a3feb1, []int{28}
 }
 func (m *LeaseStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2530,23 +2548,37 @@ func (m *LeaseStatus) GetID() int64 {
 	return 0
 }
 
-type LeaseLeasesResponse struct {
+func (m *LeaseStatus) GetTTL() int64 {
+	if m != nil {
+		return m.TTL
+	}
+	return 0
+}
+
+func (m *LeaseStatus) GetGrantedTTL() int64 {
+	if m != nil {
+		return m.GrantedTTL
+	}
+	return 0
+}
+
+type LeaseQueryResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Leases []*LeaseStatus  `protobuf:"bytes,2,rep,name=leases,proto3" json:"leases,omitempty"`
 }
 
-func (m *LeaseLeasesResponse) Reset()         { *m = LeaseLeasesResponse{} }
-func (m *LeaseLeasesResponse) String() string { return proto.CompactTextString(m) }
-func (*LeaseLeasesResponse) ProtoMessage()    {}
-func (*LeaseLeasesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{32}
+func (m *LeaseQueryResponse) Reset()         { *m = LeaseQueryResponse{} }
+func (m *LeaseQueryResponse) String() string { return proto.CompactTextString(m) }
+func (*LeaseQueryResponse) ProtoMessage()    {}
+func (*LeaseQueryResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{29}
 }
-func (m *LeaseLeasesResponse) XXX_Unmarshal(b []byte) error {
+func (m *LeaseQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *LeaseLeasesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *LeaseQueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_LeaseLeasesResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_LeaseQueryResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -2556,26 +2588,26 @@ func (m *LeaseLeasesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *LeaseLeasesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseLeasesResponse.Merge(m, src)
+func (m *LeaseQueryResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LeaseQueryResponse.Merge(m, src)
 }
-func (m *LeaseLeasesResponse) XXX_Size() int {
+func (m *LeaseQueryResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *LeaseLeasesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseLeasesResponse.DiscardUnknown(m)
+func (m *LeaseQueryResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_LeaseQueryResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LeaseLeasesResponse proto.InternalMessageInfo
+var xxx_messageInfo_LeaseQueryResponse proto.InternalMessageInfo
 
-func (m *LeaseLeasesResponse) GetHeader() *ResponseHeader {
+func (m *LeaseQueryResponse) GetHeader() *ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *LeaseLeasesResponse) GetLeases() []*LeaseStatus {
+func (m *LeaseQueryResponse) GetLeases() []*LeaseStatus {
 	if m != nil {
 		return m.Leases
 	}
@@ -2605,7 +2637,7 @@ func (m *KeyValue) Reset()         { *m = KeyValue{} }
 func (m *KeyValue) String() string { return proto.CompactTextString(m) }
 func (*KeyValue) ProtoMessage()    {}
 func (*KeyValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{33}
+	return fileDescriptor_77a6da22d6a3feb1, []int{30}
 }
 func (m *KeyValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2695,7 +2727,7 @@ func (m *Event) Reset()         { *m = Event{} }
 func (m *Event) String() string { return proto.CompactTextString(m) }
 func (*Event) ProtoMessage()    {}
 func (*Event) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{34}
+	return fileDescriptor_77a6da22d6a3feb1, []int{31}
 }
 func (m *Event) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2746,45 +2778,42 @@ func (m *Event) GetPrevKv() *KeyValue {
 }
 
 func init() {
-	proto.RegisterEnum("flockpb.RangeRequest_SortOrder", RangeRequest_SortOrder_name, RangeRequest_SortOrder_value)
-	proto.RegisterEnum("flockpb.RangeRequest_SortTarget", RangeRequest_SortTarget_name, RangeRequest_SortTarget_value)
-	proto.RegisterEnum("flockpb.Compare_CompareResult", Compare_CompareResult_name, Compare_CompareResult_value)
-	proto.RegisterEnum("flockpb.Compare_CompareTarget", Compare_CompareTarget_name, Compare_CompareTarget_value)
-	proto.RegisterEnum("flockpb.WatchCreateRequest_FilterType", WatchCreateRequest_FilterType_name, WatchCreateRequest_FilterType_value)
+	proto.RegisterEnum("flockpb.KVQueryRequest_SortOrder", KVQueryRequest_SortOrder_name, KVQueryRequest_SortOrder_value)
+	proto.RegisterEnum("flockpb.KVQueryRequest_SortTarget", KVQueryRequest_SortTarget_name, KVQueryRequest_SortTarget_value)
+	proto.RegisterEnum("flockpb.KVPredicate_Comparison", KVPredicate_Comparison_name, KVPredicate_Comparison_value)
+	proto.RegisterEnum("flockpb.KVPredicate_Target", KVPredicate_Target_name, KVPredicate_Target_value)
+	proto.RegisterEnum("flockpb.KVWatchRequest_FilterType", KVWatchRequest_FilterType_name, KVWatchRequest_FilterType_value)
 	proto.RegisterEnum("flockpb.Event_EventType", Event_EventType_name, Event_EventType_value)
+	proto.RegisterType((*PartitionRequestHeader)(nil), "flockpb.PartitionRequestHeader")
 	proto.RegisterType((*ResponseHeader)(nil), "flockpb.ResponseHeader")
-	proto.RegisterType((*RangeRequest)(nil), "flockpb.RangeRequest")
-	proto.RegisterType((*RangeResponse)(nil), "flockpb.RangeResponse")
-	proto.RegisterType((*PutRequest)(nil), "flockpb.PutRequest")
-	proto.RegisterType((*PutResponse)(nil), "flockpb.PutResponse")
-	proto.RegisterType((*DeleteRangeRequest)(nil), "flockpb.DeleteRangeRequest")
-	proto.RegisterType((*DeleteRangeResponse)(nil), "flockpb.DeleteRangeResponse")
-	proto.RegisterType((*RequestOp)(nil), "flockpb.RequestOp")
-	proto.RegisterType((*ResponseOp)(nil), "flockpb.ResponseOp")
+	proto.RegisterType((*KVSelection)(nil), "flockpb.KVSelection")
+	proto.RegisterType((*KVQueryRequest)(nil), "flockpb.KVQueryRequest")
+	proto.RegisterType((*KVQueryResponse)(nil), "flockpb.KVQueryResponse")
+	proto.RegisterType((*KVPutRequest)(nil), "flockpb.KVPutRequest")
+	proto.RegisterType((*KVPutResponse)(nil), "flockpb.KVPutResponse")
+	proto.RegisterType((*KVDeleteRequest)(nil), "flockpb.KVDeleteRequest")
+	proto.RegisterType((*KVDeleteResponse)(nil), "flockpb.KVDeleteResponse")
+	proto.RegisterType((*KVRequestOp)(nil), "flockpb.KVRequestOp")
+	proto.RegisterType((*KVResponseOp)(nil), "flockpb.KVResponseOp")
+	proto.RegisterType((*KVPredicate)(nil), "flockpb.KVPredicate")
 	proto.RegisterType((*Compare)(nil), "flockpb.Compare")
-	proto.RegisterType((*TxnRequest)(nil), "flockpb.TxnRequest")
-	proto.RegisterType((*TxnResponse)(nil), "flockpb.TxnResponse")
-	proto.RegisterType((*CompactionRequest)(nil), "flockpb.CompactionRequest")
-	proto.RegisterType((*CompactionResponse)(nil), "flockpb.CompactionResponse")
-	proto.RegisterType((*WatchRequest)(nil), "flockpb.WatchRequest")
-	proto.RegisterType((*WatchCreateRequest)(nil), "flockpb.WatchCreateRequest")
-	proto.RegisterType((*WatchCancelRequest)(nil), "flockpb.WatchCancelRequest")
-	proto.RegisterType((*WatchProgressRequest)(nil), "flockpb.WatchProgressRequest")
-	proto.RegisterType((*WatchResponse)(nil), "flockpb.WatchResponse")
+	proto.RegisterType((*KVTxnRequest)(nil), "flockpb.KVTxnRequest")
+	proto.RegisterType((*KVTxnResponse)(nil), "flockpb.KVTxnResponse")
+	proto.RegisterType((*KVCompactionRequest)(nil), "flockpb.KVCompactionRequest")
+	proto.RegisterType((*KVCompactionResponse)(nil), "flockpb.KVCompactionResponse")
+	proto.RegisterType((*KVWatchRequest)(nil), "flockpb.KVWatchRequest")
+	proto.RegisterType((*KVWatchResponse)(nil), "flockpb.KVWatchResponse")
 	proto.RegisterType((*LeaseGrantRequest)(nil), "flockpb.LeaseGrantRequest")
 	proto.RegisterType((*LeaseGrantResponse)(nil), "flockpb.LeaseGrantResponse")
 	proto.RegisterType((*LeaseRevokeRequest)(nil), "flockpb.LeaseRevokeRequest")
 	proto.RegisterType((*LeaseRevokeResponse)(nil), "flockpb.LeaseRevokeResponse")
-	proto.RegisterType((*LeaseCheckpoint)(nil), "flockpb.LeaseCheckpoint")
-	proto.RegisterType((*LeaseCheckpointRequest)(nil), "flockpb.LeaseCheckpointRequest")
-	proto.RegisterType((*LeaseCheckpointResponse)(nil), "flockpb.LeaseCheckpointResponse")
-	proto.RegisterType((*LeaseKeepAliveRequest)(nil), "flockpb.LeaseKeepAliveRequest")
-	proto.RegisterType((*LeaseKeepAliveResponse)(nil), "flockpb.LeaseKeepAliveResponse")
-	proto.RegisterType((*LeaseTimeToLiveRequest)(nil), "flockpb.LeaseTimeToLiveRequest")
-	proto.RegisterType((*LeaseTimeToLiveResponse)(nil), "flockpb.LeaseTimeToLiveResponse")
-	proto.RegisterType((*LeaseLeasesRequest)(nil), "flockpb.LeaseLeasesRequest")
+	proto.RegisterType((*LeaseRenewRequest)(nil), "flockpb.LeaseRenewRequest")
+	proto.RegisterType((*LeaseRenewResponse)(nil), "flockpb.LeaseRenewResponse")
+	proto.RegisterType((*LeaseGetRequest)(nil), "flockpb.LeaseGetRequest")
+	proto.RegisterType((*LeaseGetResponse)(nil), "flockpb.LeaseGetResponse")
+	proto.RegisterType((*LeaseQueryRequest)(nil), "flockpb.LeaseQueryRequest")
 	proto.RegisterType((*LeaseStatus)(nil), "flockpb.LeaseStatus")
-	proto.RegisterType((*LeaseLeasesResponse)(nil), "flockpb.LeaseLeasesResponse")
+	proto.RegisterType((*LeaseQueryResponse)(nil), "flockpb.LeaseQueryResponse")
 	proto.RegisterType((*KeyValue)(nil), "flockpb.KeyValue")
 	proto.RegisterType((*Event)(nil), "flockpb.Event")
 }
@@ -2792,148 +2821,146 @@ func init() {
 func init() { proto.RegisterFile("rpc.proto", fileDescriptor_77a6da22d6a3feb1) }
 
 var fileDescriptor_77a6da22d6a3feb1 = []byte{
-	// 2257 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x59, 0xcd, 0x6f, 0x23, 0x49,
-	0x15, 0x77, 0x77, 0xfb, 0xf3, 0xf9, 0x23, 0x4e, 0xc5, 0x93, 0x18, 0x4f, 0xc6, 0x9b, 0xa9, 0x65,
-	0x77, 0xb2, 0xd1, 0x28, 0x66, 0x83, 0x16, 0x44, 0xb4, 0xc0, 0xe4, 0xc3, 0x33, 0x99, 0x8d, 0x37,
-	0x0e, 0x1d, 0xcf, 0xa0, 0x5d, 0x21, 0x99, 0x1e, 0xbb, 0xe2, 0x69, 0x6c, 0x77, 0x37, 0xdd, 0x6d,
-	0x13, 0x23, 0x21, 0x24, 0x24, 0xae, 0x80, 0xb4, 0x70, 0x47, 0x42, 0x20, 0x71, 0xe1, 0xc0, 0x5f,
-	0xc1, 0x81, 0xc3, 0x4a, 0x5c, 0xb8, 0x81, 0x66, 0xf8, 0x1f, 0x10, 0x9c, 0x50, 0x7d, 0x74, 0x77,
-	0xb5, 0xed, 0x04, 0x6d, 0x56, 0x7b, 0xc9, 0x74, 0xbd, 0xfa, 0xd5, 0x7b, 0xaf, 0x5e, 0x55, 0xbd,
-	0xdf, 0x7b, 0x1e, 0xc8, 0xb9, 0x4e, 0x6f, 0xd7, 0x71, 0x6d, 0xdf, 0x46, 0x99, 0xcb, 0x91, 0xdd,
-	0x1b, 0x3a, 0x2f, 0x6a, 0x95, 0x81, 0x3d, 0xb0, 0x99, 0xac, 0x41, 0xbf, 0xf8, 0x74, 0x6d, 0x73,
-	0x60, 0xdb, 0x83, 0x11, 0x69, 0x18, 0x8e, 0xd9, 0x30, 0x2c, 0xcb, 0xf6, 0x0d, 0xdf, 0xb4, 0x2d,
-	0x8f, 0xcf, 0xe2, 0x9f, 0x2b, 0x50, 0xd2, 0x89, 0xe7, 0xd8, 0x96, 0x47, 0x4e, 0x88, 0xd1, 0x27,
-	0x2e, 0xba, 0x07, 0xd0, 0x1b, 0x4d, 0x3c, 0x9f, 0xb8, 0x5d, 0xb3, 0x5f, 0x55, 0xb6, 0x94, 0xed,
-	0xa4, 0x9e, 0x13, 0x92, 0xa7, 0x7d, 0x74, 0x17, 0x72, 0x63, 0x32, 0x7e, 0xc1, 0x67, 0x55, 0x36,
-	0x9b, 0xe5, 0x82, 0xa7, 0x7d, 0x54, 0x83, 0xac, 0x4b, 0xa6, 0xa6, 0x67, 0xda, 0x56, 0x55, 0xdb,
-	0x52, 0xb6, 0x35, 0x3d, 0x1c, 0xd3, 0x85, 0xae, 0x71, 0xe9, 0x77, 0x7d, 0xe2, 0x8e, 0xab, 0x49,
-	0xbe, 0x90, 0x0a, 0x3a, 0xc4, 0x1d, 0xe3, 0xff, 0x26, 0xa1, 0xa0, 0x1b, 0xd6, 0x80, 0xe8, 0xe4,
-	0x87, 0x13, 0xe2, 0xf9, 0xa8, 0x0c, 0xda, 0x90, 0xcc, 0x98, 0xf9, 0x82, 0x4e, 0x3f, 0xf9, 0x7a,
-	0x6b, 0x40, 0xba, 0xc4, 0xe2, 0x86, 0x0b, 0x74, 0xbd, 0x35, 0x20, 0x4d, 0xab, 0x8f, 0x2a, 0x90,
-	0x1a, 0x99, 0x63, 0xd3, 0x17, 0x56, 0xf9, 0x20, 0xe6, 0x4e, 0x72, 0xce, 0x9d, 0x6f, 0x01, 0x78,
-	0xb6, 0xeb, 0x77, 0x6d, 0xb7, 0x4f, 0xdc, 0x6a, 0x6a, 0x4b, 0xd9, 0x2e, 0xed, 0xbd, 0xb1, 0x2b,
-	0x62, 0xb9, 0x2b, 0xfb, 0xb2, 0x7b, 0x61, 0xbb, 0x7e, 0x9b, 0xc2, 0xf4, 0x9c, 0x17, 0x7c, 0xa2,
-	0x03, 0xc8, 0xb3, 0xf5, 0xbe, 0xe1, 0x0e, 0x88, 0x5f, 0x4d, 0x33, 0x05, 0x5b, 0xd7, 0x2b, 0xe8,
-	0x30, 0x9c, 0xce, 0x8c, 0xf2, 0x6f, 0x84, 0xa1, 0xe0, 0x11, 0xd7, 0x34, 0x46, 0xe6, 0x8f, 0x8d,
-	0x17, 0x23, 0x52, 0xcd, 0x6c, 0x29, 0xdb, 0x59, 0x3d, 0x26, 0xa3, 0xbb, 0x1e, 0x92, 0x99, 0xd7,
-	0xb5, 0xad, 0xd1, 0xac, 0x9a, 0x65, 0x80, 0x2c, 0x15, 0xb4, 0xad, 0xd1, 0x8c, 0x1d, 0x95, 0x3d,
-	0xb1, 0x7c, 0x3e, 0x9b, 0x63, 0xb3, 0x39, 0x26, 0x61, 0xd3, 0xdb, 0x50, 0x1e, 0x9b, 0x56, 0x77,
-	0x6c, 0xf7, 0xbb, 0x61, 0x18, 0x80, 0x85, 0xa1, 0x34, 0x36, 0xad, 0x0f, 0xed, 0xbe, 0x1e, 0x04,
-	0x83, 0x22, 0x8d, 0xab, 0x38, 0x32, 0x2f, 0x90, 0xc6, 0x95, 0x8c, 0xdc, 0x85, 0x35, 0xaa, 0xb3,
-	0xe7, 0x12, 0xc3, 0x27, 0x11, 0xb8, 0xc0, 0xc0, 0xab, 0x63, 0xd3, 0x3a, 0x62, 0x33, 0x31, 0xbc,
-	0x71, 0xb5, 0x80, 0x2f, 0x0a, 0xbc, 0x71, 0x15, 0xc7, 0xe3, 0x5d, 0xc8, 0x85, 0xe1, 0x46, 0x59,
-	0x48, 0x9e, 0xb5, 0xcf, 0x9a, 0xe5, 0x04, 0x02, 0x48, 0x1f, 0x5c, 0x1c, 0x35, 0xcf, 0x8e, 0xcb,
-	0x0a, 0xca, 0x43, 0xe6, 0xb8, 0xc9, 0x07, 0x2a, 0x3e, 0x04, 0x88, 0xa2, 0x8b, 0x32, 0xa0, 0x9d,
-	0x36, 0x3f, 0x2a, 0x27, 0x28, 0xe6, 0x79, 0x53, 0xbf, 0x78, 0xda, 0x3e, 0x2b, 0x2b, 0x74, 0xf1,
-	0x91, 0xde, 0x3c, 0xe8, 0x34, 0xcb, 0x2a, 0x45, 0x7c, 0xd8, 0x3e, 0x2e, 0x6b, 0x28, 0x07, 0xa9,
-	0xe7, 0x07, 0xad, 0x67, 0xcd, 0x72, 0x12, 0xff, 0x52, 0x81, 0xa2, 0x38, 0x2f, 0xfe, 0x12, 0x50,
-	0x03, 0xd2, 0x2f, 0xd9, 0x6b, 0x60, 0x17, 0x30, 0xbf, 0xb7, 0x11, 0x9d, 0x6b, 0xec, 0xb1, 0xe8,
-	0x02, 0x86, 0xde, 0x04, 0x6d, 0x38, 0xf5, 0xaa, 0xea, 0x96, 0xb6, 0x9d, 0xdf, 0x5b, 0x0d, 0xd1,
-	0xa7, 0x64, 0xf6, 0xdc, 0x18, 0x4d, 0x88, 0x4e, 0x67, 0x11, 0x82, 0xe4, 0xd8, 0x76, 0x09, 0xbb,
-	0xa3, 0x59, 0x9d, 0x7d, 0xd3, 0x8b, 0xcb, 0x0e, 0x4c, 0xdc, 0x4f, 0x3e, 0xc0, 0x7f, 0x54, 0x00,
-	0xce, 0x27, 0xfe, 0xf5, 0x8f, 0xa1, 0x02, 0xa9, 0x29, 0x55, 0x2c, 0x1e, 0x02, 0x1f, 0xb0, 0x57,
-	0x40, 0x0c, 0x8f, 0x84, 0xaf, 0x80, 0x0e, 0xd0, 0x06, 0x64, 0x1c, 0x97, 0x4c, 0xbb, 0xc3, 0x29,
-	0x33, 0x92, 0xd5, 0xd3, 0x74, 0x78, 0x3a, 0x45, 0xf7, 0xa1, 0x60, 0x0e, 0x2c, 0xdb, 0x25, 0x5d,
-	0xae, 0x2b, 0xc5, 0x66, 0xf3, 0x5c, 0xc6, 0xfc, 0x96, 0x20, 0x5c, 0x71, 0x5a, 0x86, 0xb4, 0xa8,
-	0x08, 0xff, 0x00, 0xf2, 0xcc, 0xd5, 0xdb, 0x86, 0x6e, 0x27, 0x72, 0x4f, 0x65, 0x2b, 0x96, 0x84,
-	0x4f, 0x78, 0x8c, 0xbf, 0x07, 0xe8, 0x98, 0x8c, 0x88, 0x4f, 0x3e, 0x4f, 0xae, 0x90, 0xe2, 0xa1,
-	0xc9, 0xf1, 0xc0, 0xbf, 0x50, 0x60, 0x2d, 0xa6, 0xfe, 0xb6, 0x5b, 0xaa, 0x42, 0xa6, 0xcf, 0xf4,
-	0x70, 0xe3, 0x9a, 0x1e, 0x0c, 0xd1, 0x43, 0xc8, 0x0a, 0xdb, 0x5e, 0x55, 0xbb, 0xee, 0xb2, 0x64,
-	0xb8, 0x3f, 0x1e, 0xfe, 0x8d, 0x0a, 0x39, 0xb1, 0xc9, 0xb6, 0x83, 0xde, 0x87, 0xa2, 0xcb, 0x07,
-	0x5d, 0xb6, 0x17, 0xe1, 0xcd, 0x9d, 0xa5, 0x39, 0xe7, 0x24, 0xa1, 0x17, 0x04, 0x9a, 0x89, 0xd1,
-	0xd7, 0x20, 0x1f, 0xac, 0x76, 0x26, 0xbe, 0x08, 0xf5, 0x5a, 0xb8, 0x36, 0xba, 0x6d, 0x27, 0x09,
-	0x1d, 0x04, 0xf2, 0x7c, 0xe2, 0xa3, 0x36, 0x54, 0x82, 0x75, 0x7c, 0x13, 0xc2, 0xb8, 0xc6, 0x14,
-	0xdc, 0x0d, 0x15, 0x2c, 0x9e, 0xcb, 0x49, 0x42, 0x47, 0x62, 0xa9, 0x34, 0x29, 0x3b, 0xe2, 0x5f,
-	0xf1, 0xbc, 0x2c, 0x3b, 0xd2, 0xb9, 0xb2, 0x16, 0x1d, 0xe9, 0x5c, 0x59, 0x87, 0x39, 0xc8, 0x88,
-	0x11, 0xfe, 0x9d, 0x0a, 0x10, 0x84, 0xbe, 0xed, 0xa0, 0x6f, 0x43, 0xc9, 0x15, 0xa3, 0x58, 0x64,
-	0xd6, 0xe7, 0x23, 0x23, 0x0e, 0x2b, 0xa1, 0x17, 0x03, 0x3c, 0x77, 0xe9, 0x1b, 0x50, 0x08, 0x15,
-	0x44, 0xc1, 0xa9, 0xc4, 0x83, 0x13, 0x2e, 0xce, 0x07, 0x58, 0x1a, 0x1e, 0x1d, 0xee, 0x84, 0x4b,
-	0x97, 0xc4, 0x67, 0x73, 0x79, 0x7c, 0x42, 0x5d, 0x6b, 0xc1, 0x62, 0x39, 0x42, 0xb2, 0x3b, 0x51,
-	0x88, 0x2a, 0xf1, 0x10, 0x2d, 0xba, 0x43, 0x83, 0x04, 0x94, 0xf1, 0xf8, 0x10, 0xff, 0x43, 0x83,
-	0xcc, 0x91, 0x3d, 0x76, 0x0c, 0x97, 0x06, 0x3d, 0xed, 0x12, 0x6f, 0x32, 0xf2, 0x59, 0x68, 0x4a,
-	0x7b, 0xf5, 0x50, 0x99, 0x40, 0x04, 0xff, 0xea, 0x0c, 0xa5, 0x0b, 0x34, 0x5d, 0x27, 0x08, 0x4e,
-	0xbd, 0x79, 0x9d, 0xa0, 0x37, 0x81, 0x0e, 0x9e, 0xa4, 0x16, 0x3d, 0xc9, 0x1a, 0x64, 0xa6, 0xc4,
-	0x8d, 0xa8, 0xf8, 0x24, 0xa1, 0x07, 0x02, 0xf4, 0x0e, 0xac, 0xcc, 0x13, 0x44, 0x4a, 0x60, 0x4a,
-	0xbd, 0x38, 0x9f, 0xbc, 0x09, 0x85, 0x18, 0x4b, 0xa5, 0x05, 0x2e, 0x3f, 0x96, 0x48, 0x6a, 0x3d,
-	0xc8, 0x8e, 0x94, 0x51, 0x0b, 0x27, 0x89, 0x20, 0x3f, 0xae, 0x07, 0xf9, 0x31, 0x2b, 0x56, 0x89,
-	0x0c, 0x19, 0x4b, 0x17, 0x8f, 0xe2, 0xe9, 0x02, 0x3f, 0x82, 0x62, 0x2c, 0x36, 0x94, 0x39, 0x9a,
-	0xdf, 0x79, 0x76, 0xd0, 0xe2, 0x34, 0xf3, 0x84, 0x31, 0x8b, 0x5e, 0x56, 0x28, 0x5b, 0xb5, 0x9a,
-	0x17, 0x17, 0x65, 0x15, 0x15, 0x21, 0x77, 0xd6, 0xee, 0x74, 0x39, 0x4a, 0xc3, 0x4f, 0x42, 0x0d,
-	0x82, 0xa6, 0x24, 0x76, 0x4a, 0x48, 0xec, 0xa4, 0x04, 0xec, 0xa4, 0x46, 0xec, 0xc4, 0x88, 0xaa,
-	0xd5, 0x3c, 0xb8, 0x68, 0x96, 0x93, 0x87, 0x25, 0x28, 0xf0, 0xf8, 0x76, 0x27, 0x16, 0x25, 0xcb,
-	0x5f, 0x2b, 0x00, 0xd1, 0x7b, 0xa1, 0x99, 0xb4, 0xc7, 0xed, 0x54, 0x15, 0x96, 0x5b, 0xca, 0xf3,
-	0xa7, 0xa5, 0x07, 0x00, 0xf4, 0x10, 0x32, 0xde, 0xa4, 0xd7, 0x23, 0x5e, 0x40, 0x5a, 0x48, 0x4a,
-	0x6a, 0x22, 0xe3, 0xe8, 0x01, 0x84, 0xa2, 0x2f, 0x0d, 0x73, 0x34, 0x61, 0xe4, 0x75, 0x2d, 0x5a,
-	0x40, 0x28, 0x9f, 0xe6, 0xa5, 0x3b, 0xfa, 0xd9, 0xf3, 0xe7, 0x26, 0xe4, 0x98, 0x65, 0xd2, 0x17,
-	0x19, 0x34, 0xab, 0x47, 0x02, 0xf4, 0x2e, 0xe4, 0x82, 0x3b, 0x1e, 0x24, 0xd1, 0xb5, 0x05, 0x8d,
-	0x6d, 0x47, 0x8f, 0x50, 0xf8, 0x14, 0x56, 0x59, 0x04, 0x7a, 0xb4, 0xf6, 0x0d, 0xc2, 0x25, 0x57,
-	0x87, 0xca, 0x5c, 0x75, 0x58, 0x83, 0xac, 0xf3, 0x72, 0xe6, 0x99, 0x3d, 0x63, 0x24, 0x1c, 0x08,
-	0xc7, 0xb8, 0x09, 0x48, 0x56, 0x76, 0xcb, 0x4d, 0xe2, 0x7f, 0x2b, 0x50, 0xf8, 0xae, 0xe1, 0xf7,
-	0x5e, 0x06, 0xfe, 0x1c, 0x43, 0x29, 0x7c, 0x05, 0x4c, 0x22, 0x34, 0x45, 0x39, 0x96, 0xc1, 0x83,
-	0x82, 0x29, 0xc8, 0x91, 0xc5, 0x9e, 0x2c, 0x60, 0x5a, 0x0c, 0xab, 0x47, 0x46, 0xa1, 0x16, 0x75,
-	0xa9, 0x16, 0x86, 0x91, 0xb5, 0xc8, 0x02, 0xf4, 0x01, 0x94, 0x1d, 0xd7, 0x1e, 0xb8, 0xc4, 0xf3,
-	0x42, 0x3d, 0x3c, 0xa3, 0xdd, 0x8b, 0xeb, 0x39, 0x17, 0xa8, 0x48, 0xd3, 0x8a, 0x13, 0x17, 0x1d,
-	0xae, 0x44, 0xbc, 0xc5, 0xaf, 0xed, 0x5f, 0x55, 0x40, 0x8b, 0x5b, 0xf9, 0xac, 0x34, 0xfe, 0x16,
-	0x94, 0x3c, 0xdf, 0x70, 0xfd, 0xee, 0x5c, 0xc7, 0x51, 0x64, 0xd2, 0x30, 0x17, 0x3c, 0x80, 0xd0,
-	0xa1, 0xae, 0x65, 0xfb, 0xe6, 0xe5, 0x4c, 0x54, 0x41, 0xa5, 0x40, 0x7c, 0xc6, 0xa4, 0xe8, 0x11,
-	0x64, 0x2e, 0xcd, 0x91, 0x4f, 0x5c, 0xaf, 0x9a, 0xda, 0xd2, 0xb6, 0x4b, 0x7b, 0x6f, 0xdf, 0x10,
-	0xf7, 0xdd, 0xc7, 0x0c, 0xda, 0x99, 0x39, 0x44, 0x0f, 0x96, 0xc9, 0x85, 0x45, 0x3a, 0x56, 0x68,
-	0x7d, 0x09, 0xb2, 0x3f, 0xa2, 0x2a, 0x68, 0xcb, 0x94, 0xe1, 0x05, 0x01, 0x1b, 0xf3, 0x8e, 0xe9,
-	0xd2, 0x35, 0x06, 0x63, 0x62, 0xf9, 0x41, 0x79, 0x1f, 0x8c, 0xf1, 0x5b, 0x00, 0x91, 0x19, 0x9a,
-	0x07, 0xce, 0xda, 0xe7, 0xcf, 0x3a, 0xe5, 0x04, 0x2a, 0x40, 0xf6, 0xac, 0x7d, 0xdc, 0x6c, 0x35,
-	0x69, 0xd2, 0xc0, 0x8d, 0x20, 0x9a, 0xb1, 0x13, 0x94, 0x6d, 0x2a, 0x31, 0x9b, 0x78, 0x1d, 0x2a,
-	0xcb, 0xce, 0x0e, 0xff, 0x5e, 0x85, 0xa2, 0xb8, 0x91, 0xb7, 0x7d, 0xb9, 0xb2, 0x55, 0x35, 0xbe,
-	0xd3, 0x2a, 0x64, 0xf8, 0x4d, 0xed, 0x8b, 0xb2, 0x2b, 0x18, 0xd2, 0x18, 0xf0, 0xdb, 0x47, 0xfa,
-	0xe2, 0x6c, 0xc2, 0x31, 0x7a, 0x07, 0xca, 0x3d, 0xfe, 0xd8, 0xe6, 0xb8, 0x41, 0x5f, 0x11, 0x72,
-	0x89, 0x1a, 0x8a, 0xe1, 0xcd, 0x37, 0x3c, 0xc1, 0x0d, 0x39, 0xbd, 0x10, 0xdc, 0x6c, 0x2a, 0x8b,
-	0xc5, 0x3b, 0x13, 0x8f, 0x37, 0x7a, 0x1b, 0xd2, 0x64, 0x4a, 0x2c, 0xdf, 0xab, 0xe6, 0x59, 0x56,
-	0x29, 0x85, 0xbb, 0x6d, 0x52, 0xb1, 0x2e, 0x66, 0xf1, 0x7b, 0xb0, 0xca, 0x4a, 0xdf, 0x27, 0xae,
-	0x61, 0xc9, 0x35, 0x7a, 0xa7, 0xd3, 0x12, 0xa1, 0xd6, 0xfc, 0x4e, 0x0b, 0x95, 0x40, 0x7d, 0x7a,
-	0x2c, 0xa2, 0xa0, 0x9a, 0xc7, 0xf8, 0x27, 0x80, 0xe4, 0x65, 0xb7, 0x0d, 0xf1, 0x9c, 0xda, 0xc0,
-	0xb0, 0x16, 0x19, 0xae, 0x40, 0x8a, 0xb8, 0xae, 0xed, 0xb2, 0x60, 0xe6, 0x74, 0x3e, 0xc0, 0x5f,
-	0x16, 0xe6, 0x75, 0x32, 0xb5, 0x87, 0xe1, 0xa3, 0xe3, 0xda, 0x94, 0xd0, 0xc9, 0xc7, 0xb0, 0x16,
-	0x43, 0xdd, 0x36, 0xbb, 0x3d, 0x86, 0x15, 0xa6, 0xe7, 0xe8, 0x25, 0xe9, 0x0d, 0x1d, 0xdb, 0xb4,
-	0x16, 0x4c, 0xd1, 0xf3, 0x72, 0xc9, 0xd8, 0x30, 0x2d, 0xd3, 0x1a, 0x74, 0xe9, 0x16, 0xf8, 0x9e,
-	0x0a, 0xa1, 0xb0, 0xd3, 0x69, 0xe1, 0x0e, 0xac, 0xcf, 0xe9, 0x09, 0x3c, 0xdf, 0x87, 0x7c, 0x2f,
-	0x14, 0x7a, 0x82, 0xf1, 0xaa, 0xa1, 0x5f, 0xf3, 0xab, 0x64, 0x30, 0xfe, 0x00, 0x36, 0x16, 0xb4,
-	0xde, 0x76, 0xa7, 0x0f, 0xe0, 0x0e, 0xd3, 0x75, 0x4a, 0x88, 0x73, 0x30, 0x32, 0xa7, 0xd7, 0x86,
-	0x76, 0x28, 0xb6, 0x22, 0x01, 0xbf, 0xb0, 0x3b, 0x80, 0xdf, 0x17, 0xc6, 0x3a, 0xe6, 0x98, 0x74,
-	0xec, 0xd6, 0xf5, 0x6e, 0xd1, 0xae, 0x74, 0x48, 0x66, 0x9e, 0xa0, 0x39, 0xf6, 0x8d, 0x7f, 0xab,
-	0x88, 0x00, 0xc9, 0xcb, 0xbf, 0xb8, 0x0b, 0x5b, 0x07, 0x18, 0xd0, 0x47, 0x41, 0xfa, 0x74, 0x82,
-	0x77, 0xc2, 0x92, 0x24, 0x74, 0x91, 0xe6, 0xe5, 0x82, 0x70, 0xb1, 0x22, 0xae, 0x33, 0xfb, 0x13,
-	0xa6, 0xb0, 0x7b, 0x90, 0x67, 0x82, 0x0b, 0xdf, 0xf0, 0x27, 0xde, 0xc2, 0x11, 0xf8, 0xe2, 0x76,
-	0x07, 0x8b, 0x6e, 0xbb, 0xa5, 0x87, 0x90, 0x66, 0x95, 0x63, 0x50, 0x3c, 0x55, 0xe2, 0xd7, 0x8e,
-	0x5b, 0xd7, 0x05, 0x06, 0xff, 0x49, 0x81, 0x6c, 0xd0, 0xdc, 0x2d, 0x61, 0xb9, 0x07, 0x8b, 0xd5,
-	0x2f, 0x0f, 0xd6, 0x7c, 0xed, 0x7b, 0x7f, 0xae, 0xf6, 0xe5, 0x11, 0x8c, 0x55, 0xbe, 0xd5, 0xb9,
-	0x2a, 0x3b, 0xaa, 0xb1, 0xc3, 0x5f, 0x0c, 0x52, 0x4b, 0x7f, 0x31, 0x48, 0x4b, 0xbf, 0x18, 0xe0,
-	0x3f, 0x28, 0x90, 0x62, 0x29, 0x0f, 0x3d, 0x84, 0xa4, 0x3f, 0x73, 0x88, 0xe8, 0x1a, 0xaa, 0xf1,
-	0x84, 0xc8, 0xff, 0x32, 0x0e, 0x64, 0x28, 0x74, 0x1f, 0xd4, 0x9b, 0xba, 0x78, 0x75, 0x38, 0x95,
-	0xbb, 0x7d, 0xed, 0xff, 0x75, 0xfb, 0x5b, 0x90, 0x0b, 0x2d, 0xd0, 0xd2, 0x98, 0x93, 0x1f, 0x40,
-	0x3a, 0xa0, 0xbe, 0xbd, 0x3f, 0x6b, 0xa0, 0x9e, 0x3e, 0x47, 0x6d, 0x48, 0xf1, 0xce, 0x69, 0x79,
-	0x2f, 0x5c, 0xbb, 0xa6, 0x11, 0xc4, 0x1b, 0x3f, 0xfb, 0xdb, 0xbf, 0x3e, 0x51, 0x57, 0x71, 0xa1,
-	0x31, 0x7d, 0xb7, 0x31, 0x9c, 0x36, 0x58, 0x6d, 0xb1, 0xaf, 0xec, 0xa0, 0x27, 0xa0, 0xd1, 0xe6,
-	0x6e, 0x59, 0x7b, 0x5c, 0x5b, 0xda, 0x16, 0xe2, 0x3b, 0x4c, 0xd5, 0x0a, 0x06, 0xa1, 0xca, 0x99,
-	0xf8, 0x54, 0xd1, 0x00, 0xf2, 0x72, 0x67, 0x77, 0x53, 0xbb, 0x5c, 0xbb, 0xb1, 0x57, 0xc4, 0xf7,
-	0x98, 0x81, 0x0d, 0x8c, 0x84, 0x01, 0xde, 0x6c, 0xca, 0x1e, 0x77, 0xae, 0x2c, 0xb4, 0xac, 0x8f,
-	0xae, 0x2d, 0xed, 0x1c, 0x17, 0x3c, 0xf6, 0xaf, 0x2c, 0xaa, 0xe8, 0xfb, 0xa2, 0x69, 0xec, 0xf9,
-	0xa8, 0x16, 0x6f, 0x1f, 0xe4, 0xe2, 0xb9, 0x76, 0x77, 0xe9, 0x9c, 0x50, 0xbd, 0xc9, 0x54, 0xaf,
-	0xe3, 0x55, 0xa1, 0xba, 0x17, 0x42, 0xf6, 0x95, 0x9d, 0xbd, 0x8f, 0x20, 0xc5, 0xaa, 0x0c, 0x74,
-	0x1e, 0x7c, 0xdc, 0x89, 0x57, 0x5a, 0x8b, 0xc7, 0x16, 0xab, 0x4a, 0x70, 0x85, 0xa9, 0x2f, 0xe1,
-	0x1c, 0x55, 0xcf, 0xca, 0x8b, 0x7d, 0x65, 0x67, 0x5b, 0xf9, 0x8a, 0xb2, 0xf7, 0x9f, 0x24, 0xa4,
-	0xd8, 0x0b, 0x44, 0x06, 0x40, 0x44, 0xb6, 0xd2, 0x4e, 0x16, 0x88, 0x5b, 0xda, 0xc9, 0x22, 0x3b,
-	0xe3, 0x1a, 0x33, 0x55, 0xc1, 0x2b, 0xd4, 0x14, 0x7b, 0x1c, 0x0d, 0x96, 0x97, 0x68, 0xa4, 0x7e,
-	0x2a, 0x72, 0x0d, 0xa7, 0x4a, 0x34, 0xa7, 0x27, 0x46, 0xb3, 0xd2, 0xd9, 0x2e, 0x61, 0x57, 0xfc,
-	0x1e, 0xb3, 0xd2, 0xc0, 0xe5, 0xc8, 0x8a, 0xcb, 0x10, 0xfb, 0xca, 0xce, 0xc7, 0x55, 0xbc, 0x26,
-	0xc2, 0x38, 0x37, 0x83, 0x26, 0x50, 0x8a, 0x13, 0x0a, 0xaa, 0xc7, 0xcd, 0xcc, 0x53, 0x52, 0xed,
-	0x8d, 0x6b, 0xe7, 0x85, 0x27, 0x75, 0xe6, 0x89, 0x30, 0xc9, 0xed, 0x0d, 0x09, 0x71, 0x0c, 0x0a,
-	0x12, 0x41, 0x46, 0x9f, 0x28, 0x82, 0xdb, 0x23, 0x72, 0x40, 0x73, 0x8a, 0x17, 0x58, 0xa7, 0xb6,
-	0x75, 0x3d, 0x40, 0x98, 0xfe, 0x26, 0x33, 0xfd, 0x75, 0x5c, 0x89, 0x4c, 0xfb, 0xe6, 0x98, 0xf8,
-	0xb6, 0xb0, 0xfd, 0xf1, 0x26, 0xde, 0x88, 0x05, 0x22, 0x36, 0x1b, 0x9e, 0x06, 0x4f, 0xed, 0xf3,
-	0xa7, 0x11, 0x63, 0x89, 0xf9, 0xd3, 0x88, 0xb3, 0xc1, 0xb2, 0xd3, 0xe0, 0x89, 0x7c, 0xd9, 0x69,
-	0x84, 0x33, 0x87, 0xd5, 0xbf, 0xbc, 0xaa, 0x2b, 0x9f, 0xbe, 0xaa, 0x2b, 0xff, 0x7c, 0x55, 0x57,
-	0x7e, 0xf5, 0xba, 0x9e, 0xf8, 0xf4, 0x75, 0x3d, 0xf1, 0xf7, 0xd7, 0xf5, 0xc4, 0x8b, 0x34, 0xfb,
-	0xbf, 0x96, 0xaf, 0xfe, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xff, 0xce, 0x75, 0x75, 0xb5, 0x19, 0x00,
+	// 2225 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x59, 0xdd, 0x6f, 0x1b, 0x59,
+	0x15, 0xf7, 0xf8, 0xdb, 0xc7, 0x8e, 0xe3, 0xde, 0x7e, 0x4d, 0xdd, 0x10, 0xda, 0xa9, 0x76, 0xdb,
+	0xad, 0x4a, 0xbc, 0xb8, 0x0f, 0x20, 0x96, 0x5d, 0x92, 0x38, 0x6e, 0x12, 0xc5, 0xc4, 0xe9, 0xb5,
+	0x9b, 0x15, 0x08, 0xb0, 0xa6, 0xf6, 0x8d, 0x33, 0xb2, 0x33, 0xe3, 0xce, 0x5c, 0xbb, 0x31, 0xab,
+	0x0a, 0x09, 0x69, 0x77, 0x41, 0xfb, 0xc0, 0xa2, 0x22, 0x78, 0xe2, 0x95, 0x47, 0x04, 0xfc, 0x15,
+	0x3c, 0xae, 0x54, 0x09, 0xf1, 0x88, 0x5a, 0x5e, 0xf8, 0x2f, 0xd0, 0xfd, 0x98, 0x4f, 0xbb, 0x85,
+	0x75, 0x2a, 0xe5, 0x25, 0xf2, 0x3d, 0xf7, 0x9c, 0x73, 0x7f, 0xe7, 0xdc, 0xf3, 0x75, 0x27, 0x90,
+	0xb3, 0x47, 0xdd, 0xb5, 0x91, 0x6d, 0x51, 0x0b, 0x65, 0x8e, 0x86, 0x56, 0x77, 0x30, 0x7a, 0x5c,
+	0xbe, 0xd4, 0xb7, 0xfa, 0x16, 0xa7, 0x55, 0xd8, 0x2f, 0xb1, 0x5d, 0x5e, 0xe9, 0x5b, 0x56, 0x7f,
+	0x48, 0x2a, 0xfa, 0xc8, 0xa8, 0xe8, 0xa6, 0x69, 0x51, 0x9d, 0x1a, 0x96, 0xe9, 0x88, 0x5d, 0xad,
+	0x01, 0x57, 0x0e, 0x74, 0x9b, 0x1a, 0x8c, 0x86, 0xc9, 0x93, 0x31, 0x71, 0xe8, 0x0e, 0xd1, 0x7b,
+	0xc4, 0x46, 0x97, 0x20, 0xe5, 0x50, 0xcb, 0x26, 0xaa, 0x72, 0x43, 0xb9, 0x93, 0xc3, 0x62, 0x81,
+	0x56, 0x20, 0x37, 0x72, 0xf9, 0xd5, 0x38, 0xdf, 0xf1, 0x09, 0xda, 0x2e, 0x14, 0x31, 0x71, 0x46,
+	0x96, 0xe9, 0x10, 0xa9, 0xe5, 0x3a, 0xe4, 0x4e, 0xc8, 0xc9, 0x63, 0x62, 0x77, 0x8c, 0x1e, 0xd7,
+	0x94, 0xc4, 0x59, 0x41, 0xd8, 0xed, 0xa1, 0x32, 0x64, 0x6d, 0x32, 0x31, 0x1c, 0x57, 0x57, 0x02,
+	0x7b, 0x6b, 0xed, 0xaf, 0x29, 0xc8, 0xef, 0x1d, 0xb6, 0xc8, 0x90, 0x74, 0x99, 0x6a, 0x74, 0x15,
+	0xd2, 0x03, 0x32, 0xed, 0xf4, 0x29, 0xd7, 0x52, 0xd8, 0x89, 0xe1, 0xd4, 0x80, 0x4c, 0xb7, 0x29,
+	0xba, 0x06, 0x19, 0xb1, 0x41, 0xb8, 0x0e, 0xb6, 0x93, 0xe6, 0x3b, 0xc4, 0x95, 0x19, 0x52, 0x35,
+	0xc1, 0x77, 0x14, 0x2e, 0xd3, 0xf0, 0x64, 0x86, 0x94, 0xa8, 0x49, 0xb9, 0x93, 0xe6, 0x3b, 0x04,
+	0xdd, 0x81, 0xe5, 0x13, 0xab, 0xd7, 0x71, 0x71, 0xb0, 0x03, 0x53, 0x0c, 0xda, 0x4e, 0x1c, 0x2f,
+	0x9d, 0x58, 0x3d, 0x2c, 0xe9, 0xdb, 0x14, 0xdd, 0x85, 0x52, 0x84, 0x93, 0xa8, 0x69, 0xc9, 0x5a,
+	0x0c, 0xb1, 0xce, 0x6a, 0x1d, 0x52, 0x35, 0xc3, 0x59, 0x13, 0x21, 0xad, 0x8d, 0x59, 0xad, 0x0c,
+	0x63, 0x56, 0xb2, 0x16, 0x43, 0xac, 0x04, 0xad, 0x01, 0xea, 0xda, 0x44, 0xa7, 0x24, 0x04, 0x37,
+	0xc7, 0xb9, 0x93, 0xb8, 0x24, 0xf6, 0x02, 0x88, 0xdf, 0x87, 0x8b, 0xb3, 0xfc, 0x44, 0x05, 0x29,
+	0x70, 0x21, 0x2a, 0x30, 0xf7, 0x84, 0x21, 0x55, 0xf3, 0x5c, 0x20, 0x15, 0x3d, 0xa1, 0x31, 0xf7,
+	0x04, 0x66, 0x40, 0x41, 0x0a, 0x5c, 0x88, 0x0a, 0x10, 0xf4, 0x2e, 0x2c, 0xb3, 0xab, 0x70, 0xa8,
+	0x6e, 0x53, 0xa7, 0xf3, 0xd4, 0xa0, 0xc7, 0xea, 0x3a, 0xbb, 0x12, 0xbc, 0x34, 0x20, 0xd3, 0x16,
+	0xa7, 0x7e, 0x6c, 0xd0, 0x63, 0x54, 0x82, 0xc4, 0x80, 0x4c, 0xd5, 0x0d, 0xbe, 0xc7, 0x7e, 0xb2,
+	0x00, 0x1d, 0x12, 0xdd, 0x21, 0xea, 0x26, 0x0f, 0x1d, 0xb1, 0xd8, 0x5c, 0x06, 0x26, 0xd8, 0xb1,
+	0x75, 0xb3, 0x4f, 0x3a, 0x27, 0x86, 0x19, 0x21, 0xe8, 0xa7, 0x9b, 0x97, 0x00, 0x85, 0x3c, 0xcc,
+	0x8f, 0xde, 0x44, 0x11, 0xbf, 0x13, 0xb3, 0xb7, 0x79, 0x15, 0x2e, 0x47, 0xad, 0x11, 0xcc, 0x97,
+	0x67, 0xcd, 0x24, 0x66, 0x4f, 0xfb, 0x5d, 0x12, 0x8a, 0x7b, 0x87, 0x0f, 0xc7, 0xc4, 0x9e, 0xca,
+	0x5c, 0x42, 0xdf, 0x81, 0xf4, 0x31, 0xcf, 0x04, 0x1e, 0xb6, 0xf9, 0xea, 0x37, 0xd7, 0x64, 0xb6,
+	0xae, 0xcd, 0x4f, 0x3b, 0x2c, 0xd9, 0x51, 0x15, 0x72, 0x8e, 0x1b, 0xfc, 0x3c, 0xb0, 0xf3, 0xd5,
+	0x4b, 0x9e, 0x6c, 0x20, 0x31, 0xb0, 0xcf, 0xc6, 0x3d, 0x62, 0x9c, 0x18, 0x22, 0xdc, 0x99, 0x47,
+	0xd8, 0x22, 0x94, 0x65, 0xc9, 0x70, 0x96, 0xa1, 0x75, 0x00, 0xc7, 0xb2, 0x69, 0xc7, 0xb2, 0x19,
+	0x44, 0x16, 0xe8, 0xc5, 0xea, 0xcd, 0xc0, 0x31, 0x41, 0x5b, 0xd6, 0x5a, 0x96, 0x4d, 0x9b, 0x8c,
+	0x11, 0xe7, 0x1c, 0xf7, 0x27, 0xaa, 0x41, 0x9e, 0x6b, 0xa0, 0xba, 0xdd, 0x27, 0x94, 0x27, 0x40,
+	0xb1, 0xaa, 0xbd, 0x49, 0x45, 0x9b, 0x73, 0x62, 0x7e, 0xb0, 0xf8, 0x8d, 0x34, 0x28, 0x38, 0xc4,
+	0x36, 0xf4, 0xa1, 0xf1, 0x73, 0xfd, 0xf1, 0x90, 0xf0, 0xdc, 0xc8, 0xe2, 0x10, 0x0d, 0xbd, 0x03,
+	0x45, 0x72, 0xda, 0x1d, 0x8e, 0x7b, 0xa4, 0x33, 0xd1, 0x87, 0x63, 0xe2, 0xf0, 0xb4, 0xc8, 0xe2,
+	0x25, 0x49, 0x3d, 0xe4, 0x44, 0x74, 0x0b, 0x96, 0x0c, 0x53, 0xb0, 0x75, 0xad, 0xb1, 0x29, 0xd2,
+	0x21, 0x8b, 0x0b, 0x92, 0x58, 0x63, 0x34, 0xed, 0x0e, 0xe4, 0x3c, 0x63, 0x50, 0x16, 0x92, 0xfb,
+	0xcd, 0xfd, 0x7a, 0x29, 0x86, 0x32, 0x90, 0xd8, 0x68, 0xd5, 0x4a, 0x0a, 0x23, 0x6d, 0xd5, 0x5b,
+	0xb5, 0x52, 0x5c, 0xdb, 0x04, 0xf0, 0x31, 0x33, 0x86, 0xbd, 0xfa, 0x8f, 0x4a, 0x31, 0x94, 0x87,
+	0xcc, 0x61, 0x1d, 0xb7, 0x76, 0x9b, 0xfb, 0x25, 0x05, 0x01, 0xa4, 0x6b, 0xb8, 0xbe, 0xd1, 0xae,
+	0x97, 0xe2, 0x8c, 0xe3, 0x87, 0xcd, 0xad, 0x52, 0x02, 0xe5, 0x20, 0x75, 0xb8, 0xd1, 0x78, 0x54,
+	0x2f, 0x25, 0xb5, 0xdf, 0x2a, 0xb0, 0xec, 0xf9, 0x41, 0x54, 0x47, 0x54, 0x89, 0xc4, 0xc5, 0x55,
+	0xcf, 0x63, 0xe1, 0x02, 0xea, 0xc5, 0xc3, 0x2d, 0x48, 0x0c, 0x26, 0x8e, 0x1a, 0xbf, 0x91, 0xb8,
+	0x93, 0xaf, 0x5e, 0xf0, 0xfd, 0x4b, 0xa6, 0xdc, 0x70, 0xcc, 0x76, 0x11, 0x82, 0xe4, 0x09, 0x2b,
+	0xd9, 0x09, 0x6e, 0x33, 0xff, 0xcd, 0x82, 0x42, 0x38, 0x42, 0xdc, 0xbd, 0x58, 0x68, 0x9f, 0xc5,
+	0xa1, 0xb0, 0x77, 0x78, 0x30, 0xa6, 0xe7, 0x15, 0xa8, 0xfc, 0x0e, 0x45, 0x5d, 0xc6, 0x62, 0xe1,
+	0x27, 0x74, 0x32, 0x90, 0xd0, 0xe8, 0x2a, 0x64, 0x46, 0x36, 0x99, 0x74, 0x06, 0x13, 0x1e, 0x9f,
+	0x59, 0x9c, 0x66, 0xcb, 0xbd, 0x09, 0xba, 0x09, 0x05, 0xa3, 0x6f, 0x5a, 0xb6, 0x8c, 0x07, 0x1e,
+	0x7a, 0x59, 0x9c, 0x17, 0x34, 0xee, 0x94, 0x00, 0x8b, 0x50, 0x9c, 0x09, 0xb2, 0x34, 0x18, 0x49,
+	0x33, 0x61, 0x49, 0xfa, 0x61, 0xd1, 0x9b, 0xb9, 0x07, 0x59, 0x09, 0xf0, 0x0d, 0xd7, 0x93, 0x11,
+	0xa0, 0x1d, 0xed, 0x0f, 0x3c, 0x18, 0xb6, 0xc8, 0x90, 0xb0, 0x3a, 0x78, 0x0e, 0xbe, 0x0f, 0xf8,
+	0x33, 0x11, 0xf4, 0xa7, 0xf6, 0x85, 0x02, 0x25, 0x1f, 0xd9, 0xa2, 0xde, 0x50, 0x21, 0xd3, 0xe3,
+	0x2a, 0x7a, 0xb2, 0xa5, 0xbb, 0xcb, 0x90, 0x9f, 0x12, 0xff, 0xd3, 0x4f, 0xbf, 0x89, 0xb3, 0xfe,
+	0x2f, 0xcd, 0x6e, 0x8e, 0xd0, 0x47, 0xb0, 0x64, 0x8b, 0x45, 0xe7, 0x09, 0xcb, 0xa4, 0x19, 0x3c,
+	0xe1, 0x4a, 0xb3, 0x13, 0xc3, 0x05, 0xc9, 0xcf, 0xc9, 0xe8, 0xbb, 0x90, 0x77, 0xe5, 0x47, 0x63,
+	0x2a, 0x9d, 0x75, 0x39, 0x20, 0xed, 0xe7, 0xc2, 0x4e, 0x0c, 0x83, 0xe4, 0x3d, 0x18, 0x53, 0xb4,
+	0x01, 0x45, 0x57, 0x52, 0x98, 0xc2, 0xfd, 0x96, 0xaf, 0xaa, 0x01, 0xe1, 0xd0, 0x7d, 0xee, 0xc4,
+	0xb0, 0x8b, 0x55, 0xd0, 0x83, 0x87, 0xd3, 0x53, 0x51, 0x85, 0xc3, 0x87, 0xb7, 0x4f, 0xcd, 0xd9,
+	0xc3, 0xdb, 0xa7, 0xe6, 0x66, 0x0e, 0x32, 0x72, 0xa5, 0xfd, 0x91, 0xa7, 0xac, 0xeb, 0xf6, 0xe6,
+	0x48, 0x00, 0x13, 0xab, 0x90, 0x4f, 0xd4, 0x59, 0x9f, 0xc8, 0xab, 0xe2, 0xc0, 0xc4, 0x6f, 0xe1,
+	0x95, 0x0f, 0xa0, 0xe0, 0xa9, 0xf0, 0xdd, 0x72, 0x25, 0xea, 0x16, 0x4f, 0x3c, 0xef, 0x72, 0x33,
+	0xc7, 0x6c, 0xc1, 0xb2, 0x27, 0x1c, 0xf2, 0xcc, 0xb5, 0x39, 0x9e, 0xf1, 0x54, 0x78, 0x98, 0xa5,
+	0x6f, 0x82, 0x10, 0x7c, 0xe7, 0x5c, 0x89, 0x3a, 0x67, 0x16, 0x02, 0x73, 0x0f, 0xb0, 0xde, 0x26,
+	0x96, 0xda, 0x5f, 0x12, 0x2c, 0x62, 0x0e, 0x6c, 0xd2, 0x33, 0xba, 0x3a, 0x25, 0xe8, 0x07, 0x00,
+	0x5d, 0xeb, 0x64, 0xa4, 0xdb, 0x86, 0x63, 0x99, 0xdc, 0x35, 0xc5, 0x40, 0x66, 0x05, 0x38, 0xd7,
+	0x6a, 0x1e, 0x1b, 0x0e, 0x88, 0xa0, 0xfb, 0x90, 0x96, 0x5d, 0x2d, 0xce, 0x85, 0xaf, 0xcf, 0x15,
+	0x96, 0xed, 0x4c, 0xb2, 0xa2, 0x32, 0x64, 0x26, 0xc4, 0xe6, 0xcd, 0x96, 0x77, 0xe1, 0x9d, 0x18,
+	0x76, 0x09, 0xe8, 0x3d, 0x58, 0x8e, 0x8c, 0x0d, 0xa2, 0xd4, 0x31, 0xaf, 0x84, 0x27, 0x23, 0x74,
+	0x0b, 0x0a, 0xc1, 0x71, 0x44, 0xce, 0xa0, 0x31, 0x9c, 0x0f, 0x8c, 0x80, 0xe8, 0x8a, 0x5b, 0x46,
+	0xd3, 0xee, 0x48, 0x2c, 0x0a, 0xe9, 0x15, 0xb7, 0x90, 0x66, 0xa4, 0x94, 0x58, 0x6a, 0x1f, 0x02,
+	0xf8, 0xa6, 0xb2, 0x0e, 0x55, 0x7f, 0xf8, 0x68, 0xa3, 0x21, 0xda, 0xd9, 0x36, 0xef, 0x60, 0x58,
+	0x34, 0xbf, 0x46, 0xbd, 0xd5, 0x2a, 0xc5, 0xd1, 0x12, 0xe4, 0xf6, 0x9b, 0xed, 0x8e, 0xe0, 0x4a,
+	0x68, 0xeb, 0x90, 0x96, 0x7d, 0x30, 0xd0, 0xfe, 0x62, 0x81, 0xf6, 0xa7, 0xb8, 0xed, 0x2f, 0xee,
+	0xb7, 0x3f, 0xde, 0x09, 0x1b, 0xf5, 0x8d, 0x56, 0xbd, 0x94, 0xdc, 0x2c, 0x42, 0x41, 0xb8, 0xa9,
+	0x33, 0x36, 0xd9, 0x90, 0xff, 0x04, 0x32, 0x02, 0x10, 0x09, 0x97, 0x32, 0xe5, 0xff, 0x2b, 0x65,
+	0x55, 0xc8, 0x8d, 0xdc, 0x7b, 0x98, 0x53, 0xfe, 0xbc, 0x3b, 0xc2, 0x3e, 0x9b, 0xf6, 0x42, 0x61,
+	0x59, 0xe4, 0xe7, 0xdb, 0xe2, 0xc5, 0xf7, 0x2e, 0x64, 0x44, 0xb0, 0x10, 0x59, 0xf6, 0x4b, 0x9e,
+	0xa4, 0x34, 0x0a, 0xbb, 0x0c, 0x68, 0x0d, 0x32, 0xce, 0xb8, 0xdb, 0x25, 0x8e, 0x5b, 0xfa, 0x82,
+	0x38, 0xbd, 0x22, 0x87, 0x5d, 0x26, 0xc6, 0x7f, 0xa4, 0x1b, 0xc3, 0xb1, 0xcd, 0x9a, 0xe1, 0x1b,
+	0xf8, 0x25, 0x93, 0xf6, 0x5c, 0x61, 0x6d, 0x2c, 0x90, 0x28, 0x5f, 0xbf, 0x70, 0xaf, 0x40, 0x8e,
+	0x9f, 0x4e, 0x7a, 0xb2, 0x74, 0x67, 0xb1, 0x4f, 0x40, 0xf7, 0x21, 0xe7, 0x26, 0x9a, 0x6b, 0xc2,
+	0xe5, 0x10, 0x24, 0xb7, 0x2a, 0x61, 0x9f, 0x4f, 0xfb, 0x4c, 0x81, 0x8b, 0x7b, 0x87, 0xdc, 0x19,
+	0xdd, 0x80, 0x1f, 0x17, 0x77, 0xf9, 0x1b, 0x1e, 0x8c, 0x6c, 0x6f, 0x74, 0x3c, 0x75, 0x8c, 0xae,
+	0x3e, 0x94, 0x8d, 0xcd, 0x5b, 0x6b, 0xdb, 0x70, 0x29, 0x8c, 0x63, 0x41, 0x27, 0x69, 0xff, 0x89,
+	0xb3, 0x09, 0xff, 0x63, 0x9d, 0x76, 0x8f, 0xcf, 0xa5, 0x79, 0xbf, 0x03, 0x45, 0xfe, 0x02, 0xf1,
+	0x0b, 0x83, 0x18, 0xf5, 0x97, 0x38, 0xd5, 0x2b, 0x0c, 0xb7, 0x61, 0x79, 0x64, 0x5b, 0x7d, 0x9b,
+	0x38, 0x4e, 0xc7, 0xb4, 0xa8, 0x71, 0x34, 0xe5, 0x85, 0x26, 0x8b, 0x8b, 0x2e, 0x79, 0x9f, 0x53,
+	0xd1, 0xf7, 0x21, 0x73, 0x64, 0x0c, 0x29, 0xb1, 0x1d, 0x35, 0x75, 0x23, 0x11, 0x99, 0xdc, 0x83,
+	0x66, 0xae, 0x3d, 0xe0, 0x6c, 0xed, 0xe9, 0x88, 0x60, 0x57, 0x24, 0x38, 0x4a, 0xa4, 0x43, 0xa3,
+	0x59, 0x19, 0xb2, 0x47, 0xb6, 0xde, 0x3f, 0x21, 0x26, 0x95, 0x53, 0xba, 0xb7, 0xd6, 0x6e, 0x03,
+	0xf8, 0xba, 0x58, 0xf1, 0xd8, 0x6f, 0x76, 0x0e, 0x1e, 0xb5, 0x4b, 0x31, 0x51, 0x6e, 0x3a, 0x5b,
+	0xf5, 0x46, 0x9d, 0xd5, 0x12, 0xed, 0x1f, 0x7c, 0x52, 0x92, 0x20, 0x16, 0x8d, 0xea, 0xf7, 0xa0,
+	0xd4, 0x15, 0xf7, 0xde, 0x89, 0x44, 0xce, 0xb2, 0xa4, 0x07, 0x4a, 0xee, 0x52, 0x57, 0x37, 0xbb,
+	0x64, 0xd8, 0xb1, 0x89, 0xee, 0x48, 0xd7, 0xe6, 0x70, 0x41, 0x10, 0x31, 0xa7, 0x85, 0x2c, 0x4b,
+	0x86, 0x2d, 0x43, 0xef, 0x42, 0x9a, 0x4c, 0x88, 0x49, 0x1d, 0x35, 0xcf, 0x13, 0xa4, 0xe8, 0x81,
+	0xab, 0x33, 0x32, 0x96, 0xbb, 0xda, 0xcf, 0xe0, 0x02, 0x9f, 0x3d, 0xb7, 0x6d, 0xdd, 0x3c, 0xfb,
+	0xfc, 0x5d, 0x82, 0x44, 0xbb, 0xdd, 0x90, 0x46, 0x25, 0x68, 0xbb, 0xa1, 0x7d, 0xae, 0x00, 0x0a,
+	0x1e, 0xb0, 0xa8, 0xef, 0x8a, 0x10, 0xdf, 0xdd, 0x92, 0x8a, 0xe3, 0xc6, 0x96, 0x7b, 0x52, 0xc2,
+	0x3b, 0x09, 0xad, 0x02, 0xf4, 0xd9, 0x19, 0xa4, 0xc7, 0x36, 0xc4, 0xd8, 0x1e, 0xa0, 0x68, 0x3f,
+	0x95, 0x40, 0x30, 0x99, 0x58, 0x83, 0xb3, 0x8f, 0xbb, 0x11, 0x40, 0xda, 0x03, 0xb8, 0x18, 0x52,
+	0xbf, 0x68, 0x56, 0xff, 0x44, 0x5e, 0x08, 0x26, 0x26, 0x79, 0xfa, 0xd6, 0x51, 0x7a, 0xd7, 0x21,
+	0xd5, 0x9f, 0xdf, 0x75, 0xfc, 0x18, 0x96, 0x45, 0x5c, 0x10, 0xfa, 0xd6, 0xad, 0xfc, 0x54, 0x81,
+	0x92, 0xaf, 0xfc, 0xfc, 0x6c, 0x6c, 0xc8, 0xbb, 0x7c, 0x2b, 0x5f, 0x61, 0xb4, 0x26, 0xe4, 0xb9,
+	0xb6, 0x16, 0xd5, 0xe9, 0xd8, 0x91, 0xf0, 0x94, 0x33, 0xc0, 0x73, 0x64, 0x2c, 0x9c, 0xf1, 0x6b,
+	0xc0, 0x3d, 0x48, 0xf3, 0x91, 0xce, 0x7d, 0x71, 0xfa, 0x8d, 0x23, 0x00, 0x17, 0x4b, 0x1e, 0xed,
+	0xcf, 0x0a, 0x64, 0xdd, 0x17, 0x96, 0xfb, 0x21, 0x4d, 0xf1, 0x3f, 0xa4, 0xdd, 0x9e, 0x1d, 0x4b,
+	0xc5, 0x0d, 0x44, 0x87, 0xd2, 0x9b, 0x91, 0xa1, 0x54, 0xd8, 0x1d, 0x1a, 0x49, 0x55, 0x7f, 0xfc,
+	0x15, 0xc6, 0x7b, 0xc3, 0xaf, 0xf7, 0xe6, 0x4f, 0xcd, 0x7d, 0xf3, 0xa7, 0x03, 0x6f, 0x7e, 0xed,
+	0x4f, 0x0a, 0xa4, 0x78, 0xcd, 0x44, 0xf7, 0x20, 0x49, 0xa7, 0x23, 0x22, 0xc7, 0x77, 0x35, 0x5c,
+	0x51, 0xc5, 0x5f, 0xde, 0x93, 0x38, 0x17, 0xba, 0x09, 0xf1, 0xc1, 0x44, 0xf6, 0xd2, 0x39, 0x8f,
+	0xcb, 0xf8, 0x60, 0xc2, 0xa6, 0xb6, 0xe0, 0xf3, 0x77, 0x2e, 0x9f, 0xfb, 0x22, 0xbe, 0x01, 0x39,
+	0xef, 0x04, 0x36, 0xda, 0x8a, 0x36, 0x05, 0x90, 0x76, 0x7b, 0x54, 0xf5, 0x6f, 0x49, 0x88, 0xef,
+	0x1d, 0xa2, 0x5f, 0x40, 0x4a, 0xbc, 0xa7, 0x5e, 0xf7, 0x1c, 0x2d, 0xbf, 0xf6, 0x4d, 0xa6, 0xd5,
+	0x7e, 0xf9, 0xe2, 0xdf, 0xcf, 0xe3, 0x1f, 0xa2, 0x0f, 0x2a, 0x93, 0x6f, 0x57, 0xf8, 0x47, 0x76,
+	0xa7, 0xf2, 0x89, 0xb8, 0xe6, 0x35, 0xbe, 0x7c, 0x56, 0xf1, 0x3e, 0xb0, 0xfb, 0x3b, 0x1e, 0xe9,
+	0x59, 0x65, 0x30, 0x71, 0xd0, 0xa7, 0x0a, 0x24, 0xda, 0xa7, 0x26, 0x9a, 0xff, 0xa6, 0x2c, 0xbf,
+	0xe6, 0x35, 0xa5, 0x35, 0xf9, 0xd9, 0xbb, 0xda, 0xd6, 0xa2, 0x67, 0x53, 0x5b, 0x37, 0x1d, 0x31,
+	0x54, 0x39, 0xdf, 0x53, 0xee, 0xa2, 0xdf, 0x2b, 0x72, 0xa2, 0xef, 0x52, 0xb4, 0x12, 0x38, 0x74,
+	0x66, 0x06, 0x2c, 0x7f, 0xe3, 0x35, 0xbb, 0x12, 0xd9, 0x3e, 0x47, 0xb6, 0xa3, 0xd5, 0x16, 0x45,
+	0xd6, 0xf5, 0x74, 0x72, 0x60, 0xbf, 0x56, 0x20, 0xc5, 0x47, 0x89, 0xd0, 0x15, 0x05, 0x27, 0x9c,
+	0xd0, 0x15, 0x85, 0xa6, 0x0e, 0x6d, 0x8f, 0x83, 0xa9, 0x6b, 0xeb, 0x8b, 0x82, 0x79, 0xca, 0xd4,
+	0x11, 0x9b, 0x21, 0x79, 0x5f, 0xa9, 0xbe, 0x48, 0x41, 0x8a, 0xa7, 0x29, 0xfa, 0x42, 0x81, 0x14,
+	0x6f, 0xd2, 0xa8, 0x1c, 0x4e, 0xe0, 0xe0, 0x68, 0x50, 0xbe, 0x3e, 0x77, 0x4f, 0x62, 0xdb, 0xe5,
+	0xd8, 0x6a, 0xda, 0x47, 0x8b, 0x62, 0x13, 0x35, 0x82, 0xf9, 0xe8, 0x57, 0x8a, 0x1b, 0xc6, 0x11,
+	0x34, 0xa1, 0x48, 0xbe, 0x3e, 0x77, 0x4f, 0xa2, 0x79, 0xc0, 0xd1, 0xac, 0xa3, 0x33, 0xa2, 0x41,
+	0x9f, 0x2b, 0x90, 0xd8, 0x26, 0x14, 0xa9, 0x11, 0xd3, 0xbd, 0xc6, 0x55, 0xbe, 0x36, 0x67, 0x27,
+	0x7c, 0x5d, 0xa8, 0x76, 0x36, 0x10, 0x95, 0x4f, 0x76, 0xb7, 0x9e, 0xa1, 0x2f, 0x15, 0x48, 0x8b,
+	0xf9, 0x02, 0x45, 0x2c, 0x0f, 0x0d, 0x35, 0xe5, 0x95, 0xf9, 0x9b, 0x61, 0x48, 0x77, 0xdf, 0x0a,
+	0xa4, 0xe7, 0x0a, 0xa4, 0xf8, 0x2c, 0x11, 0xbd, 0xa7, 0xe0, 0xfc, 0x52, 0xbe, 0x3e, 0x77, 0x4f,
+	0xe2, 0x79, 0xc8, 0xf1, 0xec, 0x69, 0x0f, 0xce, 0x84, 0xe7, 0x5b, 0x36, 0x53, 0xaa, 0x0f, 0x59,
+	0xf4, 0x6c, 0xaa, 0x7f, 0x7f, 0xb9, 0xaa, 0x7c, 0xf5, 0x72, 0x55, 0xf9, 0xd7, 0xcb, 0x55, 0xe5,
+	0xcb, 0x57, 0xab, 0xb1, 0xaf, 0x5e, 0xad, 0xc6, 0xfe, 0xf9, 0x6a, 0x35, 0xf6, 0x38, 0xcd, 0xff,
+	0xd5, 0x78, 0xff, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xbf, 0x2f, 0xb6, 0x63, 0xb4, 0x1c, 0x00,
 	0x00,
 }
 
@@ -2949,25 +2976,20 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type KVClient interface {
-	// Range gets the keys in the range from the key-value store.
-	Range(ctx context.Context, in *RangeRequest, opts ...grpc.CallOption) (*RangeResponse, error)
-	// Put puts the given key into the key-value store.
-	// A put request increments the revision of the key-value store
-	// and generates one event in the event history.
-	Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*PutResponse, error)
-	// DeleteRange deletes the given range from the key-value store.
-	// A delete request increments the revision of the key-value store
-	// and generates a delete event in the event history for every deleted key.
-	DeleteRange(ctx context.Context, in *DeleteRangeRequest, opts ...grpc.CallOption) (*DeleteRangeResponse, error)
+	// Query retrieves kvs from a partition
+	Query(ctx context.Context, in *KVQueryRequest, opts ...grpc.CallOption) (*KVQueryResponse, error)
 	// Txn processes multiple requests in a single transaction.
 	// A txn request increments the revision of the key-value store
 	// and generates events with the same revision for every completed request.
 	// It is not allowed to modify the same key several times within one txn.
-	Txn(ctx context.Context, in *TxnRequest, opts ...grpc.CallOption) (*TxnResponse, error)
-	// Compact compacts the event history in the etcd key-value store. The key-value
+	Txn(ctx context.Context, in *KVTxnRequest, opts ...grpc.CallOption) (*KVTxnResponse, error)
+	// Compact compacts the event history in the key-value store. The key-value
 	// store should be periodically compacted or the event history will continue to grow
 	// indefinitely.
-	Compact(ctx context.Context, in *CompactionRequest, opts ...grpc.CallOption) (*CompactionResponse, error)
+	Compact(ctx context.Context, in *KVCompactionRequest, opts ...grpc.CallOption) (*KVCompactionResponse, error)
+	// Watch creates a watcher to watch for events happening or that have happened.
+	// The entire event history can be watched starting from the last compaction revision.
+	Watch(ctx context.Context, in *KVWatchRequest, opts ...grpc.CallOption) (KV_WatchClient, error)
 }
 
 type kVClient struct {
@@ -2978,35 +3000,17 @@ func NewKVClient(cc *grpc.ClientConn) KVClient {
 	return &kVClient{cc}
 }
 
-func (c *kVClient) Range(ctx context.Context, in *RangeRequest, opts ...grpc.CallOption) (*RangeResponse, error) {
-	out := new(RangeResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.KV/Range", in, out, opts...)
+func (c *kVClient) Query(ctx context.Context, in *KVQueryRequest, opts ...grpc.CallOption) (*KVQueryResponse, error) {
+	out := new(KVQueryResponse)
+	err := c.cc.Invoke(ctx, "/flockpb.KV/Query", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kVClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*PutResponse, error) {
-	out := new(PutResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.KV/Put", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *kVClient) DeleteRange(ctx context.Context, in *DeleteRangeRequest, opts ...grpc.CallOption) (*DeleteRangeResponse, error) {
-	out := new(DeleteRangeResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.KV/DeleteRange", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *kVClient) Txn(ctx context.Context, in *TxnRequest, opts ...grpc.CallOption) (*TxnResponse, error) {
-	out := new(TxnResponse)
+func (c *kVClient) Txn(ctx context.Context, in *KVTxnRequest, opts ...grpc.CallOption) (*KVTxnResponse, error) {
+	out := new(KVTxnResponse)
 	err := c.cc.Invoke(ctx, "/flockpb.KV/Txn", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3014,8 +3018,8 @@ func (c *kVClient) Txn(ctx context.Context, in *TxnRequest, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *kVClient) Compact(ctx context.Context, in *CompactionRequest, opts ...grpc.CallOption) (*CompactionResponse, error) {
-	out := new(CompactionResponse)
+func (c *kVClient) Compact(ctx context.Context, in *KVCompactionRequest, opts ...grpc.CallOption) (*KVCompactionResponse, error) {
+	out := new(KVCompactionResponse)
 	err := c.cc.Invoke(ctx, "/flockpb.KV/Compact", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -3023,109 +3027,97 @@ func (c *kVClient) Compact(ctx context.Context, in *CompactionRequest, opts ...g
 	return out, nil
 }
 
+func (c *kVClient) Watch(ctx context.Context, in *KVWatchRequest, opts ...grpc.CallOption) (KV_WatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_KV_serviceDesc.Streams[0], "/flockpb.KV/Watch", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &kVWatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type KV_WatchClient interface {
+	Recv() (*KVWatchResponse, error)
+	grpc.ClientStream
+}
+
+type kVWatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *kVWatchClient) Recv() (*KVWatchResponse, error) {
+	m := new(KVWatchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // KVServer is the server API for KV service.
 type KVServer interface {
-	// Range gets the keys in the range from the key-value store.
-	Range(context.Context, *RangeRequest) (*RangeResponse, error)
-	// Put puts the given key into the key-value store.
-	// A put request increments the revision of the key-value store
-	// and generates one event in the event history.
-	Put(context.Context, *PutRequest) (*PutResponse, error)
-	// DeleteRange deletes the given range from the key-value store.
-	// A delete request increments the revision of the key-value store
-	// and generates a delete event in the event history for every deleted key.
-	DeleteRange(context.Context, *DeleteRangeRequest) (*DeleteRangeResponse, error)
+	// Query retrieves kvs from a partition
+	Query(context.Context, *KVQueryRequest) (*KVQueryResponse, error)
 	// Txn processes multiple requests in a single transaction.
 	// A txn request increments the revision of the key-value store
 	// and generates events with the same revision for every completed request.
 	// It is not allowed to modify the same key several times within one txn.
-	Txn(context.Context, *TxnRequest) (*TxnResponse, error)
-	// Compact compacts the event history in the etcd key-value store. The key-value
+	Txn(context.Context, *KVTxnRequest) (*KVTxnResponse, error)
+	// Compact compacts the event history in the key-value store. The key-value
 	// store should be periodically compacted or the event history will continue to grow
 	// indefinitely.
-	Compact(context.Context, *CompactionRequest) (*CompactionResponse, error)
+	Compact(context.Context, *KVCompactionRequest) (*KVCompactionResponse, error)
+	// Watch creates a watcher to watch for events happening or that have happened.
+	// The entire event history can be watched starting from the last compaction revision.
+	Watch(*KVWatchRequest, KV_WatchServer) error
 }
 
 // UnimplementedKVServer can be embedded to have forward compatible implementations.
 type UnimplementedKVServer struct {
 }
 
-func (*UnimplementedKVServer) Range(ctx context.Context, req *RangeRequest) (*RangeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Range not implemented")
+func (*UnimplementedKVServer) Query(ctx context.Context, req *KVQueryRequest) (*KVQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
-func (*UnimplementedKVServer) Put(ctx context.Context, req *PutRequest) (*PutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Put not implemented")
-}
-func (*UnimplementedKVServer) DeleteRange(ctx context.Context, req *DeleteRangeRequest) (*DeleteRangeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteRange not implemented")
-}
-func (*UnimplementedKVServer) Txn(ctx context.Context, req *TxnRequest) (*TxnResponse, error) {
+func (*UnimplementedKVServer) Txn(ctx context.Context, req *KVTxnRequest) (*KVTxnResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Txn not implemented")
 }
-func (*UnimplementedKVServer) Compact(ctx context.Context, req *CompactionRequest) (*CompactionResponse, error) {
+func (*UnimplementedKVServer) Compact(ctx context.Context, req *KVCompactionRequest) (*KVCompactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Compact not implemented")
+}
+func (*UnimplementedKVServer) Watch(req *KVWatchRequest, srv KV_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
 }
 
 func RegisterKVServer(s *grpc.Server, srv KVServer) {
 	s.RegisterService(&_KV_serviceDesc, srv)
 }
 
-func _KV_Range_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RangeRequest)
+func _KV_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KVQueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KVServer).Range(ctx, in)
+		return srv.(KVServer).Query(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.KV/Range",
+		FullMethod: "/flockpb.KV/Query",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVServer).Range(ctx, req.(*RangeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _KV_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PutRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(KVServer).Put(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/flockpb.KV/Put",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVServer).Put(ctx, req.(*PutRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _KV_DeleteRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteRangeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(KVServer).DeleteRange(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/flockpb.KV/DeleteRange",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVServer).DeleteRange(ctx, req.(*DeleteRangeRequest))
+		return srv.(KVServer).Query(ctx, req.(*KVQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KV_Txn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TxnRequest)
+	in := new(KVTxnRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -3137,13 +3129,13 @@ func _KV_Txn_Handler(srv interface{}, ctx context.Context, dec func(interface{})
 		FullMethod: "/flockpb.KV/Txn",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVServer).Txn(ctx, req.(*TxnRequest))
+		return srv.(KVServer).Txn(ctx, req.(*KVTxnRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KV_Compact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompactionRequest)
+	in := new(KVCompactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -3155,9 +3147,30 @@ func _KV_Compact_Handler(srv interface{}, ctx context.Context, dec func(interfac
 		FullMethod: "/flockpb.KV/Compact",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVServer).Compact(ctx, req.(*CompactionRequest))
+		return srv.(KVServer).Compact(ctx, req.(*KVCompactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _KV_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(KVWatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(KVServer).Watch(m, &kVWatchServer{stream})
+}
+
+type KV_WatchServer interface {
+	Send(*KVWatchResponse) error
+	grpc.ServerStream
+}
+
+type kVWatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *kVWatchServer) Send(m *KVWatchResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 var _KV_serviceDesc = grpc.ServiceDesc{
@@ -3165,16 +3178,8 @@ var _KV_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*KVServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Range",
-			Handler:    _KV_Range_Handler,
-		},
-		{
-			MethodName: "Put",
-			Handler:    _KV_Put_Handler,
-		},
-		{
-			MethodName: "DeleteRange",
-			Handler:    _KV_DeleteRange_Handler,
+			MethodName: "Query",
+			Handler:    _KV_Query_Handler,
 		},
 		{
 			MethodName: "Txn",
@@ -3185,119 +3190,11 @@ var _KV_serviceDesc = grpc.ServiceDesc{
 			Handler:    _KV_Compact_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc.proto",
-}
-
-// WatchClient is the client API for Watch service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type WatchClient interface {
-	// Watch watches for events happening or that have happened. Both input and output
-	// are streams; the input stream is for creating and canceling watchers and the output
-	// stream sends events. One watch RPC can watch on multiple key ranges, streaming events
-	// for several watches at once. The entire event history can be watched starting from the
-	// last compaction revision.
-	Watch(ctx context.Context, opts ...grpc.CallOption) (Watch_WatchClient, error)
-}
-
-type watchClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewWatchClient(cc *grpc.ClientConn) WatchClient {
-	return &watchClient{cc}
-}
-
-func (c *watchClient) Watch(ctx context.Context, opts ...grpc.CallOption) (Watch_WatchClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Watch_serviceDesc.Streams[0], "/flockpb.Watch/Watch", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &watchWatchClient{stream}
-	return x, nil
-}
-
-type Watch_WatchClient interface {
-	Send(*WatchRequest) error
-	Recv() (*WatchResponse, error)
-	grpc.ClientStream
-}
-
-type watchWatchClient struct {
-	grpc.ClientStream
-}
-
-func (x *watchWatchClient) Send(m *WatchRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *watchWatchClient) Recv() (*WatchResponse, error) {
-	m := new(WatchResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// WatchServer is the server API for Watch service.
-type WatchServer interface {
-	// Watch watches for events happening or that have happened. Both input and output
-	// are streams; the input stream is for creating and canceling watchers and the output
-	// stream sends events. One watch RPC can watch on multiple key ranges, streaming events
-	// for several watches at once. The entire event history can be watched starting from the
-	// last compaction revision.
-	Watch(Watch_WatchServer) error
-}
-
-// UnimplementedWatchServer can be embedded to have forward compatible implementations.
-type UnimplementedWatchServer struct {
-}
-
-func (*UnimplementedWatchServer) Watch(srv Watch_WatchServer) error {
-	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
-}
-
-func RegisterWatchServer(s *grpc.Server, srv WatchServer) {
-	s.RegisterService(&_Watch_serviceDesc, srv)
-}
-
-func _Watch_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WatchServer).Watch(&watchWatchServer{stream})
-}
-
-type Watch_WatchServer interface {
-	Send(*WatchResponse) error
-	Recv() (*WatchRequest, error)
-	grpc.ServerStream
-}
-
-type watchWatchServer struct {
-	grpc.ServerStream
-}
-
-func (x *watchWatchServer) Send(m *WatchResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *watchWatchServer) Recv() (*WatchRequest, error) {
-	m := new(WatchRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-var _Watch_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "flockpb.Watch",
-	HandlerType: (*WatchServer)(nil),
-	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Watch",
-			Handler:       _Watch_Watch_Handler,
+			Handler:       _KV_Watch_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "rpc.proto",
@@ -3307,19 +3204,17 @@ var _Watch_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type LeaseClient interface {
-	// LeaseGrant creates a lease which expires if the server does not receive a keepAlive
+	// Grant creates a lease which expires if the server does not receive a renewal
 	// within a given time to live period. All keys attached to the lease will be expired and
 	// deleted if the lease expires. Each expired key generates a delete event in the event history.
-	LeaseGrant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error)
-	// LeaseRevoke revokes a lease. All keys attached to the lease will expire and be deleted.
-	LeaseRevoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error)
-	// LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
-	// to the server and streaming keep alive responses from the server to the client.
-	LeaseKeepAlive(ctx context.Context, opts ...grpc.CallOption) (Lease_LeaseKeepAliveClient, error)
-	// LeaseTimeToLive retrieves lease information.
-	LeaseTimeToLive(ctx context.Context, in *LeaseTimeToLiveRequest, opts ...grpc.CallOption) (*LeaseTimeToLiveResponse, error)
-	// LeaseLeases lists all existing leases.
-	LeaseLeases(ctx context.Context, in *LeaseLeasesRequest, opts ...grpc.CallOption) (*LeaseLeasesResponse, error)
+	Grant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error)
+	Query(ctx context.Context, in *LeaseQueryRequest, opts ...grpc.CallOption) (*LeaseQueryResponse, error)
+	// Get retrieves information on a lease.
+	Get(ctx context.Context, in *LeaseGetRequest, opts ...grpc.CallOption) (*LeaseGetResponse, error)
+	// Revoke revokes a lease. All keys attached to the lease will expire and be deleted.
+	Revoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error)
+	// Renew renews the lease so that it does not expire
+	Renew(ctx context.Context, in *LeaseRenewRequest, opts ...grpc.CallOption) (*LeaseRenewResponse, error)
 }
 
 type leaseClient struct {
@@ -3330,67 +3225,45 @@ func NewLeaseClient(cc *grpc.ClientConn) LeaseClient {
 	return &leaseClient{cc}
 }
 
-func (c *leaseClient) LeaseGrant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error) {
+func (c *leaseClient) Grant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error) {
 	out := new(LeaseGrantResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/LeaseGrant", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Lease/Grant", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leaseClient) LeaseRevoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error) {
+func (c *leaseClient) Query(ctx context.Context, in *LeaseQueryRequest, opts ...grpc.CallOption) (*LeaseQueryResponse, error) {
+	out := new(LeaseQueryResponse)
+	err := c.cc.Invoke(ctx, "/flockpb.Lease/Query", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *leaseClient) Get(ctx context.Context, in *LeaseGetRequest, opts ...grpc.CallOption) (*LeaseGetResponse, error) {
+	out := new(LeaseGetResponse)
+	err := c.cc.Invoke(ctx, "/flockpb.Lease/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *leaseClient) Revoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error) {
 	out := new(LeaseRevokeResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/LeaseRevoke", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Lease/Revoke", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leaseClient) LeaseKeepAlive(ctx context.Context, opts ...grpc.CallOption) (Lease_LeaseKeepAliveClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Lease_serviceDesc.Streams[0], "/flockpb.Lease/LeaseKeepAlive", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &leaseLeaseKeepAliveClient{stream}
-	return x, nil
-}
-
-type Lease_LeaseKeepAliveClient interface {
-	Send(*LeaseKeepAliveRequest) error
-	Recv() (*LeaseKeepAliveResponse, error)
-	grpc.ClientStream
-}
-
-type leaseLeaseKeepAliveClient struct {
-	grpc.ClientStream
-}
-
-func (x *leaseLeaseKeepAliveClient) Send(m *LeaseKeepAliveRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *leaseLeaseKeepAliveClient) Recv() (*LeaseKeepAliveResponse, error) {
-	m := new(LeaseKeepAliveResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *leaseClient) LeaseTimeToLive(ctx context.Context, in *LeaseTimeToLiveRequest, opts ...grpc.CallOption) (*LeaseTimeToLiveResponse, error) {
-	out := new(LeaseTimeToLiveResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/LeaseTimeToLive", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *leaseClient) LeaseLeases(ctx context.Context, in *LeaseLeasesRequest, opts ...grpc.CallOption) (*LeaseLeasesResponse, error) {
-	out := new(LeaseLeasesResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/LeaseLeases", in, out, opts...)
+func (c *leaseClient) Renew(ctx context.Context, in *LeaseRenewRequest, opts ...grpc.CallOption) (*LeaseRenewResponse, error) {
+	out := new(LeaseRenewResponse)
+	err := c.cc.Invoke(ctx, "/flockpb.Lease/Renew", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -3399,139 +3272,129 @@ func (c *leaseClient) LeaseLeases(ctx context.Context, in *LeaseLeasesRequest, o
 
 // LeaseServer is the server API for Lease service.
 type LeaseServer interface {
-	// LeaseGrant creates a lease which expires if the server does not receive a keepAlive
+	// Grant creates a lease which expires if the server does not receive a renewal
 	// within a given time to live period. All keys attached to the lease will be expired and
 	// deleted if the lease expires. Each expired key generates a delete event in the event history.
-	LeaseGrant(context.Context, *LeaseGrantRequest) (*LeaseGrantResponse, error)
-	// LeaseRevoke revokes a lease. All keys attached to the lease will expire and be deleted.
-	LeaseRevoke(context.Context, *LeaseRevokeRequest) (*LeaseRevokeResponse, error)
-	// LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
-	// to the server and streaming keep alive responses from the server to the client.
-	LeaseKeepAlive(Lease_LeaseKeepAliveServer) error
-	// LeaseTimeToLive retrieves lease information.
-	LeaseTimeToLive(context.Context, *LeaseTimeToLiveRequest) (*LeaseTimeToLiveResponse, error)
-	// LeaseLeases lists all existing leases.
-	LeaseLeases(context.Context, *LeaseLeasesRequest) (*LeaseLeasesResponse, error)
+	Grant(context.Context, *LeaseGrantRequest) (*LeaseGrantResponse, error)
+	Query(context.Context, *LeaseQueryRequest) (*LeaseQueryResponse, error)
+	// Get retrieves information on a lease.
+	Get(context.Context, *LeaseGetRequest) (*LeaseGetResponse, error)
+	// Revoke revokes a lease. All keys attached to the lease will expire and be deleted.
+	Revoke(context.Context, *LeaseRevokeRequest) (*LeaseRevokeResponse, error)
+	// Renew renews the lease so that it does not expire
+	Renew(context.Context, *LeaseRenewRequest) (*LeaseRenewResponse, error)
 }
 
 // UnimplementedLeaseServer can be embedded to have forward compatible implementations.
 type UnimplementedLeaseServer struct {
 }
 
-func (*UnimplementedLeaseServer) LeaseGrant(ctx context.Context, req *LeaseGrantRequest) (*LeaseGrantResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LeaseGrant not implemented")
+func (*UnimplementedLeaseServer) Grant(ctx context.Context, req *LeaseGrantRequest) (*LeaseGrantResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Grant not implemented")
 }
-func (*UnimplementedLeaseServer) LeaseRevoke(ctx context.Context, req *LeaseRevokeRequest) (*LeaseRevokeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LeaseRevoke not implemented")
+func (*UnimplementedLeaseServer) Query(ctx context.Context, req *LeaseQueryRequest) (*LeaseQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
-func (*UnimplementedLeaseServer) LeaseKeepAlive(srv Lease_LeaseKeepAliveServer) error {
-	return status.Errorf(codes.Unimplemented, "method LeaseKeepAlive not implemented")
+func (*UnimplementedLeaseServer) Get(ctx context.Context, req *LeaseGetRequest) (*LeaseGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (*UnimplementedLeaseServer) LeaseTimeToLive(ctx context.Context, req *LeaseTimeToLiveRequest) (*LeaseTimeToLiveResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LeaseTimeToLive not implemented")
+func (*UnimplementedLeaseServer) Revoke(ctx context.Context, req *LeaseRevokeRequest) (*LeaseRevokeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Revoke not implemented")
 }
-func (*UnimplementedLeaseServer) LeaseLeases(ctx context.Context, req *LeaseLeasesRequest) (*LeaseLeasesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LeaseLeases not implemented")
+func (*UnimplementedLeaseServer) Renew(ctx context.Context, req *LeaseRenewRequest) (*LeaseRenewResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Renew not implemented")
 }
 
 func RegisterLeaseServer(s *grpc.Server, srv LeaseServer) {
 	s.RegisterService(&_Lease_serviceDesc, srv)
 }
 
-func _Lease_LeaseGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Lease_Grant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseGrantRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).LeaseGrant(ctx, in)
+		return srv.(LeaseServer).Grant(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/LeaseGrant",
+		FullMethod: "/flockpb.Lease/Grant",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).LeaseGrant(ctx, req.(*LeaseGrantRequest))
+		return srv.(LeaseServer).Grant(ctx, req.(*LeaseGrantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Lease_LeaseRevoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Lease_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseQueryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LeaseServer).Query(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/flockpb.Lease/Query",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LeaseServer).Query(ctx, req.(*LeaseQueryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Lease_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LeaseServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/flockpb.Lease/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LeaseServer).Get(ctx, req.(*LeaseGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Lease_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseRevokeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).LeaseRevoke(ctx, in)
+		return srv.(LeaseServer).Revoke(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/LeaseRevoke",
+		FullMethod: "/flockpb.Lease/Revoke",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).LeaseRevoke(ctx, req.(*LeaseRevokeRequest))
+		return srv.(LeaseServer).Revoke(ctx, req.(*LeaseRevokeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Lease_LeaseKeepAlive_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(LeaseServer).LeaseKeepAlive(&leaseLeaseKeepAliveServer{stream})
-}
-
-type Lease_LeaseKeepAliveServer interface {
-	Send(*LeaseKeepAliveResponse) error
-	Recv() (*LeaseKeepAliveRequest, error)
-	grpc.ServerStream
-}
-
-type leaseLeaseKeepAliveServer struct {
-	grpc.ServerStream
-}
-
-func (x *leaseLeaseKeepAliveServer) Send(m *LeaseKeepAliveResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *leaseLeaseKeepAliveServer) Recv() (*LeaseKeepAliveRequest, error) {
-	m := new(LeaseKeepAliveRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _Lease_LeaseTimeToLive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LeaseTimeToLiveRequest)
+func _Lease_Renew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseRenewRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).LeaseTimeToLive(ctx, in)
+		return srv.(LeaseServer).Renew(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/LeaseTimeToLive",
+		FullMethod: "/flockpb.Lease/Renew",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).LeaseTimeToLive(ctx, req.(*LeaseTimeToLiveRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Lease_LeaseLeases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LeaseLeasesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LeaseServer).LeaseLeases(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/flockpb.Lease/LeaseLeases",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).LeaseLeases(ctx, req.(*LeaseLeasesRequest))
+		return srv.(LeaseServer).Renew(ctx, req.(*LeaseRenewRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3541,31 +3404,65 @@ var _Lease_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*LeaseServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "LeaseGrant",
-			Handler:    _Lease_LeaseGrant_Handler,
+			MethodName: "Grant",
+			Handler:    _Lease_Grant_Handler,
 		},
 		{
-			MethodName: "LeaseRevoke",
-			Handler:    _Lease_LeaseRevoke_Handler,
+			MethodName: "Query",
+			Handler:    _Lease_Query_Handler,
 		},
 		{
-			MethodName: "LeaseTimeToLive",
-			Handler:    _Lease_LeaseTimeToLive_Handler,
+			MethodName: "Get",
+			Handler:    _Lease_Get_Handler,
 		},
 		{
-			MethodName: "LeaseLeases",
-			Handler:    _Lease_LeaseLeases_Handler,
+			MethodName: "Revoke",
+			Handler:    _Lease_Revoke_Handler,
+		},
+		{
+			MethodName: "Renew",
+			Handler:    _Lease_Renew_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "LeaseKeepAlive",
-			Handler:       _Lease_LeaseKeepAlive_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "rpc.proto",
+}
+
+func (m *PartitionRequestHeader) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PartitionRequestHeader) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PartitionRequestHeader) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Partition) > 0 {
+		i -= len(m.Partition)
+		copy(dAtA[i:], m.Partition)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.Partition)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Store) > 0 {
+		i -= len(m.Store)
+		copy(dAtA[i:], m.Store)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.Store)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ResponseHeader) Marshal() (dAtA []byte, err error) {
@@ -3588,30 +3485,20 @@ func (m *ResponseHeader) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.RaftTerm != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.RaftTerm))
-		i--
-		dAtA[i] = 0x20
-	}
 	if m.Revision != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.Revision))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x10
 	}
 	if m.MemberId != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.MemberId))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.ClusterId != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ClusterId))
 		i--
 		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *RangeRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVSelection) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3621,39 +3508,281 @@ func (m *RangeRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *RangeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVSelection) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RangeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVSelection) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.MaxCreateRevision != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.MaxCreateRevision))
+	if m.Lease != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.Lease))
 		i--
-		dAtA[i] = 0x68
+		dAtA[i] = 0x4
+		i--
+		dAtA[i] = 0x90
 	}
-	if m.MinCreateRevision != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.MinCreateRevision))
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
 		i--
-		dAtA[i] = 0x60
+		dAtA[i] = 0x4
+		i--
+		dAtA[i] = 0x8a
 	}
-	if m.MaxModRevision != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.MaxModRevision))
+	if len(m.KeyStartsWith) > 0 {
+		i -= len(m.KeyStartsWith)
+		copy(dAtA[i:], m.KeyStartsWith)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.KeyStartsWith)))
 		i--
-		dAtA[i] = 0x58
+		dAtA[i] = 0x4
+		i--
+		dAtA[i] = 0x82
 	}
-	if m.MinModRevision != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.MinModRevision))
-		i--
-		dAtA[i] = 0x50
+	if m.CreateRevisionEnd != nil {
+		{
+			size := m.CreateRevisionEnd.Size()
+			i -= size
+			if _, err := m.CreateRevisionEnd.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
 	}
-	if m.CountOnly {
+	if m.CreateRevisionStart != nil {
+		{
+			size := m.CreateRevisionStart.Size()
+			i -= size
+			if _, err := m.CreateRevisionStart.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.ModRevisionEnd != nil {
+		{
+			size := m.ModRevisionEnd.Size()
+			i -= size
+			if _, err := m.ModRevisionEnd.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.ModRevisionStart != nil {
+		{
+			size := m.ModRevisionStart.Size()
+			i -= size
+			if _, err := m.ModRevisionStart.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.KeyRangeMax != nil {
+		{
+			size := m.KeyRangeMax.Size()
+			i -= size
+			if _, err := m.KeyRangeMax.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.KeyRangeMin != nil {
+		{
+			size := m.KeyRangeMin.Size()
+			i -= size
+			if _, err := m.KeyRangeMin.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *KVSelection_KeyGt) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_KeyGt) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.KeyGt != nil {
+		i -= len(m.KeyGt)
+		copy(dAtA[i:], m.KeyGt)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.KeyGt)))
 		i--
-		if m.CountOnly {
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_KeyGte) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_KeyGte) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.KeyGte != nil {
+		i -= len(m.KeyGte)
+		copy(dAtA[i:], m.KeyGte)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.KeyGte)))
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_KeyLt) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_KeyLt) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.KeyLt != nil {
+		i -= len(m.KeyLt)
+		copy(dAtA[i:], m.KeyLt)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.KeyLt)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_KeyLte) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_KeyLte) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.KeyLte != nil {
+		i -= len(m.KeyLte)
+		copy(dAtA[i:], m.KeyLte)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.KeyLte)))
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_ModRevisionGt) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_ModRevisionGt) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.ModRevisionGt))
+	i--
+	dAtA[i] = 0x28
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_ModRevisionGte) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_ModRevisionGte) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.ModRevisionGte))
+	i--
+	dAtA[i] = 0x30
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_ModRevisionLt) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_ModRevisionLt) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.ModRevisionLt))
+	i--
+	dAtA[i] = 0x38
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_ModRevisionLte) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_ModRevisionLte) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.ModRevisionLte))
+	i--
+	dAtA[i] = 0x40
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_CreateRevisionGt) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_CreateRevisionGt) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.CreateRevisionGt))
+	i--
+	dAtA[i] = 0x48
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_CreateRevisionGte) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_CreateRevisionGte) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.CreateRevisionGte))
+	i--
+	dAtA[i] = 0x50
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_CreateRevisionLt) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_CreateRevisionLt) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.CreateRevisionLt))
+	i--
+	dAtA[i] = 0x58
+	return len(dAtA) - i, nil
+}
+func (m *KVSelection_CreateRevisionLte) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVSelection_CreateRevisionLte) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.CreateRevisionLte))
+	i--
+	dAtA[i] = 0x60
+	return len(dAtA) - i, nil
+}
+func (m *KVQueryRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *KVQueryRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.IncludeCount {
+		i--
+		if m.IncludeCount {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
@@ -3661,9 +3790,9 @@ func (m *RangeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x48
 	}
-	if m.KeysOnly {
+	if m.ExcludeValues {
 		i--
-		if m.KeysOnly {
+		if m.ExcludeValues {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
@@ -3701,24 +3830,34 @@ func (m *RangeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	if len(m.RangeEnd) > 0 {
-		i -= len(m.RangeEnd)
-		copy(dAtA[i:], m.RangeEnd)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.RangeEnd)))
+	if m.Selection != nil {
+		{
+			size, err := m.Selection.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *RangeResponse) Marshal() (dAtA []byte, err error) {
+func (m *KVQueryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3728,12 +3867,12 @@ func (m *RangeResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *RangeResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVQueryResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RangeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVQueryResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -3782,7 +3921,7 @@ func (m *RangeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *PutRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVPutRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3792,12 +3931,12 @@ func (m *PutRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *PutRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVPutRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *PutRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVPutRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -3810,7 +3949,7 @@ func (m *PutRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x30
+		dAtA[i] = 0x38
 	}
 	if m.IgnoreValue {
 		i--
@@ -3820,7 +3959,7 @@ func (m *PutRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x28
+		dAtA[i] = 0x30
 	}
 	if m.PrevKv {
 		i--
@@ -3830,53 +3969,23 @@ func (m *PutRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 	}
 	if m.Lease != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.Lease))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x20
 	}
 	if len(m.Value) > 0 {
 		i -= len(m.Value)
 		copy(dAtA[i:], m.Value)
 		i = encodeVarintRpc(dAtA, i, uint64(len(m.Value)))
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x1a
 	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *PutResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *PutResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *PutResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.PrevKv != nil {
+	if m.Selection != nil {
 		{
-			size, err := m.PrevKv.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.Selection.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -3901,7 +4010,7 @@ func (m *PutResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *DeleteRangeRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVPutResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3911,12 +4020,61 @@ func (m *DeleteRangeRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *DeleteRangeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVPutResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *DeleteRangeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVPutResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PrevKvs) > 0 {
+		for iNdEx := len(m.PrevKvs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.PrevKvs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRpc(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *KVDeleteRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *KVDeleteRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVDeleteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -3931,24 +4089,34 @@ func (m *DeleteRangeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	if len(m.RangeEnd) > 0 {
-		i -= len(m.RangeEnd)
-		copy(dAtA[i:], m.RangeEnd)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.RangeEnd)))
+	if m.Selection != nil {
+		{
+			size, err := m.Selection.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *DeleteRangeResponse) Marshal() (dAtA []byte, err error) {
+func (m *KVDeleteResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3958,12 +4126,12 @@ func (m *DeleteRangeResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *DeleteRangeResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVDeleteResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *DeleteRangeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVDeleteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4002,7 +4170,7 @@ func (m *DeleteRangeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *RequestOp) Marshal() (dAtA []byte, err error) {
+func (m *KVRequestOp) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4012,12 +4180,12 @@ func (m *RequestOp) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *RequestOp) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVRequestOp) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RequestOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVRequestOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4034,16 +4202,16 @@ func (m *RequestOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *RequestOp_RequestRange) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestQuery) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RequestOp_RequestRange) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestQuery) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.RequestRange != nil {
+	if m.RequestQuery != nil {
 		{
-			size, err := m.RequestRange.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.RequestQuery.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -4055,12 +4223,12 @@ func (m *RequestOp_RequestRange) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	}
 	return len(dAtA) - i, nil
 }
-func (m *RequestOp_RequestPut) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestPut) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RequestOp_RequestPut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestPut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.RequestPut != nil {
 		{
@@ -4076,16 +4244,16 @@ func (m *RequestOp_RequestPut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
-func (m *RequestOp_RequestDeleteRange) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestDelete) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RequestOp_RequestDeleteRange) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestDelete) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.RequestDeleteRange != nil {
+	if m.RequestDelete != nil {
 		{
-			size, err := m.RequestDeleteRange.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.RequestDelete.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -4097,12 +4265,12 @@ func (m *RequestOp_RequestDeleteRange) MarshalToSizedBuffer(dAtA []byte) (int, e
 	}
 	return len(dAtA) - i, nil
 }
-func (m *RequestOp_RequestTxn) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestTxn) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RequestOp_RequestTxn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVRequestOp_RequestTxn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.RequestTxn != nil {
 		{
@@ -4118,7 +4286,7 @@ func (m *RequestOp_RequestTxn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
-func (m *ResponseOp) Marshal() (dAtA []byte, err error) {
+func (m *KVResponseOp) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4128,12 +4296,12 @@ func (m *ResponseOp) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ResponseOp) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVResponseOp) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ResponseOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVResponseOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4150,16 +4318,16 @@ func (m *ResponseOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ResponseOp_ResponseRange) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponseQuery) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ResponseOp_ResponseRange) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponseQuery) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.ResponseRange != nil {
+	if m.ResponseQuery != nil {
 		{
-			size, err := m.ResponseRange.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ResponseQuery.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -4171,12 +4339,12 @@ func (m *ResponseOp_ResponseRange) MarshalToSizedBuffer(dAtA []byte) (int, error
 	}
 	return len(dAtA) - i, nil
 }
-func (m *ResponseOp_ResponsePut) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponsePut) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ResponseOp_ResponsePut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponsePut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.ResponsePut != nil {
 		{
@@ -4192,16 +4360,16 @@ func (m *ResponseOp_ResponsePut) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	}
 	return len(dAtA) - i, nil
 }
-func (m *ResponseOp_ResponseDeleteRange) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponseDelete) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ResponseOp_ResponseDeleteRange) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponseDelete) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.ResponseDeleteRange != nil {
+	if m.ResponseDelete != nil {
 		{
-			size, err := m.ResponseDeleteRange.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ResponseDelete.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -4213,12 +4381,12 @@ func (m *ResponseOp_ResponseDeleteRange) MarshalToSizedBuffer(dAtA []byte) (int,
 	}
 	return len(dAtA) - i, nil
 }
-func (m *ResponseOp_ResponseTxn) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponseTxn) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ResponseOp_ResponseTxn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVResponseOp_ResponseTxn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	if m.ResponseTxn != nil {
 		{
@@ -4232,6 +4400,112 @@ func (m *ResponseOp_ResponseTxn) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x22
 	}
+	return len(dAtA) - i, nil
+}
+func (m *KVPredicate) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *KVPredicate) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVPredicate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.TargetUnion != nil {
+		{
+			size := m.TargetUnion.Size()
+			i -= size
+			if _, err := m.TargetUnion.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.Target != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.Target))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Comparison != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.Comparison))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *KVPredicate_Version) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVPredicate_Version) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.Version))
+	i--
+	dAtA[i] = 0x18
+	return len(dAtA) - i, nil
+}
+func (m *KVPredicate_CreateRevision) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVPredicate_CreateRevision) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.CreateRevision))
+	i--
+	dAtA[i] = 0x20
+	return len(dAtA) - i, nil
+}
+func (m *KVPredicate_ModRevision) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVPredicate_ModRevision) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.ModRevision))
+	i--
+	dAtA[i] = 0x28
+	return len(dAtA) - i, nil
+}
+func (m *KVPredicate_Value) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVPredicate_Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Value != nil {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0x32
+	}
+	return len(dAtA) - i, nil
+}
+func (m *KVPredicate_Lease) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVPredicate_Lease) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintRpc(dAtA, i, uint64(m.Lease))
+	i--
+	dAtA[i] = 0x38
 	return len(dAtA) - i, nil
 }
 func (m *Compare) Marshal() (dAtA []byte, err error) {
@@ -4254,109 +4528,34 @@ func (m *Compare) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.RangeEnd) > 0 {
-		i -= len(m.RangeEnd)
-		copy(dAtA[i:], m.RangeEnd)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.RangeEnd)))
-		i--
-		dAtA[i] = 0x4
-		i--
-		dAtA[i] = 0x82
-	}
-	if m.TargetUnion != nil {
+	if m.Predicate != nil {
 		{
-			size := m.TargetUnion.Size()
-			i -= size
-			if _, err := m.TargetUnion.MarshalTo(dAtA[i:]); err != nil {
+			size, err := m.Predicate.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
 				return 0, err
 			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
 		}
-	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x12
 	}
-	if m.Target != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.Target))
+	if m.Selection != nil {
+		{
+			size, err := m.Selection.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x10
-	}
-	if m.Result != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.Result))
-		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *Compare_Version) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Compare_Version) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i = encodeVarintRpc(dAtA, i, uint64(m.Version))
-	i--
-	dAtA[i] = 0x20
-	return len(dAtA) - i, nil
-}
-func (m *Compare_CreateRevision) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Compare_CreateRevision) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i = encodeVarintRpc(dAtA, i, uint64(m.CreateRevision))
-	i--
-	dAtA[i] = 0x28
-	return len(dAtA) - i, nil
-}
-func (m *Compare_ModRevision) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Compare_ModRevision) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i = encodeVarintRpc(dAtA, i, uint64(m.ModRevision))
-	i--
-	dAtA[i] = 0x30
-	return len(dAtA) - i, nil
-}
-func (m *Compare_Value) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Compare_Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.Value != nil {
-		i -= len(m.Value)
-		copy(dAtA[i:], m.Value)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Value)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *Compare_Lease) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Compare_Lease) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i = encodeVarintRpc(dAtA, i, uint64(m.Lease))
-	i--
-	dAtA[i] = 0x40
-	return len(dAtA) - i, nil
-}
-func (m *TxnRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVTxnRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4366,12 +4565,12 @@ func (m *TxnRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *TxnRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVTxnRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TxnRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVTxnRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4387,7 +4586,7 @@ func (m *TxnRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintRpc(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x1a
+			dAtA[i] = 0x22
 		}
 	}
 	if len(m.Success) > 0 {
@@ -4401,7 +4600,7 @@ func (m *TxnRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintRpc(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x12
+			dAtA[i] = 0x1a
 		}
 	}
 	if len(m.Compare) > 0 {
@@ -4415,13 +4614,25 @@ func (m *TxnRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintRpc(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0xa
+			dAtA[i] = 0x12
 		}
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *TxnResponse) Marshal() (dAtA []byte, err error) {
+func (m *KVTxnResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4431,12 +4642,12 @@ func (m *TxnResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *TxnResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVTxnResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TxnResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVTxnResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4480,7 +4691,7 @@ func (m *TxnResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *CompactionRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVCompactionRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4490,12 +4701,12 @@ func (m *CompactionRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CompactionRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVCompactionRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CompactionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVCompactionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4508,17 +4719,29 @@ func (m *CompactionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x18
 	}
 	if m.Revision != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.Revision))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x10
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *CompactionResponse) Marshal() (dAtA []byte, err error) {
+func (m *KVCompactionResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4528,12 +4751,12 @@ func (m *CompactionResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CompactionResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVCompactionResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CompactionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVCompactionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4553,7 +4776,7 @@ func (m *CompactionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *WatchRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVWatchRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4563,107 +4786,12 @@ func (m *WatchRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WatchRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVWatchRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *WatchRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.RequestUnion != nil {
-		{
-			size := m.RequestUnion.Size()
-			i -= size
-			if _, err := m.RequestUnion.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *WatchRequest_CreateRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *WatchRequest_CreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.CreateRequest != nil {
-		{
-			size, err := m.CreateRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRpc(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-func (m *WatchRequest_CancelRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *WatchRequest_CancelRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.CancelRequest != nil {
-		{
-			size, err := m.CancelRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRpc(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	return len(dAtA) - i, nil
-}
-func (m *WatchRequest_ProgressRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *WatchRequest_ProgressRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.ProgressRequest != nil {
-		{
-			size, err := m.ProgressRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRpc(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *WatchCreateRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *WatchCreateRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *WatchCreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVWatchRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4678,11 +4806,6 @@ func (m *WatchCreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x40
 	}
-	if m.WatchId != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.WatchId))
-		i--
-		dAtA[i] = 0x38
-	}
 	if m.PrevKv {
 		i--
 		if m.PrevKv {
@@ -4694,20 +4817,20 @@ func (m *WatchCreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x30
 	}
 	if len(m.Filters) > 0 {
-		dAtA19 := make([]byte, len(m.Filters)*10)
-		var j18 int
+		dAtA25 := make([]byte, len(m.Filters)*10)
+		var j24 int
 		for _, num := range m.Filters {
 			for num >= 1<<7 {
-				dAtA19[j18] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA25[j24] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j18++
+				j24++
 			}
-			dAtA19[j18] = uint8(num)
-			j18++
+			dAtA25[j24] = uint8(num)
+			j24++
 		}
-		i -= j18
-		copy(dAtA[i:], dAtA19[:j18])
-		i = encodeVarintRpc(dAtA, i, uint64(j18))
+		i -= j24
+		copy(dAtA[i:], dAtA25[:j24])
+		i = encodeVarintRpc(dAtA, i, uint64(j24))
 		i--
 		dAtA[i] = 0x2a
 	}
@@ -4726,24 +4849,34 @@ func (m *WatchCreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	if len(m.RangeEnd) > 0 {
-		i -= len(m.RangeEnd)
-		copy(dAtA[i:], m.RangeEnd)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.RangeEnd)))
+	if m.Selection != nil {
+		{
+			size, err := m.Selection.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *WatchCancelRequest) Marshal() (dAtA []byte, err error) {
+func (m *KVWatchResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4753,63 +4886,12 @@ func (m *WatchCancelRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WatchCancelRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *KVWatchResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *WatchCancelRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.WatchId != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.WatchId))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *WatchProgressRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *WatchProgressRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *WatchProgressRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *WatchResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *WatchResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *WatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *KVWatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4836,42 +4918,17 @@ func (m *WatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x38
+		dAtA[i] = 0x20
 	}
 	if len(m.CancelReason) > 0 {
 		i -= len(m.CancelReason)
 		copy(dAtA[i:], m.CancelReason)
 		i = encodeVarintRpc(dAtA, i, uint64(len(m.CancelReason)))
 		i--
-		dAtA[i] = 0x32
+		dAtA[i] = 0x1a
 	}
 	if m.CompactRevision != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.CompactRevision))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Canceled {
-		i--
-		if m.Canceled {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Created {
-		i--
-		if m.Created {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.WatchId != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.WatchId))
 		i--
 		dAtA[i] = 0x10
 	}
@@ -4910,15 +4967,22 @@ func (m *LeaseGrantRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.TTL != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x10
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -4943,12 +5007,10 @@ func (m *LeaseGrantResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Error) > 0 {
-		i -= len(m.Error)
-		copy(dAtA[i:], m.Error)
-		i = encodeVarintRpc(dAtA, i, uint64(len(m.Error)))
+	if m.GrantedTTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x20
 	}
 	if m.TTL != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
@@ -4998,7 +5060,19 @@ func (m *LeaseRevokeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.ID != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x10
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -5038,7 +5112,7 @@ func (m *LeaseRevokeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *LeaseCheckpoint) Marshal() (dAtA []byte, err error) {
+func (m *LeaseRenewRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -5048,154 +5122,16 @@ func (m *LeaseCheckpoint) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *LeaseCheckpoint) MarshalTo(dAtA []byte) (int, error) {
+func (m *LeaseRenewRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *LeaseCheckpoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *LeaseRenewRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Remaining_TTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.Remaining_TTL))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LeaseCheckpointRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LeaseCheckpointRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LeaseCheckpointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Checkpoints) > 0 {
-		for iNdEx := len(m.Checkpoints) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Checkpoints[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintRpc(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LeaseCheckpointResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LeaseCheckpointResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LeaseCheckpointResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Header != nil {
-		{
-			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRpc(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LeaseKeepAliveRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LeaseKeepAliveRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LeaseKeepAliveRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LeaseKeepAliveResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LeaseKeepAliveResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LeaseKeepAliveResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.TTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x18
-	}
 	if m.ID != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
 		i--
@@ -5216,7 +5152,7 @@ func (m *LeaseKeepAliveResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
-func (m *LeaseTimeToLiveRequest) Marshal() (dAtA []byte, err error) {
+func (m *LeaseRenewResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -5226,63 +5162,16 @@ func (m *LeaseTimeToLiveRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *LeaseTimeToLiveRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *LeaseRenewResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *LeaseTimeToLiveRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *LeaseRenewResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Keys {
-		i--
-		if m.Keys {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LeaseTimeToLiveResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LeaseTimeToLiveResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LeaseTimeToLiveResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Keys) > 0 {
-		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Keys[iNdEx])
-			copy(dAtA[i:], m.Keys[iNdEx])
-			i = encodeVarintRpc(dAtA, i, uint64(len(m.Keys[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
 	if m.GrantedTTL != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
 		i--
@@ -5313,7 +5202,7 @@ func (m *LeaseTimeToLiveResponse) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
-func (m *LeaseLeasesRequest) Marshal() (dAtA []byte, err error) {
+func (m *LeaseGetRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -5323,16 +5212,118 @@ func (m *LeaseLeasesRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *LeaseLeasesRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *LeaseGetRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *LeaseLeasesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *LeaseGetRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if m.ID != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LeaseGetResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LeaseGetResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LeaseGetResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.GrantedTTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.TTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.ID != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LeaseQueryRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LeaseQueryRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LeaseQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Header != nil {
+		{
+			size, err := m.Header.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -5356,6 +5347,16 @@ func (m *LeaseStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.GrantedTTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.TTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.ID != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
 		i--
@@ -5364,7 +5365,7 @@ func (m *LeaseStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *LeaseLeasesResponse) Marshal() (dAtA []byte, err error) {
+func (m *LeaseQueryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -5374,12 +5375,12 @@ func (m *LeaseLeasesResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *LeaseLeasesResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *LeaseQueryResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *LeaseLeasesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *LeaseQueryResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -5533,39 +5534,208 @@ func encodeVarintRpc(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *PartitionRequestHeader) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Store)
+	if l > 0 {
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	l = len(m.Partition)
+	if l > 0 {
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+
 func (m *ResponseHeader) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.ClusterId != 0 {
-		n += 1 + sovRpc(uint64(m.ClusterId))
-	}
 	if m.MemberId != 0 {
 		n += 1 + sovRpc(uint64(m.MemberId))
 	}
 	if m.Revision != 0 {
 		n += 1 + sovRpc(uint64(m.Revision))
 	}
-	if m.RaftTerm != 0 {
-		n += 1 + sovRpc(uint64(m.RaftTerm))
-	}
 	return n
 }
 
-func (m *RangeRequest) Size() (n int) {
+func (m *KVSelection) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.KeyRangeMin != nil {
+		n += m.KeyRangeMin.Size()
+	}
+	if m.KeyRangeMax != nil {
+		n += m.KeyRangeMax.Size()
+	}
+	if m.ModRevisionStart != nil {
+		n += m.ModRevisionStart.Size()
+	}
+	if m.ModRevisionEnd != nil {
+		n += m.ModRevisionEnd.Size()
+	}
+	if m.CreateRevisionStart != nil {
+		n += m.CreateRevisionStart.Size()
+	}
+	if m.CreateRevisionEnd != nil {
+		n += m.CreateRevisionEnd.Size()
+	}
+	l = len(m.KeyStartsWith)
+	if l > 0 {
+		n += 2 + l + sovRpc(uint64(l))
+	}
 	l = len(m.Key)
 	if l > 0 {
+		n += 2 + l + sovRpc(uint64(l))
+	}
+	if m.Lease != 0 {
+		n += 2 + sovRpc(uint64(m.Lease))
+	}
+	return n
+}
+
+func (m *KVSelection_KeyGt) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.KeyGt != nil {
+		l = len(m.KeyGt)
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	l = len(m.RangeEnd)
-	if l > 0 {
+	return n
+}
+func (m *KVSelection_KeyGte) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.KeyGte != nil {
+		l = len(m.KeyGte)
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+func (m *KVSelection_KeyLt) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.KeyLt != nil {
+		l = len(m.KeyLt)
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+func (m *KVSelection_KeyLte) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.KeyLte != nil {
+		l = len(m.KeyLte)
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+func (m *KVSelection_ModRevisionGt) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.ModRevisionGt))
+	return n
+}
+func (m *KVSelection_ModRevisionGte) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.ModRevisionGte))
+	return n
+}
+func (m *KVSelection_ModRevisionLt) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.ModRevisionLt))
+	return n
+}
+func (m *KVSelection_ModRevisionLte) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.ModRevisionLte))
+	return n
+}
+func (m *KVSelection_CreateRevisionGt) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.CreateRevisionGt))
+	return n
+}
+func (m *KVSelection_CreateRevisionGte) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.CreateRevisionGte))
+	return n
+}
+func (m *KVSelection_CreateRevisionLt) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.CreateRevisionLt))
+	return n
+}
+func (m *KVSelection_CreateRevisionLte) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovRpc(uint64(m.CreateRevisionLte))
+	return n
+}
+func (m *KVQueryRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if m.Selection != nil {
+		l = m.Selection.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	if m.Limit != 0 {
@@ -5583,28 +5753,16 @@ func (m *RangeRequest) Size() (n int) {
 	if m.Serializable {
 		n += 2
 	}
-	if m.KeysOnly {
+	if m.ExcludeValues {
 		n += 2
 	}
-	if m.CountOnly {
+	if m.IncludeCount {
 		n += 2
-	}
-	if m.MinModRevision != 0 {
-		n += 1 + sovRpc(uint64(m.MinModRevision))
-	}
-	if m.MaxModRevision != 0 {
-		n += 1 + sovRpc(uint64(m.MaxModRevision))
-	}
-	if m.MinCreateRevision != 0 {
-		n += 1 + sovRpc(uint64(m.MinCreateRevision))
-	}
-	if m.MaxCreateRevision != 0 {
-		n += 1 + sovRpc(uint64(m.MaxCreateRevision))
 	}
 	return n
 }
 
-func (m *RangeResponse) Size() (n int) {
+func (m *KVQueryResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5629,14 +5787,18 @@ func (m *RangeResponse) Size() (n int) {
 	return n
 }
 
-func (m *PutRequest) Size() (n int) {
+func (m *KVPutRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Key)
-	if l > 0 {
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if m.Selection != nil {
+		l = m.Selection.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	l = len(m.Value)
@@ -5658,7 +5820,7 @@ func (m *PutRequest) Size() (n int) {
 	return n
 }
 
-func (m *PutResponse) Size() (n int) {
+func (m *KVPutResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5668,25 +5830,27 @@ func (m *PutResponse) Size() (n int) {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.PrevKv != nil {
-		l = m.PrevKv.Size()
-		n += 1 + l + sovRpc(uint64(l))
+	if len(m.PrevKvs) > 0 {
+		for _, e := range m.PrevKvs {
+			l = e.Size()
+			n += 1 + l + sovRpc(uint64(l))
+		}
 	}
 	return n
 }
 
-func (m *DeleteRangeRequest) Size() (n int) {
+func (m *KVDeleteRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Key)
-	if l > 0 {
+	if m.Header != nil {
+		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	l = len(m.RangeEnd)
-	if l > 0 {
+	if m.Selection != nil {
+		l = m.Selection.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	if m.PrevKv {
@@ -5695,7 +5859,7 @@ func (m *DeleteRangeRequest) Size() (n int) {
 	return n
 }
 
-func (m *DeleteRangeResponse) Size() (n int) {
+func (m *KVDeleteResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5717,7 +5881,7 @@ func (m *DeleteRangeResponse) Size() (n int) {
 	return n
 }
 
-func (m *RequestOp) Size() (n int) {
+func (m *KVRequestOp) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5729,19 +5893,19 @@ func (m *RequestOp) Size() (n int) {
 	return n
 }
 
-func (m *RequestOp_RequestRange) Size() (n int) {
+func (m *KVRequestOp_RequestQuery) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.RequestRange != nil {
-		l = m.RequestRange.Size()
+	if m.RequestQuery != nil {
+		l = m.RequestQuery.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
-func (m *RequestOp_RequestPut) Size() (n int) {
+func (m *KVRequestOp_RequestPut) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5753,19 +5917,19 @@ func (m *RequestOp_RequestPut) Size() (n int) {
 	}
 	return n
 }
-func (m *RequestOp_RequestDeleteRange) Size() (n int) {
+func (m *KVRequestOp_RequestDelete) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.RequestDeleteRange != nil {
-		l = m.RequestDeleteRange.Size()
+	if m.RequestDelete != nil {
+		l = m.RequestDelete.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
-func (m *RequestOp_RequestTxn) Size() (n int) {
+func (m *KVRequestOp_RequestTxn) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5777,7 +5941,7 @@ func (m *RequestOp_RequestTxn) Size() (n int) {
 	}
 	return n
 }
-func (m *ResponseOp) Size() (n int) {
+func (m *KVResponseOp) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5789,19 +5953,19 @@ func (m *ResponseOp) Size() (n int) {
 	return n
 }
 
-func (m *ResponseOp_ResponseRange) Size() (n int) {
+func (m *KVResponseOp_ResponseQuery) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.ResponseRange != nil {
-		l = m.ResponseRange.Size()
+	if m.ResponseQuery != nil {
+		l = m.ResponseQuery.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
-func (m *ResponseOp_ResponsePut) Size() (n int) {
+func (m *KVResponseOp_ResponsePut) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5813,19 +5977,19 @@ func (m *ResponseOp_ResponsePut) Size() (n int) {
 	}
 	return n
 }
-func (m *ResponseOp_ResponseDeleteRange) Size() (n int) {
+func (m *KVResponseOp_ResponseDelete) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.ResponseDeleteRange != nil {
-		l = m.ResponseDeleteRange.Size()
+	if m.ResponseDelete != nil {
+		l = m.ResponseDelete.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
-func (m *ResponseOp_ResponseTxn) Size() (n int) {
+func (m *KVResponseOp_ResponseTxn) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5837,33 +6001,25 @@ func (m *ResponseOp_ResponseTxn) Size() (n int) {
 	}
 	return n
 }
-func (m *Compare) Size() (n int) {
+func (m *KVPredicate) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Result != 0 {
-		n += 1 + sovRpc(uint64(m.Result))
+	if m.Comparison != 0 {
+		n += 1 + sovRpc(uint64(m.Comparison))
 	}
 	if m.Target != 0 {
 		n += 1 + sovRpc(uint64(m.Target))
 	}
-	l = len(m.Key)
-	if l > 0 {
-		n += 1 + l + sovRpc(uint64(l))
-	}
 	if m.TargetUnion != nil {
 		n += m.TargetUnion.Size()
-	}
-	l = len(m.RangeEnd)
-	if l > 0 {
-		n += 2 + l + sovRpc(uint64(l))
 	}
 	return n
 }
 
-func (m *Compare_Version) Size() (n int) {
+func (m *KVPredicate_Version) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5872,7 +6028,7 @@ func (m *Compare_Version) Size() (n int) {
 	n += 1 + sovRpc(uint64(m.Version))
 	return n
 }
-func (m *Compare_CreateRevision) Size() (n int) {
+func (m *KVPredicate_CreateRevision) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5881,7 +6037,7 @@ func (m *Compare_CreateRevision) Size() (n int) {
 	n += 1 + sovRpc(uint64(m.CreateRevision))
 	return n
 }
-func (m *Compare_ModRevision) Size() (n int) {
+func (m *KVPredicate_ModRevision) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5890,7 +6046,7 @@ func (m *Compare_ModRevision) Size() (n int) {
 	n += 1 + sovRpc(uint64(m.ModRevision))
 	return n
 }
-func (m *Compare_Value) Size() (n int) {
+func (m *KVPredicate_Value) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5902,7 +6058,7 @@ func (m *Compare_Value) Size() (n int) {
 	}
 	return n
 }
-func (m *Compare_Lease) Size() (n int) {
+func (m *KVPredicate_Lease) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5911,12 +6067,33 @@ func (m *Compare_Lease) Size() (n int) {
 	n += 1 + sovRpc(uint64(m.Lease))
 	return n
 }
-func (m *TxnRequest) Size() (n int) {
+func (m *Compare) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Selection != nil {
+		l = m.Selection.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if m.Predicate != nil {
+		l = m.Predicate.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+
+func (m *KVTxnRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
 	if len(m.Compare) > 0 {
 		for _, e := range m.Compare {
 			l = e.Size()
@@ -5938,7 +6115,7 @@ func (m *TxnRequest) Size() (n int) {
 	return n
 }
 
-func (m *TxnResponse) Size() (n int) {
+func (m *KVTxnResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5960,12 +6137,16 @@ func (m *TxnResponse) Size() (n int) {
 	return n
 }
 
-func (m *CompactionRequest) Size() (n int) {
+func (m *KVCompactionRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
 	if m.Revision != 0 {
 		n += 1 + sovRpc(uint64(m.Revision))
 	}
@@ -5975,7 +6156,7 @@ func (m *CompactionRequest) Size() (n int) {
 	return n
 }
 
-func (m *CompactionResponse) Size() (n int) {
+func (m *KVCompactionResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5988,66 +6169,18 @@ func (m *CompactionResponse) Size() (n int) {
 	return n
 }
 
-func (m *WatchRequest) Size() (n int) {
+func (m *KVWatchRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.RequestUnion != nil {
-		n += m.RequestUnion.Size()
-	}
-	return n
-}
-
-func (m *WatchRequest_CreateRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.CreateRequest != nil {
-		l = m.CreateRequest.Size()
+	if m.Header != nil {
+		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	return n
-}
-func (m *WatchRequest_CancelRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.CancelRequest != nil {
-		l = m.CancelRequest.Size()
-		n += 1 + l + sovRpc(uint64(l))
-	}
-	return n
-}
-func (m *WatchRequest_ProgressRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ProgressRequest != nil {
-		l = m.ProgressRequest.Size()
-		n += 1 + l + sovRpc(uint64(l))
-	}
-	return n
-}
-func (m *WatchCreateRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Key)
-	if l > 0 {
-		n += 1 + l + sovRpc(uint64(l))
-	}
-	l = len(m.RangeEnd)
-	if l > 0 {
+	if m.Selection != nil {
+		l = m.Selection.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
 	if m.StartRevision != 0 {
@@ -6066,37 +6199,13 @@ func (m *WatchCreateRequest) Size() (n int) {
 	if m.PrevKv {
 		n += 2
 	}
-	if m.WatchId != 0 {
-		n += 1 + sovRpc(uint64(m.WatchId))
-	}
 	if m.Fragment {
 		n += 2
 	}
 	return n
 }
 
-func (m *WatchCancelRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.WatchId != 0 {
-		n += 1 + sovRpc(uint64(m.WatchId))
-	}
-	return n
-}
-
-func (m *WatchProgressRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *WatchResponse) Size() (n int) {
+func (m *KVWatchResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -6105,15 +6214,6 @@ func (m *WatchResponse) Size() (n int) {
 	if m.Header != nil {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
-	}
-	if m.WatchId != 0 {
-		n += 1 + sovRpc(uint64(m.WatchId))
-	}
-	if m.Created {
-		n += 2
-	}
-	if m.Canceled {
-		n += 2
 	}
 	if m.CompactRevision != 0 {
 		n += 1 + sovRpc(uint64(m.CompactRevision))
@@ -6140,11 +6240,12 @@ func (m *LeaseGrantRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
 	if m.TTL != 0 {
 		n += 1 + sovRpc(uint64(m.TTL))
-	}
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
 	}
 	return n
 }
@@ -6165,9 +6266,8 @@ func (m *LeaseGrantResponse) Size() (n int) {
 	if m.TTL != 0 {
 		n += 1 + sovRpc(uint64(m.TTL))
 	}
-	l = len(m.Error)
-	if l > 0 {
-		n += 1 + l + sovRpc(uint64(l))
+	if m.GrantedTTL != 0 {
+		n += 1 + sovRpc(uint64(m.GrantedTTL))
 	}
 	return n
 }
@@ -6178,6 +6278,10 @@ func (m *LeaseRevokeRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
 	if m.ID != 0 {
 		n += 1 + sovRpc(uint64(m.ID))
 	}
@@ -6197,62 +6301,7 @@ func (m *LeaseRevokeResponse) Size() (n int) {
 	return n
 }
 
-func (m *LeaseCheckpoint) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	if m.Remaining_TTL != 0 {
-		n += 1 + sovRpc(uint64(m.Remaining_TTL))
-	}
-	return n
-}
-
-func (m *LeaseCheckpointRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Checkpoints) > 0 {
-		for _, e := range m.Checkpoints {
-			l = e.Size()
-			n += 1 + l + sovRpc(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *LeaseCheckpointResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Header != nil {
-		l = m.Header.Size()
-		n += 1 + l + sovRpc(uint64(l))
-	}
-	return n
-}
-
-func (m *LeaseKeepAliveRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	return n
-}
-
-func (m *LeaseKeepAliveResponse) Size() (n int) {
+func (m *LeaseRenewRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -6265,28 +6314,10 @@ func (m *LeaseKeepAliveResponse) Size() (n int) {
 	if m.ID != 0 {
 		n += 1 + sovRpc(uint64(m.ID))
 	}
-	if m.TTL != 0 {
-		n += 1 + sovRpc(uint64(m.TTL))
-	}
 	return n
 }
 
-func (m *LeaseTimeToLiveRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	if m.Keys {
-		n += 2
-	}
-	return n
-}
-
-func (m *LeaseTimeToLiveResponse) Size() (n int) {
+func (m *LeaseRenewResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -6305,21 +6336,57 @@ func (m *LeaseTimeToLiveResponse) Size() (n int) {
 	if m.GrantedTTL != 0 {
 		n += 1 + sovRpc(uint64(m.GrantedTTL))
 	}
-	if len(m.Keys) > 0 {
-		for _, b := range m.Keys {
-			l = len(b)
-			n += 1 + l + sovRpc(uint64(l))
-		}
-	}
 	return n
 }
 
-func (m *LeaseLeasesRequest) Size() (n int) {
+func (m *LeaseGetRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if m.ID != 0 {
+		n += 1 + sovRpc(uint64(m.ID))
+	}
+	return n
+}
+
+func (m *LeaseGetResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if m.ID != 0 {
+		n += 1 + sovRpc(uint64(m.ID))
+	}
+	if m.TTL != 0 {
+		n += 1 + sovRpc(uint64(m.TTL))
+	}
+	if m.GrantedTTL != 0 {
+		n += 1 + sovRpc(uint64(m.GrantedTTL))
+	}
+	return n
+}
+
+func (m *LeaseQueryRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Header != nil {
+		l = m.Header.Size()
+		n += 1 + l + sovRpc(uint64(l))
+	}
 	return n
 }
 
@@ -6332,10 +6399,16 @@ func (m *LeaseStatus) Size() (n int) {
 	if m.ID != 0 {
 		n += 1 + sovRpc(uint64(m.ID))
 	}
+	if m.TTL != 0 {
+		n += 1 + sovRpc(uint64(m.TTL))
+	}
+	if m.GrantedTTL != 0 {
+		n += 1 + sovRpc(uint64(m.GrantedTTL))
+	}
 	return n
 }
 
-func (m *LeaseLeasesResponse) Size() (n int) {
+func (m *LeaseQueryResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -6409,6 +6482,123 @@ func sovRpc(x uint64) (n int) {
 func sozRpc(x uint64) (n int) {
 	return sovRpc(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (m *PartitionRequestHeader) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PartitionRequestHeader: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PartitionRequestHeader: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Store", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Store = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Partition", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Partition = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *ResponseHeader) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -6440,25 +6630,6 @@ func (m *ResponseHeader) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClusterId", wireType)
-			}
-			m.ClusterId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ClusterId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MemberId", wireType)
 			}
 			m.MemberId = 0
@@ -6476,7 +6647,7 @@ func (m *ResponseHeader) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 3:
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Revision", wireType)
 			}
@@ -6491,25 +6662,6 @@ func (m *ResponseHeader) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.Revision |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RaftTerm", wireType)
-			}
-			m.RaftTerm = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RaftTerm |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6538,7 +6690,7 @@ func (m *ResponseHeader) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *RangeRequest) Unmarshal(dAtA []byte) error {
+func (m *KVSelection) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6561,13 +6713,339 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RangeRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVSelection: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RangeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVSelection: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyGt", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.KeyRangeMin = &KVSelection_KeyGt{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyGte", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.KeyRangeMin = &KVSelection_KeyGte{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyLt", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.KeyRangeMax = &KVSelection_KeyLt{v}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyLte", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.KeyRangeMax = &KVSelection_KeyLte{v}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModRevisionGt", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ModRevisionStart = &KVSelection_ModRevisionGt{v}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModRevisionGte", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ModRevisionStart = &KVSelection_ModRevisionGte{v}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModRevisionLt", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ModRevisionEnd = &KVSelection_ModRevisionLt{v}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModRevisionLte", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ModRevisionEnd = &KVSelection_ModRevisionLte{v}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateRevisionGt", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CreateRevisionStart = &KVSelection_CreateRevisionGt{v}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateRevisionGte", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CreateRevisionStart = &KVSelection_CreateRevisionGte{v}
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateRevisionLt", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CreateRevisionEnd = &KVSelection_CreateRevisionLt{v}
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateRevisionLte", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CreateRevisionEnd = &KVSelection_CreateRevisionLte{v}
+		case 64:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyStartsWith", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.KeyStartsWith = append(m.KeyStartsWith[:0], dAtA[iNdEx:postIndex]...)
+			if m.KeyStartsWith == nil {
+				m.KeyStartsWith = []byte{}
+			}
+			iNdEx = postIndex
+		case 65:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
@@ -6601,11 +7079,11 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 				m.Key = []byte{}
 			}
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RangeEnd", wireType)
+		case 66:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
 			}
-			var byteLen int
+			m.Lease = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -6615,24 +7093,134 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				m.Lease |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
 				return ErrInvalidLengthRpc
 			}
-			postIndex := iNdEx + byteLen
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *KVQueryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: KVQueryRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: KVQueryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRpc
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RangeEnd = append(m.RangeEnd[:0], dAtA[iNdEx:postIndex]...)
-			if m.RangeEnd == nil {
-				m.RangeEnd = []byte{}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Selection", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Selection == nil {
+				m.Selection = &KVSelection{}
+			}
+			if err := m.Selection.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		case 3:
@@ -6687,7 +7275,7 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SortOrder |= RangeRequest_SortOrder(b&0x7F) << shift
+				m.SortOrder |= KVQueryRequest_SortOrder(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6706,7 +7294,7 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SortTarget |= RangeRequest_SortTarget(b&0x7F) << shift
+				m.SortTarget |= KVQueryRequest_SortTarget(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6733,7 +7321,7 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 			m.Serializable = bool(v != 0)
 		case 8:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KeysOnly", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ExcludeValues", wireType)
 			}
 			var v int
 			for shift := uint(0); ; shift += 7 {
@@ -6750,10 +7338,10 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.KeysOnly = bool(v != 0)
+			m.ExcludeValues = bool(v != 0)
 		case 9:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CountOnly", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field IncludeCount", wireType)
 			}
 			var v int
 			for shift := uint(0); ; shift += 7 {
@@ -6770,83 +7358,7 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.CountOnly = bool(v != 0)
-		case 10:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MinModRevision", wireType)
-			}
-			m.MinModRevision = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MinModRevision |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 11:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxModRevision", wireType)
-			}
-			m.MaxModRevision = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MaxModRevision |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 12:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MinCreateRevision", wireType)
-			}
-			m.MinCreateRevision = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MinCreateRevision |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 13:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxCreateRevision", wireType)
-			}
-			m.MaxCreateRevision = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MaxCreateRevision |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
+			m.IncludeCount = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -6871,7 +7383,7 @@ func (m *RangeRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *RangeResponse) Unmarshal(dAtA []byte) error {
+func (m *KVQueryResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6894,10 +7406,10 @@ func (m *RangeResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RangeResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVQueryResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RangeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVQueryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -7033,7 +7545,7 @@ func (m *RangeResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *PutRequest) Unmarshal(dAtA []byte) error {
+func (m *KVPutRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7056,17 +7568,17 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: PutRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVPutRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PutRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVPutRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -7076,27 +7588,65 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthRpc
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRpc
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Selection", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Selection == nil {
+				m.Selection = &KVSelection{}
+			}
+			if err := m.Selection.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
 			}
@@ -7130,7 +7680,7 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 				m.Value = []byte{}
 			}
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
 			}
@@ -7149,7 +7699,7 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PrevKv", wireType)
 			}
@@ -7169,7 +7719,7 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.PrevKv = bool(v != 0)
-		case 5:
+		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field IgnoreValue", wireType)
 			}
@@ -7189,7 +7739,7 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.IgnoreValue = bool(v != 0)
-		case 6:
+		case 7:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field IgnoreLease", wireType)
 			}
@@ -7233,7 +7783,7 @@ func (m *PutRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *PutResponse) Unmarshal(dAtA []byte) error {
+func (m *KVPutResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7256,10 +7806,10 @@ func (m *PutResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: PutResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVPutResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PutResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVPutResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -7300,7 +7850,7 @@ func (m *PutResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PrevKv", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PrevKvs", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7327,10 +7877,8 @@ func (m *PutResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.PrevKv == nil {
-				m.PrevKv = &KeyValue{}
-			}
-			if err := m.PrevKv.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.PrevKvs = append(m.PrevKvs, &KeyValue{})
+			if err := m.PrevKvs[len(m.PrevKvs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -7358,7 +7906,7 @@ func (m *PutResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *DeleteRangeRequest) Unmarshal(dAtA []byte) error {
+func (m *KVDeleteRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7381,17 +7929,17 @@ func (m *DeleteRangeRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DeleteRangeRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVDeleteRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeleteRangeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVDeleteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -7401,31 +7949,33 @@ func (m *DeleteRangeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthRpc
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRpc
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RangeEnd", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Selection", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -7435,24 +7985,26 @@ func (m *DeleteRangeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthRpc
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRpc
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RangeEnd = append(m.RangeEnd[:0], dAtA[iNdEx:postIndex]...)
-			if m.RangeEnd == nil {
-				m.RangeEnd = []byte{}
+			if m.Selection == nil {
+				m.Selection = &KVSelection{}
+			}
+			if err := m.Selection.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		case 3:
@@ -7499,7 +8051,7 @@ func (m *DeleteRangeRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *DeleteRangeResponse) Unmarshal(dAtA []byte) error {
+func (m *KVDeleteResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7522,10 +8074,10 @@ func (m *DeleteRangeResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DeleteRangeResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVDeleteResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeleteRangeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVDeleteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -7641,7 +8193,7 @@ func (m *DeleteRangeResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *RequestOp) Unmarshal(dAtA []byte) error {
+func (m *KVRequestOp) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7664,15 +8216,15 @@ func (m *RequestOp) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RequestOp: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVRequestOp: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RequestOp: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVRequestOp: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequestRange", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestQuery", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7699,11 +8251,11 @@ func (m *RequestOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &RangeRequest{}
+			v := &KVQueryRequest{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &RequestOp_RequestRange{v}
+			m.Request = &KVRequestOp_RequestQuery{v}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -7734,15 +8286,15 @@ func (m *RequestOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &PutRequest{}
+			v := &KVPutRequest{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &RequestOp_RequestPut{v}
+			m.Request = &KVRequestOp_RequestPut{v}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequestDeleteRange", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestDelete", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7769,11 +8321,11 @@ func (m *RequestOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &DeleteRangeRequest{}
+			v := &KVDeleteRequest{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &RequestOp_RequestDeleteRange{v}
+			m.Request = &KVRequestOp_RequestDelete{v}
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -7804,11 +8356,11 @@ func (m *RequestOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &TxnRequest{}
+			v := &KVTxnRequest{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &RequestOp_RequestTxn{v}
+			m.Request = &KVRequestOp_RequestTxn{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -7834,7 +8386,7 @@ func (m *RequestOp) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ResponseOp) Unmarshal(dAtA []byte) error {
+func (m *KVResponseOp) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7857,15 +8409,15 @@ func (m *ResponseOp) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ResponseOp: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVResponseOp: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ResponseOp: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVResponseOp: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResponseRange", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ResponseQuery", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7892,11 +8444,11 @@ func (m *ResponseOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &RangeResponse{}
+			v := &KVQueryResponse{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Response = &ResponseOp_ResponseRange{v}
+			m.Response = &KVResponseOp_ResponseQuery{v}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -7927,15 +8479,15 @@ func (m *ResponseOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &PutResponse{}
+			v := &KVPutResponse{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Response = &ResponseOp_ResponsePut{v}
+			m.Response = &KVResponseOp_ResponsePut{v}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResponseDeleteRange", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ResponseDelete", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7962,11 +8514,11 @@ func (m *ResponseOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &DeleteRangeResponse{}
+			v := &KVDeleteResponse{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Response = &ResponseOp_ResponseDeleteRange{v}
+			m.Response = &KVResponseOp_ResponseDelete{v}
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -7997,12 +8549,216 @@ func (m *ResponseOp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &TxnResponse{}
+			v := &KVTxnResponse{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Response = &ResponseOp_ResponseTxn{v}
+			m.Response = &KVResponseOp_ResponseTxn{v}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *KVPredicate) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: KVPredicate: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: KVPredicate: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Comparison", wireType)
+			}
+			m.Comparison = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Comparison |= KVPredicate_Comparison(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Target", wireType)
+			}
+			m.Target = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Target |= KVPredicate_Target(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TargetUnion = &KVPredicate_Version{v}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateRevision", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TargetUnion = &KVPredicate_CreateRevision{v}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ModRevision", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TargetUnion = &KVPredicate_ModRevision{v}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.TargetUnion = &KVPredicate_Value{v}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TargetUnion = &KVPredicate_Lease{v}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -8057,10 +8813,10 @@ func (m *Compare) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Selection", wireType)
 			}
-			m.Result = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -8070,35 +8826,33 @@ func (m *Compare) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Result |= Compare_CompareResult(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Selection == nil {
+				m.Selection = &KVSelection{}
+			}
+			if err := m.Selection.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Target", wireType)
-			}
-			m.Target = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Target |= Compare_CompareTarget(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Predicate", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -8108,171 +8862,26 @@ func (m *Compare) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthRpc
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRpc
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
+			if m.Predicate == nil {
+				m.Predicate = &KVPredicate{}
 			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
-			}
-			var v int64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.TargetUnion = &Compare_Version{v}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CreateRevision", wireType)
-			}
-			var v int64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.TargetUnion = &Compare_CreateRevision{v}
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ModRevision", wireType)
-			}
-			var v int64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.TargetUnion = &Compare_ModRevision{v}
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := make([]byte, postIndex-iNdEx)
-			copy(v, dAtA[iNdEx:postIndex])
-			m.TargetUnion = &Compare_Value{v}
-			iNdEx = postIndex
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
-			}
-			var v int64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.TargetUnion = &Compare_Lease{v}
-		case 64:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RangeEnd", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RangeEnd = append(m.RangeEnd[:0], dAtA[iNdEx:postIndex]...)
-			if m.RangeEnd == nil {
-				m.RangeEnd = []byte{}
+			if err := m.Predicate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		default:
@@ -8299,7 +8908,7 @@ func (m *Compare) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *TxnRequest) Unmarshal(dAtA []byte) error {
+func (m *KVTxnRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8322,13 +8931,49 @@ func (m *TxnRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: TxnRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVTxnRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TxnRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVTxnRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Compare", wireType)
 			}
@@ -8362,7 +9007,7 @@ func (m *TxnRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
 			}
@@ -8391,12 +9036,12 @@ func (m *TxnRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Success = append(m.Success, &RequestOp{})
+			m.Success = append(m.Success, &KVRequestOp{})
 			if err := m.Success[len(m.Success)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
 			}
@@ -8425,7 +9070,7 @@ func (m *TxnRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Failure = append(m.Failure, &RequestOp{})
+			m.Failure = append(m.Failure, &KVRequestOp{})
 			if err := m.Failure[len(m.Failure)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -8454,7 +9099,7 @@ func (m *TxnRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *TxnResponse) Unmarshal(dAtA []byte) error {
+func (m *KVTxnResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8477,10 +9122,10 @@ func (m *TxnResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: TxnResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVTxnResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TxnResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVTxnResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -8568,7 +9213,7 @@ func (m *TxnResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Responses = append(m.Responses, &ResponseOp{})
+			m.Responses = append(m.Responses, &KVResponseOp{})
 			if err := m.Responses[len(m.Responses)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -8597,7 +9242,7 @@ func (m *TxnResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *CompactionRequest) Unmarshal(dAtA []byte) error {
+func (m *KVCompactionRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8620,13 +9265,49 @@ func (m *CompactionRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CompactionRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVCompactionRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CompactionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVCompactionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Revision", wireType)
 			}
@@ -8645,7 +9326,7 @@ func (m *CompactionRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 2:
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Physical", wireType)
 			}
@@ -8689,7 +9370,7 @@ func (m *CompactionRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *CompactionResponse) Unmarshal(dAtA []byte) error {
+func (m *KVCompactionResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8712,10 +9393,10 @@ func (m *CompactionResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CompactionResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVCompactionResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CompactionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVCompactionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -8778,7 +9459,7 @@ func (m *CompactionResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *WatchRequest) Unmarshal(dAtA []byte) error {
+func (m *KVWatchRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8801,15 +9482,15 @@ func (m *WatchRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WatchRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVWatchRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WatchRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVWatchRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CreateRequest", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -8836,174 +9517,18 @@ func (m *WatchRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &WatchCreateRequest{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
-			}
-			m.RequestUnion = &WatchRequest_CreateRequest{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CancelRequest", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &WatchCancelRequest{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.RequestUnion = &WatchRequest_CancelRequest{v}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProgressRequest", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &WatchProgressRequest{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.RequestUnion = &WatchRequest_ProgressRequest{v}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WatchCreateRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WatchCreateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
-			if m.Key == nil {
-				m.Key = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RangeEnd", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Selection", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -9013,24 +9538,26 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthRpc
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthRpc
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RangeEnd = append(m.RangeEnd[:0], dAtA[iNdEx:postIndex]...)
-			if m.RangeEnd == nil {
-				m.RangeEnd = []byte{}
+			if m.Selection == nil {
+				m.Selection = &KVSelection{}
+			}
+			if err := m.Selection.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		case 3:
@@ -9074,7 +9601,7 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 			m.ProgressNotify = bool(v != 0)
 		case 5:
 			if wireType == 0 {
-				var v WatchCreateRequest_FilterType
+				var v KVWatchRequest_FilterType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowRpc
@@ -9084,7 +9611,7 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= WatchCreateRequest_FilterType(b&0x7F) << shift
+					v |= KVWatchRequest_FilterType(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -9118,10 +9645,10 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 				}
 				var elementCount int
 				if elementCount != 0 && len(m.Filters) == 0 {
-					m.Filters = make([]WatchCreateRequest_FilterType, 0, elementCount)
+					m.Filters = make([]KVWatchRequest_FilterType, 0, elementCount)
 				}
 				for iNdEx < postIndex {
-					var v WatchCreateRequest_FilterType
+					var v KVWatchRequest_FilterType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowRpc
@@ -9131,7 +9658,7 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= WatchCreateRequest_FilterType(b&0x7F) << shift
+						v |= KVWatchRequest_FilterType(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -9161,25 +9688,6 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.PrevKv = bool(v != 0)
-		case 7:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WatchId", wireType)
-			}
-			m.WatchId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.WatchId |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 8:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Fragment", wireType)
@@ -9224,7 +9732,7 @@ func (m *WatchCreateRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *WatchCancelRequest) Unmarshal(dAtA []byte) error {
+func (m *KVWatchResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -9247,135 +9755,10 @@ func (m *WatchCancelRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WatchCancelRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: KVWatchResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WatchCancelRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WatchId", wireType)
-			}
-			m.WatchId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.WatchId |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *WatchProgressRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WatchProgressRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WatchProgressRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *WatchResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WatchResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WatchResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: KVWatchResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -9416,65 +9799,6 @@ func (m *WatchResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WatchId", wireType)
-			}
-			m.WatchId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.WatchId |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Created", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Created = bool(v != 0)
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Canceled", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Canceled = bool(v != 0)
-		case 5:
-			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CompactRevision", wireType)
 			}
 			m.CompactRevision = 0
@@ -9492,7 +9816,7 @@ func (m *WatchResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 6:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CancelReason", wireType)
 			}
@@ -9524,7 +9848,7 @@ func (m *WatchResponse) Unmarshal(dAtA []byte) error {
 			}
 			m.CancelReason = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 7:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Fragment", wireType)
 			}
@@ -9632,6 +9956,42 @@ func (m *LeaseGrantRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
 			}
@@ -9646,25 +10006,6 @@ func (m *LeaseGrantRequest) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			m.ID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -9797,10 +10138,10 @@ func (m *LeaseGrantResponse) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
 			}
-			var stringLen uint64
+			m.GrantedTTL = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -9810,24 +10151,11 @@ func (m *LeaseGrantResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				m.GrantedTTL |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Error = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -9882,6 +10210,42 @@ func (m *LeaseRevokeRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
 			}
@@ -10013,7 +10377,7 @@ func (m *LeaseRevokeResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *LeaseCheckpoint) Unmarshal(dAtA []byte) error {
+func (m *LeaseRenewRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -10036,188 +10400,10 @@ func (m *LeaseCheckpoint) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseCheckpoint: wiretype end group for non-group")
+			return fmt.Errorf("proto: LeaseRenewRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseCheckpoint: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			m.ID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Remaining_TTL", wireType)
-			}
-			m.Remaining_TTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Remaining_TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LeaseCheckpointRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseCheckpointRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseCheckpointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checkpoints", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Checkpoints = append(m.Checkpoints, &LeaseCheckpoint{})
-			if err := m.Checkpoints[len(m.Checkpoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LeaseCheckpointResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseCheckpointResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseCheckpointResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: LeaseRenewRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -10250,168 +10436,7 @@ func (m *LeaseCheckpointResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Header == nil {
-				m.Header = &ResponseHeader{}
-			}
-			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LeaseKeepAliveRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseKeepAliveRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseKeepAliveRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			m.ID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LeaseKeepAliveResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseKeepAliveResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseKeepAliveResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Header == nil {
-				m.Header = &ResponseHeader{}
+				m.Header = &PartitionRequestHeader{}
 			}
 			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -10436,25 +10461,6 @@ func (m *LeaseKeepAliveResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
-			}
-			m.TTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10479,7 +10485,7 @@ func (m *LeaseKeepAliveResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *LeaseTimeToLiveRequest) Unmarshal(dAtA []byte) error {
+func (m *LeaseRenewResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -10502,102 +10508,10 @@ func (m *LeaseTimeToLiveRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseTimeToLiveRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: LeaseRenewResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseTimeToLiveRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			m.ID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Keys = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LeaseTimeToLiveResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseTimeToLiveResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseTimeToLiveResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: LeaseRenewResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -10693,38 +10607,6 @@ func (m *LeaseTimeToLiveResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Keys = append(m.Keys, make([]byte, postIndex-iNdEx))
-			copy(m.Keys[len(m.Keys)-1], dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10749,7 +10631,7 @@ func (m *LeaseTimeToLiveResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *LeaseLeasesRequest) Unmarshal(dAtA []byte) error {
+func (m *LeaseGetRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -10772,12 +10654,302 @@ func (m *LeaseLeasesRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseLeasesRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: LeaseGetRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseLeasesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: LeaseGetRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LeaseGetResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LeaseGetResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LeaseGetResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &ResponseHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
+			}
+			m.TTL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TTL |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
+			}
+			m.GrantedTTL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.GrantedTTL |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LeaseQueryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LeaseQueryRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LeaseQueryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Header == nil {
+				m.Header = &PartitionRequestHeader{}
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10850,6 +11022,44 @@ func (m *LeaseStatus) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
+			}
+			m.TTL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TTL |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
+			}
+			m.GrantedTTL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.GrantedTTL |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10874,7 +11084,7 @@ func (m *LeaseStatus) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *LeaseLeasesResponse) Unmarshal(dAtA []byte) error {
+func (m *LeaseQueryResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -10897,10 +11107,10 @@ func (m *LeaseLeasesResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseLeasesResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: LeaseQueryResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseLeasesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: LeaseQueryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
