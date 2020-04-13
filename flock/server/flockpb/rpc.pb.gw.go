@@ -360,7 +360,7 @@ func request_KV_Watch_0(ctx context.Context, marshaler runtime.Marshaler, client
 
 }
 
-func request_Lease_Grant_0(ctx context.Context, marshaler runtime.Marshaler, client LeaseClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Leases_Grant_0(ctx context.Context, marshaler runtime.Marshaler, client LeasesClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseGrantRequest
 	var metadata runtime.ServerMetadata
 
@@ -406,7 +406,7 @@ func request_Lease_Grant_0(ctx context.Context, marshaler runtime.Marshaler, cli
 
 }
 
-func local_request_Lease_Grant_0(ctx context.Context, marshaler runtime.Marshaler, server LeaseServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Leases_Grant_0(ctx context.Context, marshaler runtime.Marshaler, server LeasesServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseGrantRequest
 	var metadata runtime.ServerMetadata
 
@@ -453,10 +453,10 @@ func local_request_Lease_Grant_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 var (
-	filter_Lease_Query_0 = &utilities.DoubleArray{Encoding: map[string]int{"header": 0, "store": 1, "partition": 2}, Base: []int{1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3, 4}}
+	filter_Leases_Query_0 = &utilities.DoubleArray{Encoding: map[string]int{"header": 0, "store": 1, "partition": 2}, Base: []int{1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3, 4}}
 )
 
-func request_Lease_Query_0(ctx context.Context, marshaler runtime.Marshaler, client LeaseClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Leases_Query_0(ctx context.Context, marshaler runtime.Marshaler, client LeasesClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseQueryRequest
 	var metadata runtime.ServerMetadata
 
@@ -492,7 +492,7 @@ func request_Lease_Query_0(ctx context.Context, marshaler runtime.Marshaler, cli
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Lease_Query_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Leases_Query_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -501,7 +501,7 @@ func request_Lease_Query_0(ctx context.Context, marshaler runtime.Marshaler, cli
 
 }
 
-func local_request_Lease_Query_0(ctx context.Context, marshaler runtime.Marshaler, server LeaseServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Leases_Query_0(ctx context.Context, marshaler runtime.Marshaler, server LeasesServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseQueryRequest
 	var metadata runtime.ServerMetadata
 
@@ -534,7 +534,7 @@ func local_request_Lease_Query_0(ctx context.Context, marshaler runtime.Marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "header.partition", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Lease_Query_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Leases_Query_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -544,10 +544,10 @@ func local_request_Lease_Query_0(ctx context.Context, marshaler runtime.Marshale
 }
 
 var (
-	filter_Lease_Get_0 = &utilities.DoubleArray{Encoding: map[string]int{"header": 0, "store": 1, "partition": 2, "ID": 3}, Base: []int{1, 1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 2, 2, 1, 3, 4, 5}}
+	filter_Leases_Get_0 = &utilities.DoubleArray{Encoding: map[string]int{"header": 0, "store": 1, "partition": 2, "ID": 3}, Base: []int{1, 1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 2, 2, 1, 3, 4, 5}}
 )
 
-func request_Lease_Get_0(ctx context.Context, marshaler runtime.Marshaler, client LeaseClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Leases_Get_0(ctx context.Context, marshaler runtime.Marshaler, client LeasesClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseGetRequest
 	var metadata runtime.ServerMetadata
 
@@ -594,7 +594,7 @@ func request_Lease_Get_0(ctx context.Context, marshaler runtime.Marshaler, clien
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Lease_Get_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Leases_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -603,7 +603,7 @@ func request_Lease_Get_0(ctx context.Context, marshaler runtime.Marshaler, clien
 
 }
 
-func local_request_Lease_Get_0(ctx context.Context, marshaler runtime.Marshaler, server LeaseServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Leases_Get_0(ctx context.Context, marshaler runtime.Marshaler, server LeasesServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseGetRequest
 	var metadata runtime.ServerMetadata
 
@@ -647,7 +647,7 @@ func local_request_Lease_Get_0(ctx context.Context, marshaler runtime.Marshaler,
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "ID", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Lease_Get_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Leases_Get_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -657,10 +657,10 @@ func local_request_Lease_Get_0(ctx context.Context, marshaler runtime.Marshaler,
 }
 
 var (
-	filter_Lease_Revoke_0 = &utilities.DoubleArray{Encoding: map[string]int{"header": 0, "store": 1, "partition": 2, "ID": 3}, Base: []int{1, 1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 2, 2, 1, 3, 4, 5}}
+	filter_Leases_Revoke_0 = &utilities.DoubleArray{Encoding: map[string]int{"header": 0, "store": 1, "partition": 2, "ID": 3}, Base: []int{1, 1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 2, 2, 1, 3, 4, 5}}
 )
 
-func request_Lease_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, client LeaseClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Leases_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, client LeasesClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseRevokeRequest
 	var metadata runtime.ServerMetadata
 
@@ -707,7 +707,7 @@ func request_Lease_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, cl
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Lease_Revoke_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Leases_Revoke_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -716,7 +716,7 @@ func request_Lease_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, cl
 
 }
 
-func local_request_Lease_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, server LeaseServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Leases_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, server LeasesServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseRevokeRequest
 	var metadata runtime.ServerMetadata
 
@@ -760,7 +760,7 @@ func local_request_Lease_Revoke_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "ID", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Lease_Revoke_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_Leases_Revoke_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -769,7 +769,7 @@ func local_request_Lease_Revoke_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func request_Lease_Renew_0(ctx context.Context, marshaler runtime.Marshaler, client LeaseClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Leases_Renew_0(ctx context.Context, marshaler runtime.Marshaler, client LeasesClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseRenewRequest
 	var metadata runtime.ServerMetadata
 
@@ -815,7 +815,7 @@ func request_Lease_Renew_0(ctx context.Context, marshaler runtime.Marshaler, cli
 
 }
 
-func local_request_Lease_Renew_0(ctx context.Context, marshaler runtime.Marshaler, server LeaseServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Leases_Renew_0(ctx context.Context, marshaler runtime.Marshaler, server LeasesServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq LeaseRenewRequest
 	var metadata runtime.ServerMetadata
 
@@ -936,12 +936,12 @@ func RegisterKVHandlerServer(ctx context.Context, mux *runtime.ServeMux, server 
 	return nil
 }
 
-// RegisterLeaseHandlerServer registers the http handlers for service Lease to "mux".
-// UnaryRPC     :call LeaseServer directly.
+// RegisterLeasesHandlerServer registers the http handlers for service Leases to "mux".
+// UnaryRPC     :call LeasesServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-func RegisterLeaseHandlerServer(ctx context.Context, mux *runtime.ServeMux, server LeaseServer) error {
+func RegisterLeasesHandlerServer(ctx context.Context, mux *runtime.ServeMux, server LeasesServer) error {
 
-	mux.Handle("POST", pattern_Lease_Grant_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Leases_Grant_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -950,18 +950,18 @@ func RegisterLeaseHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Lease_Grant_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Leases_Grant_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Grant_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Grant_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Lease_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Leases_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -970,18 +970,18 @@ func RegisterLeaseHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Lease_Query_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Leases_Query_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Query_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Query_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Lease_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Leases_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -990,18 +990,18 @@ func RegisterLeaseHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Lease_Get_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Leases_Get_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_Lease_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_Leases_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1010,18 +1010,18 @@ func RegisterLeaseHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Lease_Revoke_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Leases_Revoke_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_Lease_Renew_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Leases_Renew_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1030,14 +1030,14 @@ func RegisterLeaseHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Lease_Renew_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Leases_Renew_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Renew_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Renew_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1185,9 +1185,9 @@ var (
 	forward_KV_Watch_0 = runtime.ForwardResponseStream
 )
 
-// RegisterLeaseHandlerFromEndpoint is same as RegisterLeaseHandler but
+// RegisterLeasesHandlerFromEndpoint is same as RegisterLeasesHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterLeaseHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterLeasesHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -1207,23 +1207,23 @@ func RegisterLeaseHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux
 		}()
 	}()
 
-	return RegisterLeaseHandler(ctx, mux, conn)
+	return RegisterLeasesHandler(ctx, mux, conn)
 }
 
-// RegisterLeaseHandler registers the http handlers for service Lease to "mux".
+// RegisterLeasesHandler registers the http handlers for service Leases to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterLeaseHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterLeaseHandlerClient(ctx, mux, NewLeaseClient(conn))
+func RegisterLeasesHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterLeasesHandlerClient(ctx, mux, NewLeasesClient(conn))
 }
 
-// RegisterLeaseHandlerClient registers the http handlers for service Lease
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "LeaseClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "LeaseClient"
+// RegisterLeasesHandlerClient registers the http handlers for service Leases
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "LeasesClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "LeasesClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "LeaseClient" to call the correct interceptors.
-func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, client LeaseClient) error {
+// "LeasesClient" to call the correct interceptors.
+func RegisterLeasesHandlerClient(ctx context.Context, mux *runtime.ServeMux, client LeasesClient) error {
 
-	mux.Handle("POST", pattern_Lease_Grant_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Leases_Grant_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1232,18 +1232,18 @@ func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Lease_Grant_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Leases_Grant_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Grant_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Grant_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Lease_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Leases_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1252,18 +1252,18 @@ func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Lease_Query_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Leases_Query_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Query_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Query_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Lease_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Leases_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1272,18 +1272,18 @@ func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Lease_Get_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Leases_Get_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_Lease_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_Leases_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1292,18 +1292,18 @@ func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Lease_Revoke_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Leases_Revoke_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_Lease_Renew_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Leases_Renew_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1312,14 +1312,14 @@ func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Lease_Renew_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Leases_Renew_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Lease_Renew_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Leases_Renew_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1327,25 +1327,25 @@ func RegisterLeaseHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Lease_Grant_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Leases_Grant_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Lease_Query_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Leases_Query_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Lease_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases", "ID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Leases_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases", "ID"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Lease_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases", "ID"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Leases_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "leases", "ID"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Lease_Renew_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "lease-renewals"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Leases_Renew_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "stores", "header.store", "partitions", "header.partition", "lease-renewals"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_Lease_Grant_0 = runtime.ForwardResponseMessage
+	forward_Leases_Grant_0 = runtime.ForwardResponseMessage
 
-	forward_Lease_Query_0 = runtime.ForwardResponseMessage
+	forward_Leases_Query_0 = runtime.ForwardResponseMessage
 
-	forward_Lease_Get_0 = runtime.ForwardResponseMessage
+	forward_Leases_Get_0 = runtime.ForwardResponseMessage
 
-	forward_Lease_Revoke_0 = runtime.ForwardResponseMessage
+	forward_Leases_Revoke_0 = runtime.ForwardResponseMessage
 
-	forward_Lease_Renew_0 = runtime.ForwardResponseMessage
+	forward_Leases_Renew_0 = runtime.ForwardResponseMessage
 )

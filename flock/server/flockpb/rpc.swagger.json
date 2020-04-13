@@ -310,7 +310,7 @@
           }
         ],
         "tags": [
-          "Lease"
+          "Leases"
         ]
       }
     },
@@ -346,7 +346,7 @@
           }
         ],
         "tags": [
-          "Lease"
+          "Leases"
         ]
       },
       "post": {
@@ -389,7 +389,7 @@
           }
         ],
         "tags": [
-          "Lease"
+          "Leases"
         ]
       }
     },
@@ -434,7 +434,7 @@
           }
         ],
         "tags": [
-          "Lease"
+          "Leases"
         ]
       },
       "delete": {
@@ -477,7 +477,7 @@
           }
         ],
         "tags": [
-          "Lease"
+          "Leases"
         ]
       }
     },
@@ -630,15 +630,6 @@
         "VALUE"
       ],
       "default": "KEY"
-    },
-    "KVWatchRequestFilterType": {
-      "type": "string",
-      "enum": [
-        "NO_PUT",
-        "NO_DELETE"
-      ],
-      "default": "NO_PUT",
-      "description": " - NO_PUT: filter out put event.\n - NO_DELETE: filter out delete event."
     },
     "flockpbCompare": {
       "type": "object",
@@ -1047,6 +1038,19 @@
         }
       }
     },
+    "flockpbKVWatchCursor": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "string",
+          "format": "int64"
+        },
+        "key": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "flockpbKVWatchRequest": {
       "type": "object",
       "properties": {
@@ -1057,32 +1061,29 @@
           "$ref": "#/definitions/flockpbKVSelection",
           "title": "Selection of keys to watch"
         },
-        "start_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "start_revision is an optional revision to watch from (inclusive). No start_revision is \"now\"."
+        "start": {
+          "$ref": "#/definitions/flockpbKVWatchCursor",
+          "description": "start is an optional cursor to watch from (exclusive). No start is \"now\"."
         },
         "progress_notify": {
           "type": "boolean",
           "format": "boolean",
           "description": "progress_notify is set so that the flock server will periodically send a WatchResponse with\nno events to the new watcher if there are no recent events. It is useful when clients\nwish to recover a disconnected watcher starting from a recent known revision.\nThe flock server may decide how often it will send notifications based on current load."
         },
-        "filters": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KVWatchRequestFilterType"
-          },
-          "description": "filters filter the events at server side before it sends back to the watcher."
+        "no_put": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "filter out put events."
+        },
+        "no_delete": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "filter out delete event."
         },
         "prev_kv": {
           "type": "boolean",
           "format": "boolean",
           "description": "If prev_kv is set, created watcher gets the previous KV before the event happens.\nIf the previous KV is already compacted, nothing will be returned."
-        },
-        "fragment": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "fragment enables splitting large revisions into multiple watch responses."
         }
       }
     },
@@ -1092,25 +1093,25 @@
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
         },
-        "compact_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "compact_revision is set to the minimum index if a watcher tries to watch\nat a compacted index.\n\nThis happens when creating a watcher at a compacted revision or the watcher cannot\ncatch up with the progress of the key-value store.\n\nThe client should treat the watcher as canceled and should not try to create any\nwatcher with the same start_revision again."
+        "compacted": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Indicates that the watch request tried watching from a\ncompacted revision. The client should treat the watcher\nas canceled and should not try to create any watcher with\nthe same start again."
         },
         "cancel_reason": {
           "type": "string",
           "description": "cancel_reason indicates the reason for canceling the watcher."
         },
-        "fragment": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "framgment is true if large watch response was split over multiple responses."
+        "after": {
+          "$ref": "#/definitions/flockpbKVWatchCursor",
+          "description": "Watchers should keep track of the latest after cursor\nso that they can resume where they left off with a\nsubsequent watch request. If the last watch request\nwas canceled due to compaction this cursor is not valid\nUse of an after cursor from a compacted revision will\nresult in another canceled watch request."
         },
         "events": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/flockpbEvent"
-          }
+          },
+          "description": "Events contains a list of events ordered by\nby [revision,key]. There may be events from several different\nrevisions in the events list, but events from older revisions\nwill appear first."
         }
       }
     },
@@ -1149,16 +1150,13 @@
         }
       }
     },
-    "flockpbLeaseGetResponse": {
+    "flockpbLease": {
       "type": "object",
       "properties": {
-        "header": {
-          "$ref": "#/definitions/flockpbResponseHeader"
-        },
         "ID": {
           "type": "string",
           "format": "int64",
-          "description": "ID is the lease ID from the keep alive request."
+          "title": "ID is the lease ID"
         },
         "TTL": {
           "type": "string",
@@ -1169,6 +1167,17 @@
           "type": "string",
           "format": "int64",
           "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
+        }
+      }
+    },
+    "flockpbLeaseGetResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/flockpbResponseHeader"
+        },
+        "lease": {
+          "$ref": "#/definitions/flockpbLease"
         }
       }
     },
@@ -1191,20 +1200,8 @@
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
         },
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID for the granted lease."
-        },
-        "TTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds."
-        },
-        "grantedTTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
+        "lease": {
+          "$ref": "#/definitions/flockpbLease"
         }
       }
     },
@@ -1217,7 +1214,7 @@
         "leases": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/flockpbLeaseStatus"
+            "$ref": "#/definitions/flockpbLease"
           }
         }
       }
@@ -1241,20 +1238,8 @@
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
         },
-        "ID": {
-          "type": "string",
-          "format": "int64",
-          "description": "ID is the lease ID from the keep alive request."
-        },
-        "TTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds."
-        },
-        "grantedTTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
+        "lease": {
+          "$ref": "#/definitions/flockpbLease"
         }
       }
     },
@@ -1263,25 +1248,6 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/flockpbResponseHeader"
-        }
-      }
-    },
-    "flockpbLeaseStatus": {
-      "type": "object",
-      "properties": {
-        "ID": {
-          "type": "string",
-          "format": "int64"
-        },
-        "TTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds."
-        },
-        "grantedTTL": {
-          "type": "string",
-          "format": "int64",
-          "description": "GrantedTTL is the initial granted time in seconds upon lease creation/renewal."
         }
       }
     },

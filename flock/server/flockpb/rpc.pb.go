@@ -155,33 +155,6 @@ func (KVPredicate_Target) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_77a6da22d6a3feb1, []int{11, 1}
 }
 
-type KVWatchRequest_FilterType int32
-
-const (
-	// filter out put event.
-	KVWatchRequest_NO_PUT KVWatchRequest_FilterType = 0
-	// filter out delete event.
-	KVWatchRequest_NO_DELETE KVWatchRequest_FilterType = 1
-)
-
-var KVWatchRequest_FilterType_name = map[int32]string{
-	0: "NO_PUT",
-	1: "NO_DELETE",
-}
-
-var KVWatchRequest_FilterType_value = map[string]int32{
-	"NO_PUT":    0,
-	"NO_DELETE": 1,
-}
-
-func (x KVWatchRequest_FilterType) String() string {
-	return proto.EnumName(KVWatchRequest_FilterType_name, int32(x))
-}
-
-func (KVWatchRequest_FilterType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{17, 0}
-}
-
 type Event_EventType int32
 
 const (
@@ -1799,31 +1772,83 @@ func (m *KVCompactionResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
+type KVWatchCursor struct {
+	Revision int64  `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	Key      []byte `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (m *KVWatchCursor) Reset()         { *m = KVWatchCursor{} }
+func (m *KVWatchCursor) String() string { return proto.CompactTextString(m) }
+func (*KVWatchCursor) ProtoMessage()    {}
+func (*KVWatchCursor) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{17}
+}
+func (m *KVWatchCursor) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KVWatchCursor) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KVWatchCursor.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *KVWatchCursor) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVWatchCursor.Merge(m, src)
+}
+func (m *KVWatchCursor) XXX_Size() int {
+	return m.Size()
+}
+func (m *KVWatchCursor) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVWatchCursor.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KVWatchCursor proto.InternalMessageInfo
+
+func (m *KVWatchCursor) GetRevision() int64 {
+	if m != nil {
+		return m.Revision
+	}
+	return 0
+}
+
+func (m *KVWatchCursor) GetKey() []byte {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
 type KVWatchRequest struct {
 	Header *PartitionRequestHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// Selection of keys to watch
 	Selection *KVSelection `protobuf:"bytes,2,opt,name=selection,proto3" json:"selection,omitempty"`
-	// start_revision is an optional revision to watch from (inclusive). No start_revision is "now".
-	StartRevision int64 `protobuf:"varint,3,opt,name=start_revision,json=startRevision,proto3" json:"start_revision,omitempty"`
+	// start is an optional cursor to watch from (exclusive). No start is "now".
+	Start *KVWatchCursor `protobuf:"bytes,3,opt,name=start,proto3" json:"start,omitempty"`
 	// progress_notify is set so that the flock server will periodically send a WatchResponse with
 	// no events to the new watcher if there are no recent events. It is useful when clients
 	// wish to recover a disconnected watcher starting from a recent known revision.
 	// The flock server may decide how often it will send notifications based on current load.
 	ProgressNotify bool `protobuf:"varint,4,opt,name=progress_notify,json=progressNotify,proto3" json:"progress_notify,omitempty"`
-	// filters filter the events at server side before it sends back to the watcher.
-	Filters []KVWatchRequest_FilterType `protobuf:"varint,5,rep,packed,name=filters,proto3,enum=flockpb.KVWatchRequest_FilterType" json:"filters,omitempty"`
+	// filter out put events.
+	NoPut bool `protobuf:"varint,5,opt,name=no_put,json=noPut,proto3" json:"no_put,omitempty"`
+	// filter out delete event.
+	NoDelete bool `protobuf:"varint,6,opt,name=no_delete,json=noDelete,proto3" json:"no_delete,omitempty"`
 	// If prev_kv is set, created watcher gets the previous KV before the event happens.
 	// If the previous KV is already compacted, nothing will be returned.
-	PrevKv bool `protobuf:"varint,6,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
-	// fragment enables splitting large revisions into multiple watch responses.
-	Fragment bool `protobuf:"varint,8,opt,name=fragment,proto3" json:"fragment,omitempty"`
+	PrevKv bool `protobuf:"varint,7,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
 }
 
 func (m *KVWatchRequest) Reset()         { *m = KVWatchRequest{} }
 func (m *KVWatchRequest) String() string { return proto.CompactTextString(m) }
 func (*KVWatchRequest) ProtoMessage()    {}
 func (*KVWatchRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{17}
+	return fileDescriptor_77a6da22d6a3feb1, []int{18}
 }
 func (m *KVWatchRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1866,11 +1891,11 @@ func (m *KVWatchRequest) GetSelection() *KVSelection {
 	return nil
 }
 
-func (m *KVWatchRequest) GetStartRevision() int64 {
+func (m *KVWatchRequest) GetStart() *KVWatchCursor {
 	if m != nil {
-		return m.StartRevision
+		return m.Start
 	}
-	return 0
+	return nil
 }
 
 func (m *KVWatchRequest) GetProgressNotify() bool {
@@ -1880,11 +1905,18 @@ func (m *KVWatchRequest) GetProgressNotify() bool {
 	return false
 }
 
-func (m *KVWatchRequest) GetFilters() []KVWatchRequest_FilterType {
+func (m *KVWatchRequest) GetNoPut() bool {
 	if m != nil {
-		return m.Filters
+		return m.NoPut
 	}
-	return nil
+	return false
+}
+
+func (m *KVWatchRequest) GetNoDelete() bool {
+	if m != nil {
+		return m.NoDelete
+	}
+	return false
 }
 
 func (m *KVWatchRequest) GetPrevKv() bool {
@@ -1894,36 +1926,34 @@ func (m *KVWatchRequest) GetPrevKv() bool {
 	return false
 }
 
-func (m *KVWatchRequest) GetFragment() bool {
-	if m != nil {
-		return m.Fragment
-	}
-	return false
-}
-
 type KVWatchResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// compact_revision is set to the minimum index if a watcher tries to watch
-	// at a compacted index.
-	//
-	// This happens when creating a watcher at a compacted revision or the watcher cannot
-	// catch up with the progress of the key-value store.
-	//
-	// The client should treat the watcher as canceled and should not try to create any
-	// watcher with the same start_revision again.
-	CompactRevision int64 `protobuf:"varint,2,opt,name=compact_revision,json=compactRevision,proto3" json:"compact_revision,omitempty"`
+	// Indicates that the watch request tried watching from a
+	// compacted revision. The client should treat the watcher
+	// as canceled and should not try to create any watcher with
+	// the same start again.
+	Compacted bool `protobuf:"varint,2,opt,name=compacted,proto3" json:"compacted,omitempty"`
 	// cancel_reason indicates the reason for canceling the watcher.
 	CancelReason string `protobuf:"bytes,3,opt,name=cancel_reason,json=cancelReason,proto3" json:"cancel_reason,omitempty"`
-	// framgment is true if large watch response was split over multiple responses.
-	Fragment bool     `protobuf:"varint,4,opt,name=fragment,proto3" json:"fragment,omitempty"`
-	Events   []*Event `protobuf:"bytes,11,rep,name=events,proto3" json:"events,omitempty"`
+	// Watchers should keep track of the latest after cursor
+	// so that they can resume where they left off with a
+	// subsequent watch request. If the last watch request
+	// was canceled due to compaction this cursor is not valid
+	// Use of an after cursor from a compacted revision will
+	// result in another canceled watch request.
+	After *KVWatchCursor `protobuf:"bytes,4,opt,name=after,proto3" json:"after,omitempty"`
+	// Events contains a list of events ordered by
+	// by [revision,key]. There may be events from several different
+	// revisions in the events list, but events from older revisions
+	// will appear first.
+	Events []*Event `protobuf:"bytes,11,rep,name=events,proto3" json:"events,omitempty"`
 }
 
 func (m *KVWatchResponse) Reset()         { *m = KVWatchResponse{} }
 func (m *KVWatchResponse) String() string { return proto.CompactTextString(m) }
 func (*KVWatchResponse) ProtoMessage()    {}
 func (*KVWatchResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{18}
+	return fileDescriptor_77a6da22d6a3feb1, []int{19}
 }
 func (m *KVWatchResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1959,11 +1989,11 @@ func (m *KVWatchResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-func (m *KVWatchResponse) GetCompactRevision() int64 {
+func (m *KVWatchResponse) GetCompacted() bool {
 	if m != nil {
-		return m.CompactRevision
+		return m.Compacted
 	}
-	return 0
+	return false
 }
 
 func (m *KVWatchResponse) GetCancelReason() string {
@@ -1973,11 +2003,11 @@ func (m *KVWatchResponse) GetCancelReason() string {
 	return ""
 }
 
-func (m *KVWatchResponse) GetFragment() bool {
+func (m *KVWatchResponse) GetAfter() *KVWatchCursor {
 	if m != nil {
-		return m.Fragment
+		return m.After
 	}
-	return false
+	return nil
 }
 
 func (m *KVWatchResponse) GetEvents() []*Event {
@@ -1997,7 +2027,7 @@ func (m *LeaseGrantRequest) Reset()         { *m = LeaseGrantRequest{} }
 func (m *LeaseGrantRequest) String() string { return proto.CompactTextString(m) }
 func (*LeaseGrantRequest) ProtoMessage()    {}
 func (*LeaseGrantRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{19}
+	return fileDescriptor_77a6da22d6a3feb1, []int{20}
 }
 func (m *LeaseGrantRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2042,19 +2072,14 @@ func (m *LeaseGrantRequest) GetTTL() int64 {
 
 type LeaseGrantResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// ID is the lease ID for the granted lease.
-	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
-	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
-	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
+	Lease  *Lease          `protobuf:"bytes,2,opt,name=lease,proto3" json:"lease,omitempty"`
 }
 
 func (m *LeaseGrantResponse) Reset()         { *m = LeaseGrantResponse{} }
 func (m *LeaseGrantResponse) String() string { return proto.CompactTextString(m) }
 func (*LeaseGrantResponse) ProtoMessage()    {}
 func (*LeaseGrantResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{20}
+	return fileDescriptor_77a6da22d6a3feb1, []int{21}
 }
 func (m *LeaseGrantResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2090,25 +2115,11 @@ func (m *LeaseGrantResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-func (m *LeaseGrantResponse) GetID() int64 {
+func (m *LeaseGrantResponse) GetLease() *Lease {
 	if m != nil {
-		return m.ID
+		return m.Lease
 	}
-	return 0
-}
-
-func (m *LeaseGrantResponse) GetTTL() int64 {
-	if m != nil {
-		return m.TTL
-	}
-	return 0
-}
-
-func (m *LeaseGrantResponse) GetGrantedTTL() int64 {
-	if m != nil {
-		return m.GrantedTTL
-	}
-	return 0
+	return nil
 }
 
 type LeaseRevokeRequest struct {
@@ -2121,7 +2132,7 @@ func (m *LeaseRevokeRequest) Reset()         { *m = LeaseRevokeRequest{} }
 func (m *LeaseRevokeRequest) String() string { return proto.CompactTextString(m) }
 func (*LeaseRevokeRequest) ProtoMessage()    {}
 func (*LeaseRevokeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{21}
+	return fileDescriptor_77a6da22d6a3feb1, []int{22}
 }
 func (m *LeaseRevokeRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2172,7 +2183,7 @@ func (m *LeaseRevokeResponse) Reset()         { *m = LeaseRevokeResponse{} }
 func (m *LeaseRevokeResponse) String() string { return proto.CompactTextString(m) }
 func (*LeaseRevokeResponse) ProtoMessage()    {}
 func (*LeaseRevokeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{22}
+	return fileDescriptor_77a6da22d6a3feb1, []int{23}
 }
 func (m *LeaseRevokeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2218,7 +2229,7 @@ func (m *LeaseRenewRequest) Reset()         { *m = LeaseRenewRequest{} }
 func (m *LeaseRenewRequest) String() string { return proto.CompactTextString(m) }
 func (*LeaseRenewRequest) ProtoMessage()    {}
 func (*LeaseRenewRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{23}
+	return fileDescriptor_77a6da22d6a3feb1, []int{24}
 }
 func (m *LeaseRenewRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2263,19 +2274,14 @@ func (m *LeaseRenewRequest) GetID() int64 {
 
 type LeaseRenewResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// ID is the lease ID from the keep alive request.
-	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
-	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
-	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
+	Lease  *Lease          `protobuf:"bytes,2,opt,name=lease,proto3" json:"lease,omitempty"`
 }
 
 func (m *LeaseRenewResponse) Reset()         { *m = LeaseRenewResponse{} }
 func (m *LeaseRenewResponse) String() string { return proto.CompactTextString(m) }
 func (*LeaseRenewResponse) ProtoMessage()    {}
 func (*LeaseRenewResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{24}
+	return fileDescriptor_77a6da22d6a3feb1, []int{25}
 }
 func (m *LeaseRenewResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2311,25 +2317,11 @@ func (m *LeaseRenewResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-func (m *LeaseRenewResponse) GetID() int64 {
+func (m *LeaseRenewResponse) GetLease() *Lease {
 	if m != nil {
-		return m.ID
+		return m.Lease
 	}
-	return 0
-}
-
-func (m *LeaseRenewResponse) GetTTL() int64 {
-	if m != nil {
-		return m.TTL
-	}
-	return 0
-}
-
-func (m *LeaseRenewResponse) GetGrantedTTL() int64 {
-	if m != nil {
-		return m.GrantedTTL
-	}
-	return 0
+	return nil
 }
 
 type LeaseGetRequest struct {
@@ -2342,7 +2334,7 @@ func (m *LeaseGetRequest) Reset()         { *m = LeaseGetRequest{} }
 func (m *LeaseGetRequest) String() string { return proto.CompactTextString(m) }
 func (*LeaseGetRequest) ProtoMessage()    {}
 func (*LeaseGetRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{25}
+	return fileDescriptor_77a6da22d6a3feb1, []int{26}
 }
 func (m *LeaseGetRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2387,19 +2379,14 @@ func (m *LeaseGetRequest) GetID() int64 {
 
 type LeaseGetResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	// ID is the lease ID from the keep alive request.
-	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
-	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
-	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
+	Lease  *Lease          `protobuf:"bytes,2,opt,name=lease,proto3" json:"lease,omitempty"`
 }
 
 func (m *LeaseGetResponse) Reset()         { *m = LeaseGetResponse{} }
 func (m *LeaseGetResponse) String() string { return proto.CompactTextString(m) }
 func (*LeaseGetResponse) ProtoMessage()    {}
 func (*LeaseGetResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{26}
+	return fileDescriptor_77a6da22d6a3feb1, []int{27}
 }
 func (m *LeaseGetResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2435,25 +2422,11 @@ func (m *LeaseGetResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-func (m *LeaseGetResponse) GetID() int64 {
+func (m *LeaseGetResponse) GetLease() *Lease {
 	if m != nil {
-		return m.ID
+		return m.Lease
 	}
-	return 0
-}
-
-func (m *LeaseGetResponse) GetTTL() int64 {
-	if m != nil {
-		return m.TTL
-	}
-	return 0
-}
-
-func (m *LeaseGetResponse) GetGrantedTTL() int64 {
-	if m != nil {
-		return m.GrantedTTL
-	}
-	return 0
+	return nil
 }
 
 type LeaseQueryRequest struct {
@@ -2464,7 +2437,7 @@ func (m *LeaseQueryRequest) Reset()         { *m = LeaseQueryRequest{} }
 func (m *LeaseQueryRequest) String() string { return proto.CompactTextString(m) }
 func (*LeaseQueryRequest) ProtoMessage()    {}
 func (*LeaseQueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{27}
+	return fileDescriptor_77a6da22d6a3feb1, []int{28}
 }
 func (m *LeaseQueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2500,71 +2473,9 @@ func (m *LeaseQueryRequest) GetHeader() *PartitionRequestHeader {
 	return nil
 }
 
-type LeaseStatus struct {
-	ID int64 `protobuf:"varint,1,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
-	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
-	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
-	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
-	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
-}
-
-func (m *LeaseStatus) Reset()         { *m = LeaseStatus{} }
-func (m *LeaseStatus) String() string { return proto.CompactTextString(m) }
-func (*LeaseStatus) ProtoMessage()    {}
-func (*LeaseStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_77a6da22d6a3feb1, []int{28}
-}
-func (m *LeaseStatus) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LeaseStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LeaseStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LeaseStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LeaseStatus.Merge(m, src)
-}
-func (m *LeaseStatus) XXX_Size() int {
-	return m.Size()
-}
-func (m *LeaseStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_LeaseStatus.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LeaseStatus proto.InternalMessageInfo
-
-func (m *LeaseStatus) GetID() int64 {
-	if m != nil {
-		return m.ID
-	}
-	return 0
-}
-
-func (m *LeaseStatus) GetTTL() int64 {
-	if m != nil {
-		return m.TTL
-	}
-	return 0
-}
-
-func (m *LeaseStatus) GetGrantedTTL() int64 {
-	if m != nil {
-		return m.GrantedTTL
-	}
-	return 0
-}
-
 type LeaseQueryResponse struct {
 	Header *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	Leases []*LeaseStatus  `protobuf:"bytes,2,rep,name=leases,proto3" json:"leases,omitempty"`
+	Leases []*Lease        `protobuf:"bytes,2,rep,name=leases,proto3" json:"leases,omitempty"`
 }
 
 func (m *LeaseQueryResponse) Reset()         { *m = LeaseQueryResponse{} }
@@ -2607,7 +2518,7 @@ func (m *LeaseQueryResponse) GetHeader() *ResponseHeader {
 	return nil
 }
 
-func (m *LeaseQueryResponse) GetLeases() []*LeaseStatus {
+func (m *LeaseQueryResponse) GetLeases() []*Lease {
 	if m != nil {
 		return m.Leases
 	}
@@ -2777,12 +2688,126 @@ func (m *Event) GetPrevKv() *KeyValue {
 	return nil
 }
 
+type Lease struct {
+	// ID is the lease ID
+	ID int64 `protobuf:"varint,2,opt,name=ID,json=iD,proto3" json:"ID,omitempty"`
+	// TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
+	TTL int64 `protobuf:"varint,3,opt,name=TTL,json=tTL,proto3" json:"TTL,omitempty"`
+	// GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
+	GrantedTTL int64 `protobuf:"varint,4,opt,name=grantedTTL,proto3" json:"grantedTTL,omitempty"`
+}
+
+func (m *Lease) Reset()         { *m = Lease{} }
+func (m *Lease) String() string { return proto.CompactTextString(m) }
+func (*Lease) ProtoMessage()    {}
+func (*Lease) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{32}
+}
+func (m *Lease) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Lease) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Lease.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Lease) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Lease.Merge(m, src)
+}
+func (m *Lease) XXX_Size() int {
+	return m.Size()
+}
+func (m *Lease) XXX_DiscardUnknown() {
+	xxx_messageInfo_Lease.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Lease proto.InternalMessageInfo
+
+func (m *Lease) GetID() int64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+func (m *Lease) GetTTL() int64 {
+	if m != nil {
+		return m.TTL
+	}
+	return 0
+}
+
+func (m *Lease) GetGrantedTTL() int64 {
+	if m != nil {
+		return m.GrantedTTL
+	}
+	return 0
+}
+
+type RaftStatus struct {
+	RaftTerm  uint64 `protobuf:"varint,1,opt,name=raft_term,json=raftTerm,proto3" json:"raft_term,omitempty"`
+	RaftIndex uint64 `protobuf:"varint,2,opt,name=raft_index,json=raftIndex,proto3" json:"raft_index,omitempty"`
+}
+
+func (m *RaftStatus) Reset()         { *m = RaftStatus{} }
+func (m *RaftStatus) String() string { return proto.CompactTextString(m) }
+func (*RaftStatus) ProtoMessage()    {}
+func (*RaftStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{33}
+}
+func (m *RaftStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RaftStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RaftStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RaftStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RaftStatus.Merge(m, src)
+}
+func (m *RaftStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *RaftStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_RaftStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RaftStatus proto.InternalMessageInfo
+
+func (m *RaftStatus) GetRaftTerm() uint64 {
+	if m != nil {
+		return m.RaftTerm
+	}
+	return 0
+}
+
+func (m *RaftStatus) GetRaftIndex() uint64 {
+	if m != nil {
+		return m.RaftIndex
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterEnum("flockpb.KVQueryRequest_SortOrder", KVQueryRequest_SortOrder_name, KVQueryRequest_SortOrder_value)
 	proto.RegisterEnum("flockpb.KVQueryRequest_SortTarget", KVQueryRequest_SortTarget_name, KVQueryRequest_SortTarget_value)
 	proto.RegisterEnum("flockpb.KVPredicate_Comparison", KVPredicate_Comparison_name, KVPredicate_Comparison_value)
 	proto.RegisterEnum("flockpb.KVPredicate_Target", KVPredicate_Target_name, KVPredicate_Target_value)
-	proto.RegisterEnum("flockpb.KVWatchRequest_FilterType", KVWatchRequest_FilterType_name, KVWatchRequest_FilterType_value)
 	proto.RegisterEnum("flockpb.Event_EventType", Event_EventType_name, Event_EventType_value)
 	proto.RegisterType((*PartitionRequestHeader)(nil), "flockpb.PartitionRequestHeader")
 	proto.RegisterType((*ResponseHeader)(nil), "flockpb.ResponseHeader")
@@ -2801,6 +2826,7 @@ func init() {
 	proto.RegisterType((*KVTxnResponse)(nil), "flockpb.KVTxnResponse")
 	proto.RegisterType((*KVCompactionRequest)(nil), "flockpb.KVCompactionRequest")
 	proto.RegisterType((*KVCompactionResponse)(nil), "flockpb.KVCompactionResponse")
+	proto.RegisterType((*KVWatchCursor)(nil), "flockpb.KVWatchCursor")
 	proto.RegisterType((*KVWatchRequest)(nil), "flockpb.KVWatchRequest")
 	proto.RegisterType((*KVWatchResponse)(nil), "flockpb.KVWatchResponse")
 	proto.RegisterType((*LeaseGrantRequest)(nil), "flockpb.LeaseGrantRequest")
@@ -2812,156 +2838,159 @@ func init() {
 	proto.RegisterType((*LeaseGetRequest)(nil), "flockpb.LeaseGetRequest")
 	proto.RegisterType((*LeaseGetResponse)(nil), "flockpb.LeaseGetResponse")
 	proto.RegisterType((*LeaseQueryRequest)(nil), "flockpb.LeaseQueryRequest")
-	proto.RegisterType((*LeaseStatus)(nil), "flockpb.LeaseStatus")
 	proto.RegisterType((*LeaseQueryResponse)(nil), "flockpb.LeaseQueryResponse")
 	proto.RegisterType((*KeyValue)(nil), "flockpb.KeyValue")
 	proto.RegisterType((*Event)(nil), "flockpb.Event")
+	proto.RegisterType((*Lease)(nil), "flockpb.Lease")
+	proto.RegisterType((*RaftStatus)(nil), "flockpb.RaftStatus")
 }
 
 func init() { proto.RegisterFile("rpc.proto", fileDescriptor_77a6da22d6a3feb1) }
 
 var fileDescriptor_77a6da22d6a3feb1 = []byte{
-	// 2225 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x59, 0xdd, 0x6f, 0x1b, 0x59,
-	0x15, 0xf7, 0xf8, 0xdb, 0xc7, 0x8e, 0xe3, 0xde, 0x7e, 0x4d, 0xdd, 0x10, 0xda, 0xa9, 0x76, 0xdb,
-	0xad, 0x4a, 0xbc, 0xb8, 0x0f, 0x20, 0x96, 0x5d, 0x92, 0x38, 0x6e, 0x12, 0xc5, 0xc4, 0xe9, 0xb5,
-	0x9b, 0x15, 0x08, 0xb0, 0xa6, 0xf6, 0x8d, 0x33, 0xb2, 0x33, 0xe3, 0xce, 0x5c, 0xbb, 0x31, 0xab,
-	0x0a, 0x09, 0x69, 0x77, 0x41, 0xfb, 0xc0, 0xa2, 0x22, 0x78, 0xe2, 0x95, 0x47, 0x04, 0xfc, 0x15,
-	0x3c, 0xae, 0x54, 0x09, 0xf1, 0x88, 0x5a, 0x5e, 0xf8, 0x2f, 0xd0, 0xfd, 0x98, 0x4f, 0xbb, 0x85,
-	0x75, 0x2a, 0xe5, 0x25, 0xf2, 0x3d, 0xf7, 0x9c, 0x73, 0x7f, 0xe7, 0xdc, 0xf3, 0x75, 0x27, 0x90,
-	0xb3, 0x47, 0xdd, 0xb5, 0x91, 0x6d, 0x51, 0x0b, 0x65, 0x8e, 0x86, 0x56, 0x77, 0x30, 0x7a, 0x5c,
-	0xbe, 0xd4, 0xb7, 0xfa, 0x16, 0xa7, 0x55, 0xd8, 0x2f, 0xb1, 0x5d, 0x5e, 0xe9, 0x5b, 0x56, 0x7f,
-	0x48, 0x2a, 0xfa, 0xc8, 0xa8, 0xe8, 0xa6, 0x69, 0x51, 0x9d, 0x1a, 0x96, 0xe9, 0x88, 0x5d, 0xad,
-	0x01, 0x57, 0x0e, 0x74, 0x9b, 0x1a, 0x8c, 0x86, 0xc9, 0x93, 0x31, 0x71, 0xe8, 0x0e, 0xd1, 0x7b,
-	0xc4, 0x46, 0x97, 0x20, 0xe5, 0x50, 0xcb, 0x26, 0xaa, 0x72, 0x43, 0xb9, 0x93, 0xc3, 0x62, 0x81,
-	0x56, 0x20, 0x37, 0x72, 0xf9, 0xd5, 0x38, 0xdf, 0xf1, 0x09, 0xda, 0x2e, 0x14, 0x31, 0x71, 0x46,
-	0x96, 0xe9, 0x10, 0xa9, 0xe5, 0x3a, 0xe4, 0x4e, 0xc8, 0xc9, 0x63, 0x62, 0x77, 0x8c, 0x1e, 0xd7,
-	0x94, 0xc4, 0x59, 0x41, 0xd8, 0xed, 0xa1, 0x32, 0x64, 0x6d, 0x32, 0x31, 0x1c, 0x57, 0x57, 0x02,
-	0x7b, 0x6b, 0xed, 0xaf, 0x29, 0xc8, 0xef, 0x1d, 0xb6, 0xc8, 0x90, 0x74, 0x99, 0x6a, 0x74, 0x15,
-	0xd2, 0x03, 0x32, 0xed, 0xf4, 0x29, 0xd7, 0x52, 0xd8, 0x89, 0xe1, 0xd4, 0x80, 0x4c, 0xb7, 0x29,
-	0xba, 0x06, 0x19, 0xb1, 0x41, 0xb8, 0x0e, 0xb6, 0x93, 0xe6, 0x3b, 0xc4, 0x95, 0x19, 0x52, 0x35,
-	0xc1, 0x77, 0x14, 0x2e, 0xd3, 0xf0, 0x64, 0x86, 0x94, 0xa8, 0x49, 0xb9, 0x93, 0xe6, 0x3b, 0x04,
-	0xdd, 0x81, 0xe5, 0x13, 0xab, 0xd7, 0x71, 0x71, 0xb0, 0x03, 0x53, 0x0c, 0xda, 0x4e, 0x1c, 0x2f,
-	0x9d, 0x58, 0x3d, 0x2c, 0xe9, 0xdb, 0x14, 0xdd, 0x85, 0x52, 0x84, 0x93, 0xa8, 0x69, 0xc9, 0x5a,
-	0x0c, 0xb1, 0xce, 0x6a, 0x1d, 0x52, 0x35, 0xc3, 0x59, 0x13, 0x21, 0xad, 0x8d, 0x59, 0xad, 0x0c,
-	0x63, 0x56, 0xb2, 0x16, 0x43, 0xac, 0x04, 0xad, 0x01, 0xea, 0xda, 0x44, 0xa7, 0x24, 0x04, 0x37,
-	0xc7, 0xb9, 0x93, 0xb8, 0x24, 0xf6, 0x02, 0x88, 0xdf, 0x87, 0x8b, 0xb3, 0xfc, 0x44, 0x05, 0x29,
-	0x70, 0x21, 0x2a, 0x30, 0xf7, 0x84, 0x21, 0x55, 0xf3, 0x5c, 0x20, 0x15, 0x3d, 0xa1, 0x31, 0xf7,
-	0x04, 0x66, 0x40, 0x41, 0x0a, 0x5c, 0x88, 0x0a, 0x10, 0xf4, 0x2e, 0x2c, 0xb3, 0xab, 0x70, 0xa8,
-	0x6e, 0x53, 0xa7, 0xf3, 0xd4, 0xa0, 0xc7, 0xea, 0x3a, 0xbb, 0x12, 0xbc, 0x34, 0x20, 0xd3, 0x16,
-	0xa7, 0x7e, 0x6c, 0xd0, 0x63, 0x54, 0x82, 0xc4, 0x80, 0x4c, 0xd5, 0x0d, 0xbe, 0xc7, 0x7e, 0xb2,
-	0x00, 0x1d, 0x12, 0xdd, 0x21, 0xea, 0x26, 0x0f, 0x1d, 0xb1, 0xd8, 0x5c, 0x06, 0x26, 0xd8, 0xb1,
-	0x75, 0xb3, 0x4f, 0x3a, 0x27, 0x86, 0x19, 0x21, 0xe8, 0xa7, 0x9b, 0x97, 0x00, 0x85, 0x3c, 0xcc,
-	0x8f, 0xde, 0x44, 0x11, 0xbf, 0x13, 0xb3, 0xb7, 0x79, 0x15, 0x2e, 0x47, 0xad, 0x11, 0xcc, 0x97,
-	0x67, 0xcd, 0x24, 0x66, 0x4f, 0xfb, 0x5d, 0x12, 0x8a, 0x7b, 0x87, 0x0f, 0xc7, 0xc4, 0x9e, 0xca,
-	0x5c, 0x42, 0xdf, 0x81, 0xf4, 0x31, 0xcf, 0x04, 0x1e, 0xb6, 0xf9, 0xea, 0x37, 0xd7, 0x64, 0xb6,
-	0xae, 0xcd, 0x4f, 0x3b, 0x2c, 0xd9, 0x51, 0x15, 0x72, 0x8e, 0x1b, 0xfc, 0x3c, 0xb0, 0xf3, 0xd5,
-	0x4b, 0x9e, 0x6c, 0x20, 0x31, 0xb0, 0xcf, 0xc6, 0x3d, 0x62, 0x9c, 0x18, 0x22, 0xdc, 0x99, 0x47,
-	0xd8, 0x22, 0x94, 0x65, 0xc9, 0x70, 0x96, 0xa1, 0x75, 0x00, 0xc7, 0xb2, 0x69, 0xc7, 0xb2, 0x19,
-	0x44, 0x16, 0xe8, 0xc5, 0xea, 0xcd, 0xc0, 0x31, 0x41, 0x5b, 0xd6, 0x5a, 0x96, 0x4d, 0x9b, 0x8c,
-	0x11, 0xe7, 0x1c, 0xf7, 0x27, 0xaa, 0x41, 0x9e, 0x6b, 0xa0, 0xba, 0xdd, 0x27, 0x94, 0x27, 0x40,
-	0xb1, 0xaa, 0xbd, 0x49, 0x45, 0x9b, 0x73, 0x62, 0x7e, 0xb0, 0xf8, 0x8d, 0x34, 0x28, 0x38, 0xc4,
-	0x36, 0xf4, 0xa1, 0xf1, 0x73, 0xfd, 0xf1, 0x90, 0xf0, 0xdc, 0xc8, 0xe2, 0x10, 0x0d, 0xbd, 0x03,
-	0x45, 0x72, 0xda, 0x1d, 0x8e, 0x7b, 0xa4, 0x33, 0xd1, 0x87, 0x63, 0xe2, 0xf0, 0xb4, 0xc8, 0xe2,
-	0x25, 0x49, 0x3d, 0xe4, 0x44, 0x74, 0x0b, 0x96, 0x0c, 0x53, 0xb0, 0x75, 0xad, 0xb1, 0x29, 0xd2,
-	0x21, 0x8b, 0x0b, 0x92, 0x58, 0x63, 0x34, 0xed, 0x0e, 0xe4, 0x3c, 0x63, 0x50, 0x16, 0x92, 0xfb,
-	0xcd, 0xfd, 0x7a, 0x29, 0x86, 0x32, 0x90, 0xd8, 0x68, 0xd5, 0x4a, 0x0a, 0x23, 0x6d, 0xd5, 0x5b,
-	0xb5, 0x52, 0x5c, 0xdb, 0x04, 0xf0, 0x31, 0x33, 0x86, 0xbd, 0xfa, 0x8f, 0x4a, 0x31, 0x94, 0x87,
-	0xcc, 0x61, 0x1d, 0xb7, 0x76, 0x9b, 0xfb, 0x25, 0x05, 0x01, 0xa4, 0x6b, 0xb8, 0xbe, 0xd1, 0xae,
-	0x97, 0xe2, 0x8c, 0xe3, 0x87, 0xcd, 0xad, 0x52, 0x02, 0xe5, 0x20, 0x75, 0xb8, 0xd1, 0x78, 0x54,
-	0x2f, 0x25, 0xb5, 0xdf, 0x2a, 0xb0, 0xec, 0xf9, 0x41, 0x54, 0x47, 0x54, 0x89, 0xc4, 0xc5, 0x55,
-	0xcf, 0x63, 0xe1, 0x02, 0xea, 0xc5, 0xc3, 0x2d, 0x48, 0x0c, 0x26, 0x8e, 0x1a, 0xbf, 0x91, 0xb8,
-	0x93, 0xaf, 0x5e, 0xf0, 0xfd, 0x4b, 0xa6, 0xdc, 0x70, 0xcc, 0x76, 0x11, 0x82, 0xe4, 0x09, 0x2b,
-	0xd9, 0x09, 0x6e, 0x33, 0xff, 0xcd, 0x82, 0x42, 0x38, 0x42, 0xdc, 0xbd, 0x58, 0x68, 0x9f, 0xc5,
-	0xa1, 0xb0, 0x77, 0x78, 0x30, 0xa6, 0xe7, 0x15, 0xa8, 0xfc, 0x0e, 0x45, 0x5d, 0xc6, 0x62, 0xe1,
-	0x27, 0x74, 0x32, 0x90, 0xd0, 0xe8, 0x2a, 0x64, 0x46, 0x36, 0x99, 0x74, 0x06, 0x13, 0x1e, 0x9f,
-	0x59, 0x9c, 0x66, 0xcb, 0xbd, 0x09, 0xba, 0x09, 0x05, 0xa3, 0x6f, 0x5a, 0xb6, 0x8c, 0x07, 0x1e,
-	0x7a, 0x59, 0x9c, 0x17, 0x34, 0xee, 0x94, 0x00, 0x8b, 0x50, 0x9c, 0x09, 0xb2, 0x34, 0x18, 0x49,
-	0x33, 0x61, 0x49, 0xfa, 0x61, 0xd1, 0x9b, 0xb9, 0x07, 0x59, 0x09, 0xf0, 0x0d, 0xd7, 0x93, 0x11,
-	0xa0, 0x1d, 0xed, 0x0f, 0x3c, 0x18, 0xb6, 0xc8, 0x90, 0xb0, 0x3a, 0x78, 0x0e, 0xbe, 0x0f, 0xf8,
-	0x33, 0x11, 0xf4, 0xa7, 0xf6, 0x85, 0x02, 0x25, 0x1f, 0xd9, 0xa2, 0xde, 0x50, 0x21, 0xd3, 0xe3,
-	0x2a, 0x7a, 0xb2, 0xa5, 0xbb, 0xcb, 0x90, 0x9f, 0x12, 0xff, 0xd3, 0x4f, 0xbf, 0x89, 0xb3, 0xfe,
-	0x2f, 0xcd, 0x6e, 0x8e, 0xd0, 0x47, 0xb0, 0x64, 0x8b, 0x45, 0xe7, 0x09, 0xcb, 0xa4, 0x19, 0x3c,
-	0xe1, 0x4a, 0xb3, 0x13, 0xc3, 0x05, 0xc9, 0xcf, 0xc9, 0xe8, 0xbb, 0x90, 0x77, 0xe5, 0x47, 0x63,
-	0x2a, 0x9d, 0x75, 0x39, 0x20, 0xed, 0xe7, 0xc2, 0x4e, 0x0c, 0x83, 0xe4, 0x3d, 0x18, 0x53, 0xb4,
-	0x01, 0x45, 0x57, 0x52, 0x98, 0xc2, 0xfd, 0x96, 0xaf, 0xaa, 0x01, 0xe1, 0xd0, 0x7d, 0xee, 0xc4,
-	0xb0, 0x8b, 0x55, 0xd0, 0x83, 0x87, 0xd3, 0x53, 0x51, 0x85, 0xc3, 0x87, 0xb7, 0x4f, 0xcd, 0xd9,
-	0xc3, 0xdb, 0xa7, 0xe6, 0x66, 0x0e, 0x32, 0x72, 0xa5, 0xfd, 0x91, 0xa7, 0xac, 0xeb, 0xf6, 0xe6,
-	0x48, 0x00, 0x13, 0xab, 0x90, 0x4f, 0xd4, 0x59, 0x9f, 0xc8, 0xab, 0xe2, 0xc0, 0xc4, 0x6f, 0xe1,
-	0x95, 0x0f, 0xa0, 0xe0, 0xa9, 0xf0, 0xdd, 0x72, 0x25, 0xea, 0x16, 0x4f, 0x3c, 0xef, 0x72, 0x33,
-	0xc7, 0x6c, 0xc1, 0xb2, 0x27, 0x1c, 0xf2, 0xcc, 0xb5, 0x39, 0x9e, 0xf1, 0x54, 0x78, 0x98, 0xa5,
-	0x6f, 0x82, 0x10, 0x7c, 0xe7, 0x5c, 0x89, 0x3a, 0x67, 0x16, 0x02, 0x73, 0x0f, 0xb0, 0xde, 0x26,
-	0x96, 0xda, 0x5f, 0x12, 0x2c, 0x62, 0x0e, 0x6c, 0xd2, 0x33, 0xba, 0x3a, 0x25, 0xe8, 0x07, 0x00,
-	0x5d, 0xeb, 0x64, 0xa4, 0xdb, 0x86, 0x63, 0x99, 0xdc, 0x35, 0xc5, 0x40, 0x66, 0x05, 0x38, 0xd7,
-	0x6a, 0x1e, 0x1b, 0x0e, 0x88, 0xa0, 0xfb, 0x90, 0x96, 0x5d, 0x2d, 0xce, 0x85, 0xaf, 0xcf, 0x15,
-	0x96, 0xed, 0x4c, 0xb2, 0xa2, 0x32, 0x64, 0x26, 0xc4, 0xe6, 0xcd, 0x96, 0x77, 0xe1, 0x9d, 0x18,
-	0x76, 0x09, 0xe8, 0x3d, 0x58, 0x8e, 0x8c, 0x0d, 0xa2, 0xd4, 0x31, 0xaf, 0x84, 0x27, 0x23, 0x74,
-	0x0b, 0x0a, 0xc1, 0x71, 0x44, 0xce, 0xa0, 0x31, 0x9c, 0x0f, 0x8c, 0x80, 0xe8, 0x8a, 0x5b, 0x46,
-	0xd3, 0xee, 0x48, 0x2c, 0x0a, 0xe9, 0x15, 0xb7, 0x90, 0x66, 0xa4, 0x94, 0x58, 0x6a, 0x1f, 0x02,
-	0xf8, 0xa6, 0xb2, 0x0e, 0x55, 0x7f, 0xf8, 0x68, 0xa3, 0x21, 0xda, 0xd9, 0x36, 0xef, 0x60, 0x58,
-	0x34, 0xbf, 0x46, 0xbd, 0xd5, 0x2a, 0xc5, 0xd1, 0x12, 0xe4, 0xf6, 0x9b, 0xed, 0x8e, 0xe0, 0x4a,
-	0x68, 0xeb, 0x90, 0x96, 0x7d, 0x30, 0xd0, 0xfe, 0x62, 0x81, 0xf6, 0xa7, 0xb8, 0xed, 0x2f, 0xee,
-	0xb7, 0x3f, 0xde, 0x09, 0x1b, 0xf5, 0x8d, 0x56, 0xbd, 0x94, 0xdc, 0x2c, 0x42, 0x41, 0xb8, 0xa9,
-	0x33, 0x36, 0xd9, 0x90, 0xff, 0x04, 0x32, 0x02, 0x10, 0x09, 0x97, 0x32, 0xe5, 0xff, 0x2b, 0x65,
-	0x55, 0xc8, 0x8d, 0xdc, 0x7b, 0x98, 0x53, 0xfe, 0xbc, 0x3b, 0xc2, 0x3e, 0x9b, 0xf6, 0x42, 0x61,
-	0x59, 0xe4, 0xe7, 0xdb, 0xe2, 0xc5, 0xf7, 0x2e, 0x64, 0x44, 0xb0, 0x10, 0x59, 0xf6, 0x4b, 0x9e,
-	0xa4, 0x34, 0x0a, 0xbb, 0x0c, 0x68, 0x0d, 0x32, 0xce, 0xb8, 0xdb, 0x25, 0x8e, 0x5b, 0xfa, 0x82,
-	0x38, 0xbd, 0x22, 0x87, 0x5d, 0x26, 0xc6, 0x7f, 0xa4, 0x1b, 0xc3, 0xb1, 0xcd, 0x9a, 0xe1, 0x1b,
-	0xf8, 0x25, 0x93, 0xf6, 0x5c, 0x61, 0x6d, 0x2c, 0x90, 0x28, 0x5f, 0xbf, 0x70, 0xaf, 0x40, 0x8e,
-	0x9f, 0x4e, 0x7a, 0xb2, 0x74, 0x67, 0xb1, 0x4f, 0x40, 0xf7, 0x21, 0xe7, 0x26, 0x9a, 0x6b, 0xc2,
-	0xe5, 0x10, 0x24, 0xb7, 0x2a, 0x61, 0x9f, 0x4f, 0xfb, 0x4c, 0x81, 0x8b, 0x7b, 0x87, 0xdc, 0x19,
-	0xdd, 0x80, 0x1f, 0x17, 0x77, 0xf9, 0x1b, 0x1e, 0x8c, 0x6c, 0x6f, 0x74, 0x3c, 0x75, 0x8c, 0xae,
-	0x3e, 0x94, 0x8d, 0xcd, 0x5b, 0x6b, 0xdb, 0x70, 0x29, 0x8c, 0x63, 0x41, 0x27, 0x69, 0xff, 0x89,
-	0xb3, 0x09, 0xff, 0x63, 0x9d, 0x76, 0x8f, 0xcf, 0xa5, 0x79, 0xbf, 0x03, 0x45, 0xfe, 0x02, 0xf1,
-	0x0b, 0x83, 0x18, 0xf5, 0x97, 0x38, 0xd5, 0x2b, 0x0c, 0xb7, 0x61, 0x79, 0x64, 0x5b, 0x7d, 0x9b,
-	0x38, 0x4e, 0xc7, 0xb4, 0xa8, 0x71, 0x34, 0xe5, 0x85, 0x26, 0x8b, 0x8b, 0x2e, 0x79, 0x9f, 0x53,
-	0xd1, 0xf7, 0x21, 0x73, 0x64, 0x0c, 0x29, 0xb1, 0x1d, 0x35, 0x75, 0x23, 0x11, 0x99, 0xdc, 0x83,
-	0x66, 0xae, 0x3d, 0xe0, 0x6c, 0xed, 0xe9, 0x88, 0x60, 0x57, 0x24, 0x38, 0x4a, 0xa4, 0x43, 0xa3,
-	0x59, 0x19, 0xb2, 0x47, 0xb6, 0xde, 0x3f, 0x21, 0x26, 0x95, 0x53, 0xba, 0xb7, 0xd6, 0x6e, 0x03,
-	0xf8, 0xba, 0x58, 0xf1, 0xd8, 0x6f, 0x76, 0x0e, 0x1e, 0xb5, 0x4b, 0x31, 0x51, 0x6e, 0x3a, 0x5b,
-	0xf5, 0x46, 0x9d, 0xd5, 0x12, 0xed, 0x1f, 0x7c, 0x52, 0x92, 0x20, 0x16, 0x8d, 0xea, 0xf7, 0xa0,
-	0xd4, 0x15, 0xf7, 0xde, 0x89, 0x44, 0xce, 0xb2, 0xa4, 0x07, 0x4a, 0xee, 0x52, 0x57, 0x37, 0xbb,
-	0x64, 0xd8, 0xb1, 0x89, 0xee, 0x48, 0xd7, 0xe6, 0x70, 0x41, 0x10, 0x31, 0xa7, 0x85, 0x2c, 0x4b,
-	0x86, 0x2d, 0x43, 0xef, 0x42, 0x9a, 0x4c, 0x88, 0x49, 0x1d, 0x35, 0xcf, 0x13, 0xa4, 0xe8, 0x81,
-	0xab, 0x33, 0x32, 0x96, 0xbb, 0xda, 0xcf, 0xe0, 0x02, 0x9f, 0x3d, 0xb7, 0x6d, 0xdd, 0x3c, 0xfb,
-	0xfc, 0x5d, 0x82, 0x44, 0xbb, 0xdd, 0x90, 0x46, 0x25, 0x68, 0xbb, 0xa1, 0x7d, 0xae, 0x00, 0x0a,
-	0x1e, 0xb0, 0xa8, 0xef, 0x8a, 0x10, 0xdf, 0xdd, 0x92, 0x8a, 0xe3, 0xc6, 0x96, 0x7b, 0x52, 0xc2,
-	0x3b, 0x09, 0xad, 0x02, 0xf4, 0xd9, 0x19, 0xa4, 0xc7, 0x36, 0xc4, 0xd8, 0x1e, 0xa0, 0x68, 0x3f,
-	0x95, 0x40, 0x30, 0x99, 0x58, 0x83, 0xb3, 0x8f, 0xbb, 0x11, 0x40, 0xda, 0x03, 0xb8, 0x18, 0x52,
-	0xbf, 0x68, 0x56, 0xff, 0x44, 0x5e, 0x08, 0x26, 0x26, 0x79, 0xfa, 0xd6, 0x51, 0x7a, 0xd7, 0x21,
-	0xd5, 0x9f, 0xdf, 0x75, 0xfc, 0x18, 0x96, 0x45, 0x5c, 0x10, 0xfa, 0xd6, 0xad, 0xfc, 0x54, 0x81,
-	0x92, 0xaf, 0xfc, 0xfc, 0x6c, 0x6c, 0xc8, 0xbb, 0x7c, 0x2b, 0x5f, 0x61, 0xb4, 0x26, 0xe4, 0xb9,
-	0xb6, 0x16, 0xd5, 0xe9, 0xd8, 0x91, 0xf0, 0x94, 0x33, 0xc0, 0x73, 0x64, 0x2c, 0x9c, 0xf1, 0x6b,
-	0xc0, 0x3d, 0x48, 0xf3, 0x91, 0xce, 0x7d, 0x71, 0xfa, 0x8d, 0x23, 0x00, 0x17, 0x4b, 0x1e, 0xed,
-	0xcf, 0x0a, 0x64, 0xdd, 0x17, 0x96, 0xfb, 0x21, 0x4d, 0xf1, 0x3f, 0xa4, 0xdd, 0x9e, 0x1d, 0x4b,
-	0xc5, 0x0d, 0x44, 0x87, 0xd2, 0x9b, 0x91, 0xa1, 0x54, 0xd8, 0x1d, 0x1a, 0x49, 0x55, 0x7f, 0xfc,
-	0x15, 0xc6, 0x7b, 0xc3, 0xaf, 0xf7, 0xe6, 0x4f, 0xcd, 0x7d, 0xf3, 0xa7, 0x03, 0x6f, 0x7e, 0xed,
-	0x4f, 0x0a, 0xa4, 0x78, 0xcd, 0x44, 0xf7, 0x20, 0x49, 0xa7, 0x23, 0x22, 0xc7, 0x77, 0x35, 0x5c,
-	0x51, 0xc5, 0x5f, 0xde, 0x93, 0x38, 0x17, 0xba, 0x09, 0xf1, 0xc1, 0x44, 0xf6, 0xd2, 0x39, 0x8f,
-	0xcb, 0xf8, 0x60, 0xc2, 0xa6, 0xb6, 0xe0, 0xf3, 0x77, 0x2e, 0x9f, 0xfb, 0x22, 0xbe, 0x01, 0x39,
-	0xef, 0x04, 0x36, 0xda, 0x8a, 0x36, 0x05, 0x90, 0x76, 0x7b, 0x54, 0xf5, 0x6f, 0x49, 0x88, 0xef,
-	0x1d, 0xa2, 0x5f, 0x40, 0x4a, 0xbc, 0xa7, 0x5e, 0xf7, 0x1c, 0x2d, 0xbf, 0xf6, 0x4d, 0xa6, 0xd5,
-	0x7e, 0xf9, 0xe2, 0xdf, 0xcf, 0xe3, 0x1f, 0xa2, 0x0f, 0x2a, 0x93, 0x6f, 0x57, 0xf8, 0x47, 0x76,
-	0xa7, 0xf2, 0x89, 0xb8, 0xe6, 0x35, 0xbe, 0x7c, 0x56, 0xf1, 0x3e, 0xb0, 0xfb, 0x3b, 0x1e, 0xe9,
-	0x59, 0x65, 0x30, 0x71, 0xd0, 0xa7, 0x0a, 0x24, 0xda, 0xa7, 0x26, 0x9a, 0xff, 0xa6, 0x2c, 0xbf,
-	0xe6, 0x35, 0xa5, 0x35, 0xf9, 0xd9, 0xbb, 0xda, 0xd6, 0xa2, 0x67, 0x53, 0x5b, 0x37, 0x1d, 0x31,
-	0x54, 0x39, 0xdf, 0x53, 0xee, 0xa2, 0xdf, 0x2b, 0x72, 0xa2, 0xef, 0x52, 0xb4, 0x12, 0x38, 0x74,
-	0x66, 0x06, 0x2c, 0x7f, 0xe3, 0x35, 0xbb, 0x12, 0xd9, 0x3e, 0x47, 0xb6, 0xa3, 0xd5, 0x16, 0x45,
-	0xd6, 0xf5, 0x74, 0x72, 0x60, 0xbf, 0x56, 0x20, 0xc5, 0x47, 0x89, 0xd0, 0x15, 0x05, 0x27, 0x9c,
-	0xd0, 0x15, 0x85, 0xa6, 0x0e, 0x6d, 0x8f, 0x83, 0xa9, 0x6b, 0xeb, 0x8b, 0x82, 0x79, 0xca, 0xd4,
-	0x11, 0x9b, 0x21, 0x79, 0x5f, 0xa9, 0xbe, 0x48, 0x41, 0x8a, 0xa7, 0x29, 0xfa, 0x42, 0x81, 0x14,
-	0x6f, 0xd2, 0xa8, 0x1c, 0x4e, 0xe0, 0xe0, 0x68, 0x50, 0xbe, 0x3e, 0x77, 0x4f, 0x62, 0xdb, 0xe5,
-	0xd8, 0x6a, 0xda, 0x47, 0x8b, 0x62, 0x13, 0x35, 0x82, 0xf9, 0xe8, 0x57, 0x8a, 0x1b, 0xc6, 0x11,
-	0x34, 0xa1, 0x48, 0xbe, 0x3e, 0x77, 0x4f, 0xa2, 0x79, 0xc0, 0xd1, 0xac, 0xa3, 0x33, 0xa2, 0x41,
-	0x9f, 0x2b, 0x90, 0xd8, 0x26, 0x14, 0xa9, 0x11, 0xd3, 0xbd, 0xc6, 0x55, 0xbe, 0x36, 0x67, 0x27,
-	0x7c, 0x5d, 0xa8, 0x76, 0x36, 0x10, 0x95, 0x4f, 0x76, 0xb7, 0x9e, 0xa1, 0x2f, 0x15, 0x48, 0x8b,
-	0xf9, 0x02, 0x45, 0x2c, 0x0f, 0x0d, 0x35, 0xe5, 0x95, 0xf9, 0x9b, 0x61, 0x48, 0x77, 0xdf, 0x0a,
-	0xa4, 0xe7, 0x0a, 0xa4, 0xf8, 0x2c, 0x11, 0xbd, 0xa7, 0xe0, 0xfc, 0x52, 0xbe, 0x3e, 0x77, 0x4f,
-	0xe2, 0x79, 0xc8, 0xf1, 0xec, 0x69, 0x0f, 0xce, 0x84, 0xe7, 0x5b, 0x36, 0x53, 0xaa, 0x0f, 0x59,
-	0xf4, 0x6c, 0xaa, 0x7f, 0x7f, 0xb9, 0xaa, 0x7c, 0xf5, 0x72, 0x55, 0xf9, 0xd7, 0xcb, 0x55, 0xe5,
-	0xcb, 0x57, 0xab, 0xb1, 0xaf, 0x5e, 0xad, 0xc6, 0xfe, 0xf9, 0x6a, 0x35, 0xf6, 0x38, 0xcd, 0xff,
-	0xd5, 0x78, 0xff, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xbf, 0x2f, 0xb6, 0x63, 0xb4, 0x1c, 0x00,
-	0x00,
+	// 2262 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x59, 0xdd, 0x6f, 0x5b, 0x49,
+	0x15, 0xf7, 0xf5, 0xb7, 0x8f, 0x1d, 0xc7, 0x9d, 0x7e, 0xdd, 0x3a, 0xdd, 0xd0, 0xde, 0x42, 0xb7,
+	0x54, 0x25, 0x59, 0xd2, 0x07, 0x10, 0xab, 0x2e, 0x4d, 0x1c, 0x37, 0x89, 0x62, 0x92, 0x76, 0xe2,
+	0x66, 0x05, 0x02, 0xac, 0x5b, 0x7b, 0x92, 0x5e, 0xd9, 0xbe, 0xd7, 0xbd, 0x77, 0xec, 0x26, 0xac,
+	0x2a, 0x24, 0x24, 0x16, 0xd0, 0x3e, 0xb0, 0xa8, 0x08, 0x9e, 0x78, 0xe0, 0x85, 0x47, 0x04, 0xfc,
+	0x15, 0x3c, 0xae, 0xb4, 0x3c, 0x20, 0xf1, 0x82, 0x5a, 0xfe, 0x10, 0x34, 0x67, 0xe6, 0x7e, 0xc6,
+	0x2d, 0xac, 0xd3, 0x55, 0x5f, 0x22, 0xcf, 0x39, 0x67, 0x66, 0x7e, 0xf3, 0x9b, 0xf3, 0x35, 0x37,
+	0x50, 0x72, 0x47, 0xdd, 0xa5, 0x91, 0xeb, 0x70, 0x87, 0x14, 0x0e, 0x06, 0x4e, 0xb7, 0x3f, 0x7a,
+	0x54, 0x3f, 0x77, 0xe8, 0x1c, 0x3a, 0x28, 0x5b, 0x16, 0xbf, 0xa4, 0xba, 0x7e, 0xf9, 0xd0, 0x71,
+	0x0e, 0x07, 0x6c, 0xd9, 0x1c, 0x59, 0xcb, 0xa6, 0x6d, 0x3b, 0xdc, 0xe4, 0x96, 0x63, 0x7b, 0x52,
+	0x6b, 0xb4, 0xe0, 0xc2, 0x7d, 0xd3, 0xe5, 0x96, 0x90, 0x51, 0xf6, 0x64, 0xcc, 0x3c, 0xbe, 0xc9,
+	0xcc, 0x1e, 0x73, 0xc9, 0x39, 0xc8, 0x79, 0xdc, 0x71, 0x99, 0xae, 0x5d, 0xd1, 0x6e, 0x94, 0xa8,
+	0x1c, 0x90, 0xcb, 0x50, 0x1a, 0xf9, 0xf6, 0x7a, 0x1a, 0x35, 0xa1, 0xc0, 0xd8, 0x82, 0x2a, 0x65,
+	0xde, 0xc8, 0xb1, 0x3d, 0xa6, 0x56, 0x59, 0x80, 0xd2, 0x90, 0x0d, 0x1f, 0x31, 0xb7, 0x63, 0xf5,
+	0x70, 0xa5, 0x2c, 0x2d, 0x4a, 0xc1, 0x56, 0x8f, 0xd4, 0xa1, 0xe8, 0xb2, 0x89, 0xe5, 0xf9, 0x6b,
+	0x65, 0x68, 0x30, 0x36, 0xfe, 0x9a, 0x83, 0xf2, 0xf6, 0xfe, 0x1e, 0x1b, 0xb0, 0xae, 0x58, 0x9a,
+	0x5c, 0x84, 0x7c, 0x9f, 0x1d, 0x77, 0x0e, 0x39, 0xae, 0x52, 0xd9, 0x4c, 0xd1, 0x5c, 0x9f, 0x1d,
+	0x6f, 0x70, 0x72, 0x09, 0x0a, 0x52, 0xc1, 0x70, 0x0d, 0xa1, 0xc9, 0xa3, 0x86, 0xf9, 0x73, 0x06,
+	0x5c, 0xcf, 0xa0, 0x46, 0xc3, 0x39, 0xad, 0x60, 0xce, 0x80, 0x33, 0x3d, 0xab, 0x34, 0x79, 0xd4,
+	0x30, 0x72, 0x03, 0xe6, 0x87, 0x4e, 0xaf, 0xe3, 0xe3, 0x10, 0x1b, 0xe6, 0x04, 0xb4, 0xcd, 0x34,
+	0x9d, 0x1b, 0x3a, 0x3d, 0xaa, 0xe4, 0x1b, 0x9c, 0xdc, 0x84, 0x5a, 0xc2, 0x92, 0xe9, 0x79, 0x65,
+	0x5a, 0x8d, 0x99, 0x9e, 0x5c, 0x75, 0xc0, 0xf5, 0x02, 0x9a, 0x66, 0x62, 0xab, 0xb6, 0x4e, 0xae,
+	0x2a, 0x30, 0x16, 0x95, 0x69, 0x35, 0x66, 0xca, 0xc8, 0x12, 0x90, 0xae, 0xcb, 0x4c, 0xce, 0x62,
+	0x70, 0x4b, 0x68, 0x9d, 0xa5, 0x35, 0xa9, 0x8b, 0x20, 0x7e, 0x0f, 0xce, 0x9e, 0xb4, 0x67, 0x3a,
+	0xa8, 0x09, 0x67, 0x92, 0x13, 0xa6, 0xee, 0x30, 0xe0, 0x7a, 0x19, 0x27, 0xe4, 0x92, 0x3b, 0xb4,
+	0xa6, 0xee, 0x20, 0x0e, 0x50, 0x51, 0x13, 0xce, 0x24, 0x27, 0x30, 0x72, 0x1d, 0xe6, 0xc5, 0x55,
+	0x78, 0xdc, 0x74, 0xb9, 0xd7, 0x79, 0x6a, 0xf1, 0xc7, 0xfa, 0x5d, 0x71, 0x25, 0x74, 0xae, 0xcf,
+	0x8e, 0xf7, 0x50, 0xfa, 0xa1, 0xc5, 0x1f, 0x93, 0x1a, 0x64, 0xfa, 0xec, 0x58, 0x5f, 0x45, 0x9d,
+	0xf8, 0x29, 0x1c, 0x74, 0xc0, 0x4c, 0x8f, 0xe9, 0x6b, 0xe8, 0x3a, 0x72, 0xb0, 0x36, 0x0f, 0x62,
+	0x62, 0xc7, 0x35, 0xed, 0x43, 0xd6, 0x19, 0x5a, 0x76, 0x42, 0x60, 0x1e, 0xad, 0x9d, 0x03, 0x12,
+	0x63, 0x18, 0xb7, 0x5e, 0x23, 0x09, 0xde, 0x99, 0xdd, 0x5b, 0xbb, 0x08, 0xe7, 0x93, 0xa7, 0x91,
+	0xc6, 0xe7, 0x4f, 0x1e, 0x93, 0xd9, 0x3d, 0xe3, 0xb7, 0x59, 0xa8, 0x6e, 0xef, 0x3f, 0x18, 0x33,
+	0xf7, 0x58, 0xc5, 0x12, 0xf9, 0x16, 0xe4, 0x1f, 0x63, 0x24, 0xa0, 0xdb, 0x96, 0x57, 0xbe, 0xb2,
+	0xa4, 0xa2, 0x75, 0x69, 0x7a, 0xd8, 0x51, 0x65, 0x4e, 0x56, 0xa0, 0xe4, 0xf9, 0xce, 0x8f, 0x8e,
+	0x5d, 0x5e, 0x39, 0x17, 0xcc, 0x8d, 0x04, 0x06, 0x0d, 0xcd, 0x90, 0x11, 0x6b, 0x68, 0x49, 0x77,
+	0x17, 0x8c, 0x88, 0x41, 0x2c, 0xca, 0xb2, 0xf1, 0x28, 0x23, 0x77, 0x01, 0x3c, 0xc7, 0xe5, 0x1d,
+	0xc7, 0x15, 0x10, 0x85, 0xa3, 0x57, 0x57, 0xae, 0x46, 0xb6, 0x89, 0x9e, 0x65, 0x69, 0xcf, 0x71,
+	0xf9, 0xae, 0x30, 0xa4, 0x25, 0xcf, 0xff, 0x49, 0x1a, 0x50, 0xc6, 0x15, 0xb8, 0xe9, 0x1e, 0x32,
+	0x8e, 0x01, 0x50, 0x5d, 0x31, 0x5e, 0xb7, 0x44, 0x1b, 0x2d, 0x29, 0x6e, 0x2c, 0x7f, 0x13, 0x03,
+	0x2a, 0x1e, 0x73, 0x2d, 0x73, 0x60, 0xfd, 0xc4, 0x7c, 0x34, 0x60, 0x18, 0x1b, 0x45, 0x1a, 0x93,
+	0x91, 0xaf, 0x41, 0x95, 0x1d, 0x75, 0x07, 0xe3, 0x1e, 0xeb, 0x4c, 0xcc, 0xc1, 0x98, 0x79, 0x18,
+	0x16, 0x45, 0x3a, 0xa7, 0xa4, 0xfb, 0x28, 0x24, 0xd7, 0x60, 0xce, 0xb2, 0xa5, 0x59, 0xd7, 0x19,
+	0xdb, 0x32, 0x1c, 0x8a, 0xb4, 0xa2, 0x84, 0x0d, 0x21, 0x33, 0x6e, 0x40, 0x29, 0x38, 0x0c, 0x29,
+	0x42, 0x76, 0x67, 0x77, 0xa7, 0x59, 0x4b, 0x91, 0x02, 0x64, 0x56, 0xf7, 0x1a, 0x35, 0x4d, 0x88,
+	0xd6, 0x9b, 0x7b, 0x8d, 0x5a, 0xda, 0x58, 0x03, 0x08, 0x31, 0x0b, 0x83, 0xed, 0xe6, 0xf7, 0x6b,
+	0x29, 0x52, 0x86, 0xc2, 0x7e, 0x93, 0xee, 0x6d, 0xed, 0xee, 0xd4, 0x34, 0x02, 0x90, 0x6f, 0xd0,
+	0xe6, 0x6a, 0xbb, 0x59, 0x4b, 0x0b, 0x8b, 0xef, 0xed, 0xae, 0xd7, 0x32, 0xa4, 0x04, 0xb9, 0xfd,
+	0xd5, 0xd6, 0xc3, 0x66, 0x2d, 0x6b, 0xfc, 0x46, 0x83, 0xf9, 0x80, 0x07, 0x99, 0x1d, 0xc9, 0x72,
+	0xc2, 0x2f, 0x2e, 0x06, 0x8c, 0xc5, 0x13, 0x68, 0xe0, 0x0f, 0xd7, 0x20, 0xd3, 0x9f, 0x78, 0x7a,
+	0xfa, 0x4a, 0xe6, 0x46, 0x79, 0xe5, 0x4c, 0xc8, 0x2f, 0x3b, 0xc6, 0x83, 0x53, 0xa1, 0x25, 0x04,
+	0xb2, 0x43, 0x91, 0xb2, 0x33, 0x78, 0x66, 0xfc, 0x2d, 0x9c, 0x42, 0x12, 0x21, 0xef, 0x5e, 0x0e,
+	0x8c, 0x8f, 0xd3, 0x50, 0xd9, 0xde, 0xbf, 0x3f, 0xe6, 0x6f, 0xcb, 0x51, 0xf1, 0x0e, 0x65, 0x5e,
+	0xa6, 0x72, 0x10, 0x06, 0x74, 0x36, 0x12, 0xd0, 0xe4, 0x22, 0x14, 0x46, 0x2e, 0x9b, 0x74, 0xfa,
+	0x13, 0xf4, 0xcf, 0x22, 0xcd, 0x8b, 0xe1, 0xf6, 0x84, 0x5c, 0x85, 0x8a, 0x75, 0x68, 0x3b, 0xae,
+	0xf2, 0x07, 0x74, 0xbd, 0x22, 0x2d, 0x4b, 0x19, 0x92, 0x12, 0x31, 0x91, 0x0b, 0x17, 0xa2, 0x26,
+	0x2d, 0x21, 0x32, 0x6c, 0x98, 0x53, 0x3c, 0xcc, 0x7a, 0x33, 0xb7, 0xa0, 0xa8, 0x00, 0xbe, 0xe6,
+	0x7a, 0x0a, 0x12, 0xb4, 0x67, 0xfc, 0x1e, 0x9d, 0x61, 0x9d, 0x0d, 0x98, 0xc8, 0x83, 0x6f, 0x81,
+	0xfb, 0x08, 0x9f, 0x99, 0x28, 0x9f, 0xc6, 0x27, 0x1a, 0xd4, 0x42, 0x64, 0xb3, 0xb2, 0xa1, 0x43,
+	0xa1, 0x87, 0x4b, 0xf4, 0x54, 0x49, 0xf7, 0x87, 0x31, 0x9e, 0x32, 0xff, 0x93, 0xa7, 0x5f, 0xa7,
+	0x45, 0xfd, 0x57, 0xc7, 0xde, 0x1d, 0x91, 0x0f, 0x60, 0xce, 0x95, 0x83, 0xce, 0x13, 0x11, 0x49,
+	0x27, 0xf0, 0xc4, 0x33, 0xcd, 0x66, 0x8a, 0x56, 0x94, 0x3d, 0x8a, 0xc9, 0xb7, 0xa1, 0xec, 0xcf,
+	0x1f, 0x8d, 0xb9, 0x22, 0xeb, 0x7c, 0x64, 0x76, 0x18, 0x0b, 0x9b, 0x29, 0x0a, 0xca, 0xf6, 0xfe,
+	0x98, 0x93, 0x55, 0xa8, 0xfa, 0x33, 0xe5, 0x51, 0x90, 0xb7, 0xf2, 0x8a, 0x1e, 0x99, 0x1c, 0xbb,
+	0xcf, 0xcd, 0x14, 0xf5, 0xb1, 0x4a, 0x79, 0x74, 0x73, 0x7e, 0x24, 0xb3, 0x70, 0x7c, 0xf3, 0xf6,
+	0x91, 0x7d, 0x72, 0xf3, 0xf6, 0x91, 0xbd, 0x56, 0x82, 0x82, 0x1a, 0x19, 0x7f, 0xc0, 0x90, 0xf5,
+	0x69, 0xdf, 0x1d, 0x49, 0x60, 0x72, 0x14, 0xe3, 0x44, 0x3f, 0xc9, 0x89, 0xba, 0x2a, 0x04, 0x26,
+	0x7f, 0x4b, 0x56, 0xde, 0x87, 0x4a, 0xb0, 0x44, 0x48, 0xcb, 0x85, 0x24, 0x2d, 0xc1, 0xf4, 0xb2,
+	0x6f, 0x2d, 0x88, 0x59, 0x87, 0xf9, 0x60, 0x72, 0x8c, 0x99, 0x4b, 0x53, 0x98, 0x09, 0x96, 0x08,
+	0x30, 0x2b, 0x6e, 0xa2, 0x10, 0x42, 0x72, 0x2e, 0x24, 0xc9, 0x39, 0x09, 0x41, 0xd0, 0x03, 0xa2,
+	0xb6, 0xc9, 0xa1, 0xf1, 0x97, 0x8c, 0xf0, 0x98, 0xfb, 0x2e, 0xeb, 0x59, 0x5d, 0x93, 0x33, 0xf2,
+	0x5d, 0x80, 0xae, 0x33, 0x1c, 0x99, 0xae, 0xe5, 0x39, 0x36, 0x52, 0x53, 0x8d, 0x44, 0x56, 0xc4,
+	0x72, 0xa9, 0x11, 0x98, 0xd1, 0xc8, 0x14, 0x72, 0x1b, 0xf2, 0xaa, 0xaa, 0xa5, 0x71, 0xf2, 0xc2,
+	0xd4, 0xc9, 0xaa, 0x9c, 0x29, 0x53, 0x52, 0x87, 0xc2, 0x84, 0xb9, 0x58, 0x6c, 0xb1, 0x0a, 0x6f,
+	0xa6, 0xa8, 0x2f, 0x20, 0x5f, 0x87, 0xf9, 0x44, 0xdb, 0x20, 0x53, 0x9d, 0x60, 0x25, 0xde, 0x19,
+	0x91, 0x6b, 0x50, 0x89, 0xb6, 0x23, 0xaa, 0x07, 0x4d, 0xd1, 0x72, 0xa4, 0x05, 0x24, 0x17, 0xfc,
+	0x34, 0x9a, 0xf7, 0x5b, 0x62, 0x99, 0x48, 0x2f, 0xf8, 0x89, 0xb4, 0xa0, 0x66, 0xc9, 0xa1, 0x71,
+	0x07, 0x20, 0x3c, 0xaa, 0xa8, 0x50, 0xcd, 0x07, 0x0f, 0x57, 0x5b, 0xb2, 0x9c, 0x6d, 0x60, 0x05,
+	0xa3, 0xb2, 0xf8, 0xb5, 0x9a, 0x7b, 0x7b, 0xb5, 0x34, 0x99, 0x83, 0xd2, 0xce, 0x6e, 0xbb, 0x23,
+	0xad, 0x32, 0xc6, 0x5d, 0xc8, 0xab, 0x3a, 0x18, 0x29, 0x7f, 0xa9, 0x48, 0xf9, 0xd3, 0xfc, 0xf2,
+	0x97, 0x0e, 0xcb, 0x1f, 0x56, 0xc2, 0x56, 0x73, 0x75, 0xaf, 0x59, 0xcb, 0xae, 0x55, 0xa1, 0x22,
+	0x69, 0xea, 0x8c, 0x6d, 0xd1, 0xe4, 0x3f, 0x81, 0x82, 0x04, 0xc4, 0xe2, 0xa9, 0x4c, 0xfb, 0xff,
+	0x52, 0xd9, 0x0a, 0x94, 0x46, 0xfe, 0x3d, 0x4c, 0x49, 0x7f, 0xc1, 0x1d, 0xd1, 0xd0, 0xcc, 0xf8,
+	0x5c, 0x13, 0x51, 0x14, 0xc6, 0xdb, 0xec, 0xc9, 0xf7, 0x26, 0x14, 0xa4, 0xb3, 0x30, 0x95, 0xf6,
+	0x6b, 0xc1, 0x4c, 0x75, 0x28, 0xea, 0x1b, 0x90, 0x25, 0x28, 0x78, 0xe3, 0x6e, 0x97, 0x79, 0x7e,
+	0xea, 0x8b, 0xe2, 0x0c, 0x92, 0x1c, 0xf5, 0x8d, 0x84, 0xfd, 0x81, 0x69, 0x0d, 0xc6, 0xae, 0x28,
+	0x86, 0xaf, 0xb1, 0x57, 0x46, 0xc6, 0x73, 0x4d, 0x94, 0xb1, 0x48, 0xa0, 0x7c, 0xf1, 0xc4, 0x7d,
+	0x19, 0x4a, 0xb8, 0x3b, 0xeb, 0xa9, 0xd4, 0x5d, 0xa4, 0xa1, 0x80, 0xdc, 0x86, 0x92, 0x1f, 0x68,
+	0xfe, 0x11, 0xce, 0xc7, 0x20, 0xf9, 0x59, 0x89, 0x86, 0x76, 0xc6, 0xc7, 0x1a, 0x9c, 0xdd, 0xde,
+	0x47, 0x32, 0xba, 0x11, 0x1e, 0x67, 0xa7, 0xfc, 0x35, 0x0f, 0x46, 0xa1, 0x1b, 0x3d, 0x3e, 0xf6,
+	0xac, 0xae, 0x39, 0x50, 0x85, 0x2d, 0x18, 0x1b, 0x1b, 0x70, 0x2e, 0x8e, 0x63, 0x46, 0x92, 0x8c,
+	0x3b, 0x82, 0xe6, 0x0f, 0x4d, 0xde, 0x7d, 0xdc, 0x18, 0xbb, 0x9e, 0x13, 0x47, 0xa4, 0x25, 0x10,
+	0xa9, 0x27, 0x4b, 0x3a, 0x78, 0xb2, 0x18, 0x7f, 0x4c, 0x8b, 0x07, 0x02, 0xce, 0x7f, 0x2b, 0xb5,
+	0xff, 0x96, 0x78, 0xd3, 0x9b, 0x2e, 0x57, 0x79, 0x3a, 0x9a, 0x64, 0x23, 0x87, 0xa2, 0xd2, 0x88,
+	0xbc, 0x0b, 0xf3, 0x23, 0xd7, 0x39, 0x74, 0x99, 0xe7, 0x75, 0x6c, 0x87, 0x5b, 0x07, 0xc7, 0x98,
+	0xae, 0x8a, 0xb4, 0xea, 0x8b, 0x77, 0x50, 0x4a, 0xce, 0x43, 0xde, 0x76, 0xb0, 0x7e, 0xc8, 0x0e,
+	0x2d, 0x67, 0x3b, 0xa2, 0x3e, 0x2c, 0x40, 0xc9, 0x76, 0xfc, 0xca, 0x20, 0xbb, 0xb3, 0xa2, 0xed,
+	0xa8, 0xb4, 0x1f, 0x69, 0x43, 0x0a, 0xb1, 0x36, 0xe4, 0x5f, 0xd8, 0x20, 0x29, 0x8e, 0x4e, 0xe1,
+	0xcc, 0x5d, 0x79, 0xdd, 0xa1, 0x33, 0x07, 0x02, 0xf1, 0x46, 0xe8, 0x9a, 0x76, 0x97, 0x0d, 0x3a,
+	0x2e, 0x33, 0x3d, 0x95, 0xa9, 0x4b, 0xb4, 0x22, 0x85, 0x14, 0x65, 0x82, 0x2b, 0xf3, 0x80, 0x33,
+	0x77, 0x4a, 0x41, 0x8a, 0x71, 0x85, 0x46, 0xe4, 0x3a, 0xe4, 0xd9, 0x84, 0xd9, 0xdc, 0xd3, 0xcb,
+	0x18, 0x1c, 0xd5, 0xc0, 0xbc, 0x29, 0xc4, 0x54, 0x69, 0x8d, 0x1f, 0xc3, 0x19, 0xec, 0x3b, 0x37,
+	0x5c, 0xd3, 0x3e, 0x7d, 0xef, 0x5d, 0x83, 0x4c, 0xbb, 0xdd, 0x52, 0xa1, 0x90, 0xe1, 0xed, 0x96,
+	0xd1, 0x07, 0x12, 0x5d, 0x7f, 0x56, 0xfe, 0xbe, 0xea, 0x57, 0x10, 0xe9, 0x58, 0xe1, 0x69, 0x70,
+	0x71, 0xbf, 0x9e, 0xfc, 0x48, 0x6d, 0x46, 0xd9, 0xc4, 0xe9, 0x9f, 0xbe, 0x9b, 0xad, 0x42, 0x7a,
+	0x6b, 0x5d, 0x1d, 0x26, 0x6d, 0xad, 0x1b, 0xf7, 0xe0, 0x6c, 0x6c, 0xf9, 0x59, 0x83, 0xf6, 0x87,
+	0x8a, 0x73, 0xca, 0x6c, 0xf6, 0xf4, 0x8d, 0xa3, 0xec, 0x07, 0x24, 0xe0, 0xea, 0x5f, 0x2e, 0xe3,
+	0x3f, 0x80, 0x79, 0x79, 0xbd, 0x8c, 0xbf, 0xf1, 0x83, 0x58, 0x50, 0x0b, 0xd7, 0xfe, 0x72, 0x8f,
+	0xd1, 0x52, 0x37, 0xf2, 0x46, 0x3e, 0x95, 0x18, 0x43, 0x75, 0x03, 0xa7, 0x7c, 0x61, 0x5f, 0x87,
+	0x3c, 0xa2, 0xf3, 0x5f, 0x71, 0x49, 0xec, 0x4a, 0x6b, 0xfc, 0x59, 0x83, 0xa2, 0xff, 0x5e, 0xf1,
+	0x73, 0xbc, 0x16, 0x7e, 0x96, 0x7a, 0xf7, 0x64, 0x93, 0x27, 0x39, 0x4e, 0xb6, 0x78, 0x57, 0x13,
+	0x2d, 0x9e, 0xfc, 0x68, 0x13, 0x6b, 0xf0, 0xf4, 0xb0, 0x99, 0x94, 0x6f, 0xe2, 0xa0, 0x95, 0x0c,
+	0x5e, 0xd0, 0xb9, 0xa9, 0x2f, 0xe8, 0x7c, 0xe4, 0x05, 0x6d, 0xfc, 0x49, 0x83, 0x1c, 0x66, 0x21,
+	0x72, 0x0b, 0xb2, 0xfc, 0x78, 0xc4, 0x54, 0x33, 0xac, 0xc7, 0x73, 0x94, 0xfc, 0xdb, 0x3e, 0x1e,
+	0x31, 0x8a, 0x56, 0xe4, 0x2a, 0xa4, 0xfb, 0x13, 0x75, 0x91, 0x53, 0x9e, 0x6a, 0xe9, 0xfe, 0x44,
+	0xf4, 0x40, 0xd1, 0xc7, 0xe4, 0x54, 0x3b, 0x3f, 0xb1, 0x5f, 0x81, 0x52, 0xb0, 0x83, 0x68, 0x14,
+	0xef, 0x3f, 0x6c, 0xcb, 0xee, 0x71, 0xbd, 0xd9, 0x6a, 0x8a, 0xee, 0xd1, 0xd8, 0x82, 0x1c, 0x52,
+	0x9d, 0x74, 0x4d, 0x3f, 0xcf, 0x65, 0x82, 0x3c, 0x47, 0x16, 0x01, 0x0e, 0x45, 0x8a, 0x63, 0x3d,
+	0xa1, 0x90, 0xe4, 0x44, 0x24, 0xc6, 0x26, 0x00, 0x35, 0x0f, 0xf8, 0x1e, 0x37, 0xf9, 0xd8, 0x13,
+	0x95, 0xc8, 0x35, 0x0f, 0x78, 0x87, 0x33, 0x77, 0xe8, 0x7f, 0x85, 0x16, 0x82, 0x36, 0x73, 0x87,
+	0xe4, 0x1d, 0x00, 0x54, 0x5a, 0x76, 0x8f, 0x1d, 0xe1, 0xa6, 0x59, 0x8a, 0xe6, 0x5b, 0x42, 0xb0,
+	0xf2, 0xb7, 0x2c, 0xa4, 0xb7, 0xf7, 0xc9, 0x4f, 0x21, 0x27, 0x9f, 0x4c, 0xaf, 0x7a, 0x71, 0xd6,
+	0x5f, 0xf9, 0xec, 0x32, 0x1a, 0x3f, 0xfb, 0xfc, 0x3f, 0xcf, 0xd3, 0x77, 0xc8, 0xfb, 0xcb, 0x93,
+	0x6f, 0x2e, 0xe3, 0x77, 0x74, 0x6f, 0xf9, 0x23, 0xe9, 0x75, 0x4b, 0x38, 0x7c, 0xb6, 0x1c, 0x7c,
+	0x43, 0x0f, 0x35, 0x81, 0xe8, 0xd9, 0x72, 0x7f, 0xe2, 0x91, 0x9f, 0x6b, 0x90, 0x69, 0x1f, 0xd9,
+	0x64, 0xfa, 0xb3, 0xb1, 0xfe, 0x8a, 0x07, 0x93, 0xb1, 0x8b, 0x7b, 0x6f, 0x19, 0xeb, 0xb3, 0xee,
+	0xcd, 0x5d, 0xd3, 0xf6, 0x64, 0xdf, 0xe4, 0x7d, 0x47, 0xbb, 0x49, 0x7e, 0xa7, 0xa9, 0xa6, 0xbd,
+	0xcb, 0xc9, 0xe5, 0xc8, 0xa6, 0x27, 0xda, 0xbc, 0xfa, 0x3b, 0xaf, 0xd0, 0x2a, 0x64, 0x3b, 0x88,
+	0x6c, 0xd3, 0x68, 0xcc, 0x8a, 0xac, 0x1b, 0xac, 0x89, 0xc0, 0x7e, 0xa5, 0x41, 0x0e, 0x2b, 0x73,
+	0xec, 0x8a, 0xa2, 0xcd, 0x56, 0xec, 0x8a, 0x62, 0x1d, 0x86, 0xb1, 0x8d, 0x60, 0x9a, 0xc6, 0xdd,
+	0x59, 0xc1, 0x3c, 0x15, 0xcb, 0x31, 0x57, 0x20, 0x79, 0x4f, 0x5b, 0xf9, 0x47, 0x0e, 0xf2, 0xe8,
+	0xca, 0x1e, 0xf9, 0x44, 0x83, 0x1c, 0x56, 0x63, 0x52, 0x8f, 0x27, 0x94, 0x68, 0x0b, 0x50, 0x5f,
+	0x98, 0xaa, 0x53, 0xe0, 0xb6, 0x10, 0x5c, 0xc3, 0xf8, 0x60, 0x56, 0x70, 0x32, 0x73, 0x09, 0x92,
+	0x7e, 0xa9, 0xf9, 0x7e, 0x9c, 0x40, 0x13, 0x73, 0xe5, 0x85, 0xa9, 0x3a, 0x85, 0xe6, 0x1e, 0xa2,
+	0xb9, 0x4b, 0x4e, 0x89, 0x86, 0xfc, 0x42, 0x83, 0xcc, 0x06, 0xe3, 0x44, 0x4f, 0x1c, 0x3d, 0x28,
+	0x6d, 0xf5, 0x4b, 0x53, 0x34, 0xf1, 0xfb, 0x22, 0x8d, 0xd3, 0x81, 0x58, 0xfe, 0x68, 0x6b, 0xfd,
+	0x19, 0xf9, 0x54, 0x83, 0xbc, 0x6c, 0x32, 0x48, 0xe2, 0xe4, 0xb1, 0xce, 0xa6, 0x7e, 0x79, 0xba,
+	0x32, 0x0e, 0xe9, 0xe6, 0x1b, 0x81, 0xf4, 0x5c, 0x83, 0x1c, 0x76, 0x14, 0xc9, 0x7b, 0x8a, 0x36,
+	0x31, 0xf5, 0x85, 0xa9, 0x3a, 0x85, 0xe7, 0x01, 0xe2, 0xd9, 0x36, 0xee, 0x9d, 0x0a, 0xcf, 0x37,
+	0x5c, 0xb1, 0xa8, 0x39, 0x10, 0xde, 0xb3, 0xa6, 0xff, 0xfd, 0xc5, 0xa2, 0xf6, 0xd9, 0x8b, 0x45,
+	0xed, 0xdf, 0x2f, 0x16, 0xb5, 0x4f, 0x5f, 0x2e, 0xa6, 0x3e, 0x7b, 0xb9, 0x98, 0xfa, 0xe7, 0xcb,
+	0xc5, 0xd4, 0xa3, 0x3c, 0xfe, 0x3b, 0xf1, 0xf6, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xca, 0xe8,
+	0xd3, 0x83, 0x98, 0x1c, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -3200,10 +3229,10 @@ var _KV_serviceDesc = grpc.ServiceDesc{
 	Metadata: "rpc.proto",
 }
 
-// LeaseClient is the client API for Lease service.
+// LeasesClient is the client API for Leases service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type LeaseClient interface {
+type LeasesClient interface {
 	// Grant creates a lease which expires if the server does not receive a renewal
 	// within a given time to live period. All keys attached to the lease will be expired and
 	// deleted if the lease expires. Each expired key generates a delete event in the event history.
@@ -3217,61 +3246,61 @@ type LeaseClient interface {
 	Renew(ctx context.Context, in *LeaseRenewRequest, opts ...grpc.CallOption) (*LeaseRenewResponse, error)
 }
 
-type leaseClient struct {
+type leasesClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewLeaseClient(cc *grpc.ClientConn) LeaseClient {
-	return &leaseClient{cc}
+func NewLeasesClient(cc *grpc.ClientConn) LeasesClient {
+	return &leasesClient{cc}
 }
 
-func (c *leaseClient) Grant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error) {
+func (c *leasesClient) Grant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error) {
 	out := new(LeaseGrantResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/Grant", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Leases/Grant", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leaseClient) Query(ctx context.Context, in *LeaseQueryRequest, opts ...grpc.CallOption) (*LeaseQueryResponse, error) {
+func (c *leasesClient) Query(ctx context.Context, in *LeaseQueryRequest, opts ...grpc.CallOption) (*LeaseQueryResponse, error) {
 	out := new(LeaseQueryResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/Query", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Leases/Query", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leaseClient) Get(ctx context.Context, in *LeaseGetRequest, opts ...grpc.CallOption) (*LeaseGetResponse, error) {
+func (c *leasesClient) Get(ctx context.Context, in *LeaseGetRequest, opts ...grpc.CallOption) (*LeaseGetResponse, error) {
 	out := new(LeaseGetResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/Get", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Leases/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leaseClient) Revoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error) {
+func (c *leasesClient) Revoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error) {
 	out := new(LeaseRevokeResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/Revoke", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Leases/Revoke", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *leaseClient) Renew(ctx context.Context, in *LeaseRenewRequest, opts ...grpc.CallOption) (*LeaseRenewResponse, error) {
+func (c *leasesClient) Renew(ctx context.Context, in *LeaseRenewRequest, opts ...grpc.CallOption) (*LeaseRenewResponse, error) {
 	out := new(LeaseRenewResponse)
-	err := c.cc.Invoke(ctx, "/flockpb.Lease/Renew", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/flockpb.Leases/Renew", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// LeaseServer is the server API for Lease service.
-type LeaseServer interface {
+// LeasesServer is the server API for Leases service.
+type LeasesServer interface {
 	// Grant creates a lease which expires if the server does not receive a renewal
 	// within a given time to live period. All keys attached to the lease will be expired and
 	// deleted if the lease expires. Each expired key generates a delete event in the event history.
@@ -3285,143 +3314,143 @@ type LeaseServer interface {
 	Renew(context.Context, *LeaseRenewRequest) (*LeaseRenewResponse, error)
 }
 
-// UnimplementedLeaseServer can be embedded to have forward compatible implementations.
-type UnimplementedLeaseServer struct {
+// UnimplementedLeasesServer can be embedded to have forward compatible implementations.
+type UnimplementedLeasesServer struct {
 }
 
-func (*UnimplementedLeaseServer) Grant(ctx context.Context, req *LeaseGrantRequest) (*LeaseGrantResponse, error) {
+func (*UnimplementedLeasesServer) Grant(ctx context.Context, req *LeaseGrantRequest) (*LeaseGrantResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Grant not implemented")
 }
-func (*UnimplementedLeaseServer) Query(ctx context.Context, req *LeaseQueryRequest) (*LeaseQueryResponse, error) {
+func (*UnimplementedLeasesServer) Query(ctx context.Context, req *LeaseQueryRequest) (*LeaseQueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
-func (*UnimplementedLeaseServer) Get(ctx context.Context, req *LeaseGetRequest) (*LeaseGetResponse, error) {
+func (*UnimplementedLeasesServer) Get(ctx context.Context, req *LeaseGetRequest) (*LeaseGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (*UnimplementedLeaseServer) Revoke(ctx context.Context, req *LeaseRevokeRequest) (*LeaseRevokeResponse, error) {
+func (*UnimplementedLeasesServer) Revoke(ctx context.Context, req *LeaseRevokeRequest) (*LeaseRevokeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Revoke not implemented")
 }
-func (*UnimplementedLeaseServer) Renew(ctx context.Context, req *LeaseRenewRequest) (*LeaseRenewResponse, error) {
+func (*UnimplementedLeasesServer) Renew(ctx context.Context, req *LeaseRenewRequest) (*LeaseRenewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Renew not implemented")
 }
 
-func RegisterLeaseServer(s *grpc.Server, srv LeaseServer) {
-	s.RegisterService(&_Lease_serviceDesc, srv)
+func RegisterLeasesServer(s *grpc.Server, srv LeasesServer) {
+	s.RegisterService(&_Leases_serviceDesc, srv)
 }
 
-func _Lease_Grant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Leases_Grant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseGrantRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).Grant(ctx, in)
+		return srv.(LeasesServer).Grant(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/Grant",
+		FullMethod: "/flockpb.Leases/Grant",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).Grant(ctx, req.(*LeaseGrantRequest))
+		return srv.(LeasesServer).Grant(ctx, req.(*LeaseGrantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Lease_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Leases_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseQueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).Query(ctx, in)
+		return srv.(LeasesServer).Query(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/Query",
+		FullMethod: "/flockpb.Leases/Query",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).Query(ctx, req.(*LeaseQueryRequest))
+		return srv.(LeasesServer).Query(ctx, req.(*LeaseQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Lease_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Leases_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).Get(ctx, in)
+		return srv.(LeasesServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/Get",
+		FullMethod: "/flockpb.Leases/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).Get(ctx, req.(*LeaseGetRequest))
+		return srv.(LeasesServer).Get(ctx, req.(*LeaseGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Lease_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Leases_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseRevokeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).Revoke(ctx, in)
+		return srv.(LeasesServer).Revoke(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/Revoke",
+		FullMethod: "/flockpb.Leases/Revoke",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).Revoke(ctx, req.(*LeaseRevokeRequest))
+		return srv.(LeasesServer).Revoke(ctx, req.(*LeaseRevokeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Lease_Renew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Leases_Renew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaseRenewRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LeaseServer).Renew(ctx, in)
+		return srv.(LeasesServer).Renew(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/flockpb.Lease/Renew",
+		FullMethod: "/flockpb.Leases/Renew",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LeaseServer).Renew(ctx, req.(*LeaseRenewRequest))
+		return srv.(LeasesServer).Renew(ctx, req.(*LeaseRenewRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Lease_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "flockpb.Lease",
-	HandlerType: (*LeaseServer)(nil),
+var _Leases_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "flockpb.Leases",
+	HandlerType: (*LeasesServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Grant",
-			Handler:    _Lease_Grant_Handler,
+			Handler:    _Leases_Grant_Handler,
 		},
 		{
 			MethodName: "Query",
-			Handler:    _Lease_Query_Handler,
+			Handler:    _Leases_Query_Handler,
 		},
 		{
 			MethodName: "Get",
-			Handler:    _Lease_Get_Handler,
+			Handler:    _Leases_Get_Handler,
 		},
 		{
 			MethodName: "Revoke",
-			Handler:    _Lease_Revoke_Handler,
+			Handler:    _Leases_Revoke_Handler,
 		},
 		{
 			MethodName: "Renew",
-			Handler:    _Lease_Renew_Handler,
+			Handler:    _Leases_Renew_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -4776,6 +4805,41 @@ func (m *KVCompactionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *KVWatchCursor) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *KVWatchCursor) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVWatchCursor) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Revision != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.Revision))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *KVWatchRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -4796,16 +4860,6 @@ func (m *KVWatchRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Fragment {
-		i--
-		if m.Fragment {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
 	if m.PrevKv {
 		i--
 		if m.PrevKv {
@@ -4814,25 +4868,27 @@ func (m *KVWatchRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
+		dAtA[i] = 0x38
+	}
+	if m.NoDelete {
+		i--
+		if m.NoDelete {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
 		dAtA[i] = 0x30
 	}
-	if len(m.Filters) > 0 {
-		dAtA25 := make([]byte, len(m.Filters)*10)
-		var j24 int
-		for _, num := range m.Filters {
-			for num >= 1<<7 {
-				dAtA25[j24] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j24++
-			}
-			dAtA25[j24] = uint8(num)
-			j24++
-		}
-		i -= j24
-		copy(dAtA[i:], dAtA25[:j24])
-		i = encodeVarintRpc(dAtA, i, uint64(j24))
+	if m.NoPut {
 		i--
-		dAtA[i] = 0x2a
+		if m.NoPut {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x28
 	}
 	if m.ProgressNotify {
 		i--
@@ -4844,10 +4900,17 @@ func (m *KVWatchRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x20
 	}
-	if m.StartRevision != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.StartRevision))
+	if m.Start != nil {
+		{
+			size, err := m.Start.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x1a
 	}
 	if m.Selection != nil {
 		{
@@ -4910,15 +4973,17 @@ func (m *KVWatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x5a
 		}
 	}
-	if m.Fragment {
-		i--
-		if m.Fragment {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
+	if m.After != nil {
+		{
+			size, err := m.After.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x22
 	}
 	if len(m.CancelReason) > 0 {
 		i -= len(m.CancelReason)
@@ -4927,8 +4992,13 @@ func (m *KVWatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	if m.CompactRevision != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.CompactRevision))
+	if m.Compacted {
+		i--
+		if m.Compacted {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
 		i--
 		dAtA[i] = 0x10
 	}
@@ -5007,20 +5077,17 @@ func (m *LeaseGrantResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.GrantedTTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
+	if m.Lease != nil {
+		{
+			size, err := m.Lease.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x20
-	}
-	if m.TTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
 	if m.Header != nil {
 		{
@@ -5172,20 +5239,17 @@ func (m *LeaseRenewResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.GrantedTTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
+	if m.Lease != nil {
+		{
+			size, err := m.Lease.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x20
-	}
-	if m.TTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
 	if m.Header != nil {
 		{
@@ -5262,20 +5326,17 @@ func (m *LeaseGetResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.GrantedTTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
+	if m.Lease != nil {
+		{
+			size, err := m.Lease.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x20
-	}
-	if m.TTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
 	if m.Header != nil {
 		{
@@ -5323,44 +5384,6 @@ func (m *LeaseQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 		i--
 		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LeaseStatus) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LeaseStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LeaseStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.GrantedTTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.TTL != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.ID != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
-		i--
-		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -5517,6 +5540,77 @@ func (m *Event) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	if m.Type != 0 {
 		i = encodeVarintRpc(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Lease) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Lease) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Lease) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.GrantedTTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.GrantedTTL))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.TTL != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.TTL))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.ID != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.ID))
+		i--
+		dAtA[i] = 0x10
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RaftStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RaftStatus) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RaftStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.RaftIndex != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.RaftIndex))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.RaftTerm != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.RaftTerm))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -6169,6 +6263,22 @@ func (m *KVCompactionResponse) Size() (n int) {
 	return n
 }
 
+func (m *KVWatchCursor) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Revision != 0 {
+		n += 1 + sovRpc(uint64(m.Revision))
+	}
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+
 func (m *KVWatchRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -6183,23 +6293,20 @@ func (m *KVWatchRequest) Size() (n int) {
 		l = m.Selection.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.StartRevision != 0 {
-		n += 1 + sovRpc(uint64(m.StartRevision))
+	if m.Start != nil {
+		l = m.Start.Size()
+		n += 1 + l + sovRpc(uint64(l))
 	}
 	if m.ProgressNotify {
 		n += 2
 	}
-	if len(m.Filters) > 0 {
-		l = 0
-		for _, e := range m.Filters {
-			l += sovRpc(uint64(e))
-		}
-		n += 1 + sovRpc(uint64(l)) + l
-	}
-	if m.PrevKv {
+	if m.NoPut {
 		n += 2
 	}
-	if m.Fragment {
+	if m.NoDelete {
+		n += 2
+	}
+	if m.PrevKv {
 		n += 2
 	}
 	return n
@@ -6215,15 +6322,16 @@ func (m *KVWatchResponse) Size() (n int) {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.CompactRevision != 0 {
-		n += 1 + sovRpc(uint64(m.CompactRevision))
+	if m.Compacted {
+		n += 2
 	}
 	l = len(m.CancelReason)
 	if l > 0 {
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.Fragment {
-		n += 2
+	if m.After != nil {
+		l = m.After.Size()
+		n += 1 + l + sovRpc(uint64(l))
 	}
 	if len(m.Events) > 0 {
 		for _, e := range m.Events {
@@ -6260,14 +6368,9 @@ func (m *LeaseGrantResponse) Size() (n int) {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	if m.TTL != 0 {
-		n += 1 + sovRpc(uint64(m.TTL))
-	}
-	if m.GrantedTTL != 0 {
-		n += 1 + sovRpc(uint64(m.GrantedTTL))
+	if m.Lease != nil {
+		l = m.Lease.Size()
+		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
@@ -6327,14 +6430,9 @@ func (m *LeaseRenewResponse) Size() (n int) {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	if m.TTL != 0 {
-		n += 1 + sovRpc(uint64(m.TTL))
-	}
-	if m.GrantedTTL != 0 {
-		n += 1 + sovRpc(uint64(m.GrantedTTL))
+	if m.Lease != nil {
+		l = m.Lease.Size()
+		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
@@ -6365,14 +6463,9 @@ func (m *LeaseGetResponse) Size() (n int) {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	if m.TTL != 0 {
-		n += 1 + sovRpc(uint64(m.TTL))
-	}
-	if m.GrantedTTL != 0 {
-		n += 1 + sovRpc(uint64(m.GrantedTTL))
+	if m.Lease != nil {
+		l = m.Lease.Size()
+		n += 1 + l + sovRpc(uint64(l))
 	}
 	return n
 }
@@ -6386,24 +6479,6 @@ func (m *LeaseQueryRequest) Size() (n int) {
 	if m.Header != nil {
 		l = m.Header.Size()
 		n += 1 + l + sovRpc(uint64(l))
-	}
-	return n
-}
-
-func (m *LeaseStatus) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ID != 0 {
-		n += 1 + sovRpc(uint64(m.ID))
-	}
-	if m.TTL != 0 {
-		n += 1 + sovRpc(uint64(m.TTL))
-	}
-	if m.GrantedTTL != 0 {
-		n += 1 + sovRpc(uint64(m.GrantedTTL))
 	}
 	return n
 }
@@ -6472,6 +6547,39 @@ func (m *Event) Size() (n int) {
 	if m.PrevKv != nil {
 		l = m.PrevKv.Size()
 		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+
+func (m *Lease) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != 0 {
+		n += 1 + sovRpc(uint64(m.ID))
+	}
+	if m.TTL != 0 {
+		n += 1 + sovRpc(uint64(m.TTL))
+	}
+	if m.GrantedTTL != 0 {
+		n += 1 + sovRpc(uint64(m.GrantedTTL))
+	}
+	return n
+}
+
+func (m *RaftStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RaftTerm != 0 {
+		n += 1 + sovRpc(uint64(m.RaftTerm))
+	}
+	if m.RaftIndex != 0 {
+		n += 1 + sovRpc(uint64(m.RaftIndex))
 	}
 	return n
 }
@@ -9459,6 +9567,112 @@ func (m *KVCompactionResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *KVWatchCursor) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: KVWatchCursor: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: KVWatchCursor: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Revision", wireType)
+			}
+			m.Revision = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Revision |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
+			if m.Key == nil {
+				m.Key = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *KVWatchRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9561,10 +9775,10 @@ func (m *KVWatchRequest) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StartRevision", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Start", wireType)
 			}
-			m.StartRevision = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -9574,11 +9788,28 @@ func (m *KVWatchRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StartRevision |= int64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Start == nil {
+				m.Start = &KVWatchCursor{}
+			}
+			if err := m.Start.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProgressNotify", wireType)
@@ -9600,75 +9831,46 @@ func (m *KVWatchRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.ProgressNotify = bool(v != 0)
 		case 5:
-			if wireType == 0 {
-				var v KVWatchRequest_FilterType
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowRpc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= KVWatchRequest_FilterType(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NoPut", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
 				}
-				m.Filters = append(m.Filters, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowRpc
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthRpc
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthRpc
-				}
-				if postIndex > l {
+				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				var elementCount int
-				if elementCount != 0 && len(m.Filters) == 0 {
-					m.Filters = make([]KVWatchRequest_FilterType, 0, elementCount)
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
 				}
-				for iNdEx < postIndex {
-					var v KVWatchRequest_FilterType
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowRpc
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= KVWatchRequest_FilterType(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Filters = append(m.Filters, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filters", wireType)
 			}
+			m.NoPut = bool(v != 0)
 		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NoDelete", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.NoDelete = bool(v != 0)
+		case 7:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PrevKv", wireType)
 			}
@@ -9688,26 +9890,6 @@ func (m *KVWatchRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.PrevKv = bool(v != 0)
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Fragment", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Fragment = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -9799,9 +9981,9 @@ func (m *KVWatchResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CompactRevision", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Compacted", wireType)
 			}
-			m.CompactRevision = 0
+			var v int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -9811,11 +9993,12 @@ func (m *KVWatchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CompactRevision |= int64(b&0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			m.Compacted = bool(v != 0)
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CancelReason", wireType)
@@ -9849,10 +10032,10 @@ func (m *KVWatchResponse) Unmarshal(dAtA []byte) error {
 			m.CancelReason = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Fragment", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field After", wireType)
 			}
-			var v int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -9862,12 +10045,28 @@ func (m *KVWatchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Fragment = bool(v != 0)
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.After == nil {
+				m.After = &KVWatchCursor{}
+			}
+			if err := m.After.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Events", wireType)
@@ -10100,10 +10299,10 @@ func (m *LeaseGrantResponse) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
 			}
-			m.ID = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -10113,49 +10312,28 @@ func (m *LeaseGrantResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
 			}
-			m.TTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
 			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
 			}
-			m.GrantedTTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.GrantedTTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			if m.Lease == nil {
+				m.Lease = &Lease{}
 			}
+			if err := m.Lease.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10551,10 +10729,10 @@ func (m *LeaseRenewResponse) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
 			}
-			m.ID = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -10564,49 +10742,28 @@ func (m *LeaseRenewResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
 			}
-			m.TTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
 			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
 			}
-			m.GrantedTTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.GrantedTTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			if m.Lease == nil {
+				m.Lease = &Lease{}
 			}
+			if err := m.Lease.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10805,10 +10962,10 @@ func (m *LeaseGetResponse) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lease", wireType)
 			}
-			m.ID = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRpc
@@ -10818,49 +10975,28 @@ func (m *LeaseGetResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
 			}
-			m.TTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
 			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
 			}
-			m.GrantedTTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.GrantedTTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			if m.Lease == nil {
+				m.Lease = &Lease{}
 			}
+			if err := m.Lease.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -10950,116 +11086,6 @@ func (m *LeaseQueryRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LeaseStatus) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LeaseStatus: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LeaseStatus: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
-			}
-			m.ID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ID |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
-			}
-			m.TTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
-			}
-			m.GrantedTTL = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.GrantedTTL |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -11178,7 +11204,7 @@ func (m *LeaseQueryResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Leases = append(m.Leases, &LeaseStatus{})
+			m.Leases = append(m.Leases, &Lease{})
 			if err := m.Leases[len(m.Leases)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -11524,6 +11550,207 @@ func (m *Event) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Lease) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Lease: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Lease: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
+			}
+			m.TTL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TTL |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GrantedTTL", wireType)
+			}
+			m.GrantedTTL = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.GrantedTTL |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RaftStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RaftStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RaftStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RaftTerm", wireType)
+			}
+			m.RaftTerm = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RaftTerm |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RaftIndex", wireType)
+			}
+			m.RaftIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RaftIndex |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])

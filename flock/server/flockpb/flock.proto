@@ -1,0 +1,23 @@
+syntax = "proto3";
+package flockpb;
+
+import "gogoproto/gogo.proto";
+import "rpc.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+message RaftRequest {
+    oneof request {
+        KVQueryRequest kv_query_request = 1;
+        KVTxnRequest kv_txn_request = 2;
+        KVCompactionRequest kv_compaction_request = 3;
+        LeaseGrantRequest lease_grant_request = 4;
+        LeaseQueryRequest lease_query_request = 5;
+        LeaseGetRequest lease_get_request = 6;
+        LeaseRevokeRequest lease_revoke_request = 7;
+        LeaseRenewRequest lease_renew_request = 8;
+    }
+
+    string ID = 64;
+}
