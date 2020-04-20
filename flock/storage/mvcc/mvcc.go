@@ -41,6 +41,9 @@ var (
 	// ErrNotFound is returned when an operation tries to access a key
 	// that does not exist at the current revision.
 	ErrNotFound = errors.New("No such key")
+	// ErrClosed is returned when an operation is attempted
+	// after the store is closed.
+	ErrClosed = errors.New("The store was closed")
 )
 
 // IStore describes a storage interface
@@ -57,6 +60,19 @@ type IStore interface {
 	// the handle will return ErrNoSuchReplicaStore
 	// if it hasn't been created.
 	ReplicaStore(name string) IReplicaStore
+	// Close closes the store. Function calls to any I/O objects
+	// descended from this store occurring after Close returns
+	// must have no effect and return ErrClosed. Close must not
+	// return until all concurrent I/O operations have concluded.
+	// Operations started after the call to Close is started but
+	// before it returns may proceed normally or may return ErrClosed.
+	// If they return ErrClosed they must have no effect. Close may
+	// return an error to indicate any problems that occurred during
+	// shutdown.
+	Close() error
+	// Purge deletes all persistent data associated with this store.
+	// This must only be called on a closed store.
+	Purge() error
 }
 
 // IReplicaStore describes a storage interface for a flock replica.
@@ -86,7 +102,7 @@ type IReplicaStore interface {
 	// revision whose changeset includes the deleted keys.
 	RevokeLease(raftStatus flockpb.RaftStatus, id int64) error
 	// Compact compacts the history up to this revision.
-	Compact(raftStatus flockpb.RaftStatus, revision int64, metadata []byte) error
+	Compact(raftStatus flockpb.RaftStatus, revision int64) error
 	// View returns a view of the store at some revision. It returns
 	// ErrCompacted if the requested revision is too old and has been
 	// compacted away. It returns ErrRevisionTooHigh if the requested
@@ -114,7 +130,7 @@ type IView interface {
 	// does not exist at this revision.
 	Get(key []byte) (flockpb.KeyValue, error)
 	// Revision returns the revision index of this view
-	Revision() (int64, error)
+	Revision() int64
 	// Changes returns a set of change events associated with this
 	// revision. Events are always sorted in ascending order by the
 	// byte order of their key. Returns events whose key is > start up

@@ -23,8 +23,8 @@ func (revision *Revision) Get(key []byte) (flockpb.KeyValue, error) {
 }
 
 // Revision returns the revision index of this view
-func (revision *Revision) Revision() (int64, error) {
-	return 0, nil
+func (revision *Revision) Revision() int64 {
+	return 0
 }
 
 // Changes returns a set of change events associated with this

@@ -69,7 +69,7 @@ func (replicaStore *ReplicaStore) RevokeLease(raftStatus flockpb.RaftStatus, id 
 }
 
 // Compact compacts the history up to this revision.
-func (replicaStore *ReplicaStore) Compact(raftStatus flockpb.RaftStatus, revision int64, metadata []byte) error {
+func (replicaStore *ReplicaStore) Compact(raftStatus flockpb.RaftStatus, revision int64) error {
 	return nil
 }
 

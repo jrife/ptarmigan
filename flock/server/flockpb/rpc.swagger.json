@@ -196,6 +196,13 @@
             "format": "int64"
           },
           {
+            "name": "after",
+            "description": "Use after to get the next page of results by inserting the after cursor from the\nprevious page.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "limit",
             "description": "limit is the limit on the number of keys returned in the result.\nIf limit is set to 0 the default limit is used.",
             "in": "query",
@@ -825,6 +832,10 @@
           "$ref": "#/definitions/flockpbKVSelection",
           "title": "Only keys matching the predicates in the selection will be included in the result"
         },
+        "after": {
+          "type": "string",
+          "description": "Use after to get the next page of results by inserting the after cursor from the\nprevious page."
+        },
         "limit": {
           "type": "string",
           "format": "int64",
@@ -877,6 +888,10 @@
           "type": "boolean",
           "format": "boolean",
           "description": "more indicates if there are more keys matching the query."
+        },
+        "after": {
+          "type": "string",
+          "description": "after is a cursor that can be used in to get the next page\nof results after this one."
         },
         "count": {
           "type": "string",
