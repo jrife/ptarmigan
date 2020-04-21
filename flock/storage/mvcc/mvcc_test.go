@@ -1,7 +1,9 @@
 package mvcc_test
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
@@ -90,14 +92,239 @@ func (changeset revisionChangeset) apply(rev revision) revision {
 }
 
 type storeState map[string]replicaState
+
+func (store storeState) query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, error) {
+	replica, ok := store[query.Header.Replica]
+
+	if !ok {
+		return flockpb.KVQueryResponse{}, mvcc.ErrNoSuchReplicaStore
+	}
+
+	return replica.query(query)
+}
+
 type replicaState struct {
 	metadata  []byte
 	revisions []revision
 }
 
+func (replica replicaState) query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, error) {
+	revision, err := replica.findRevision(query.Revision)
+
+	if err != nil {
+		return flockpb.KVQueryResponse{}, err
+	}
+
+	response := revision.query(query)
+	// Should be latest revision
+	response.Header.Revision = replica.revisions[len(replica.revisions)-1].revision
+
+	return response, nil
+}
+
+func (replica *replicaState) compact(rev int64) error {
+	switch i := replica.findRevisionI(rev); i {
+	case -1:
+		return nil
+	case len(replica.revisions):
+		return mvcc.ErrRevisionTooHigh
+	default:
+		replica.revisions = replica.revisions[i:]
+	}
+
+	return nil
+}
+
+func (replica replicaState) findRevision(rev int64) (revision, error) {
+	// brand new/no revision
+	if len(replica.revisions) == 0 {
+		return revision{}, mvcc.ErrRevisionTooHigh
+	}
+
+	if rev == 0 {
+		// latest revision
+		return replica.revisions[len(replica.revisions)-1], nil
+	}
+
+	// binary search for revision
+	switch i := replica.findRevisionI(rev); i {
+	case -1:
+		return revision{}, mvcc.ErrCompacted
+	case len(replica.revisions):
+		return revision{}, mvcc.ErrRevisionTooHigh
+	default:
+		return replica.revisions[i], nil
+	}
+}
+
+func (replica replicaState) findRevisionI(rev int64) int {
+	low := -1
+	high := len(replica.revisions)
+	mid := low + (high-low)/2
+
+	for mid >= 0 && mid < len(replica.revisions) && low < high {
+		switch r := replica.revisions[mid].revision; {
+		case rev < r:
+			high = mid - 1
+		case rev > r:
+			low = mid + 1
+		default:
+			low = mid
+			high = mid
+		}
+
+		mid = low + (high-low)/2
+	}
+
+	return mid
+}
+
 type revision struct {
 	revision int64
 	kvs      map[string]flockpb.KeyValue
+}
+
+func (rev revision) query(query flockpb.KVQueryRequest) flockpb.KVQueryResponse {
+	response := flockpb.KVQueryResponse{}
+	keyValues := rev.kvList(query.SortTarget, query.SortOrder, query.ExcludeValues)
+	prunedKVs := []*flockpb.KeyValue{}
+
+	// Prune kvs that don't match selection
+	for _, kv := range keyValues {
+		if query.Selection != nil {
+			// Key exact match
+			if query.Selection.Key != nil && bytes.Compare(kv.Key, query.Selection.Key) != 0 {
+				continue
+			}
+
+			// Key prefix match
+			if query.Selection.KeyStartsWith != nil && !bytes.HasPrefix(kv.Key, query.Selection.KeyStartsWith) {
+				continue
+			}
+
+			// Lease match
+			if query.Selection.Lease != 0 && kv.Lease != query.Selection.Lease {
+				continue
+			}
+
+			// Key range
+			switch query.Selection.KeyRangeMin.(type) {
+			case *flockpb.KVSelection_KeyGt:
+				if bytes.Compare(kv.Key, query.Selection.GetKeyGt()) <= 0 {
+					continue
+				}
+			case *flockpb.KVSelection_KeyGte:
+				if bytes.Compare(kv.Key, query.Selection.GetKeyGte()) < 0 {
+					continue
+				}
+			default:
+				continue
+			}
+
+			switch query.Selection.KeyRangeMax.(type) {
+			case *flockpb.KVSelection_KeyLt:
+				if bytes.Compare(kv.Key, query.Selection.GetKeyLt()) >= 0 {
+					continue
+				}
+			case *flockpb.KVSelection_KeyLte:
+				if bytes.Compare(kv.Key, query.Selection.GetKeyLte()) > 0 {
+					continue
+				}
+			default:
+				continue
+			}
+
+			// Mod revision range
+			switch query.Selection.ModRevisionStart.(type) {
+			case *flockpb.KVSelection_ModRevisionGt:
+				if kv.ModRevision <= query.Selection.GetModRevisionGt() {
+					continue
+				}
+			case *flockpb.KVSelection_ModRevisionGte:
+				if kv.ModRevision < query.Selection.GetModRevisionGte() {
+					continue
+				}
+			default:
+				continue
+			}
+
+			switch query.Selection.ModRevisionEnd.(type) {
+			case *flockpb.KVSelection_ModRevisionLt:
+				if kv.ModRevision >= query.Selection.GetModRevisionLt() {
+					continue
+				}
+			case *flockpb.KVSelection_ModRevisionLte:
+				if kv.ModRevision > query.Selection.GetModRevisionLte() {
+					continue
+				}
+			default:
+				continue
+			}
+
+			// Create revision range
+			switch query.Selection.CreateRevisionStart.(type) {
+			case *flockpb.KVSelection_CreateRevisionGt:
+				if kv.ModRevision <= query.Selection.GetCreateRevisionGt() {
+					continue
+				}
+			case *flockpb.KVSelection_CreateRevisionGte:
+				if kv.ModRevision < query.Selection.GetCreateRevisionGte() {
+					continue
+				}
+			default:
+				continue
+			}
+
+			switch query.Selection.CreateRevisionEnd.(type) {
+			case *flockpb.KVSelection_CreateRevisionLt:
+				if kv.ModRevision >= query.Selection.GetCreateRevisionLt() {
+					continue
+				}
+			case *flockpb.KVSelection_CreateRevisionLte:
+				if kv.ModRevision > query.Selection.GetCreateRevisionLte() {
+					continue
+				}
+			default:
+				continue
+			}
+		}
+
+		prunedKVs = append(prunedKVs, kv)
+	}
+
+	if query.IncludeCount {
+		response.Count = int64(len(prunedKVs))
+	}
+
+	var start int64
+
+	if query.After != "" {
+		fmt.Sscanf(query.After, "%d", &start)
+		start += 1
+	}
+
+	end := start + query.Limit
+
+	if start > int64(len(prunedKVs)) {
+		start = int64(len(prunedKVs))
+	}
+
+	if end > int64(len(prunedKVs)) {
+		end = int64(len(prunedKVs))
+	}
+
+	prunedKVs = prunedKVs[start:end]
+
+	response.After = fmt.Sprintf("%d", end-1)
+	response.More = end < int64(len(prunedKVs))
+	response.Kvs = prunedKVs
+	response.Header = &flockpb.ResponseHeader{}
+
+	return response
+}
+
+func (rev revision) kvList(sortTarget flockpb.KVQueryRequest_SortTarget, sortOrder flockpb.KVQueryRequest_SortOrder, excludeValues bool) []*flockpb.KeyValue {
+	return nil
 }
 
 func newEmptyStore(t *testing.T) mvcc.IStore {

@@ -91,6 +91,7 @@ service Leases {
 message PartitionRequestHeader {
   string store = 1;
   string partition = 2;
+  string replica = 3;
 }
 
 message ResponseHeader {

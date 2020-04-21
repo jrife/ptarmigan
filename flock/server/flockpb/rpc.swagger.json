@@ -88,6 +88,12 @@
             "type": "string"
           },
           {
+            "name": "header.replica",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "selection.key_gt",
             "in": "query",
             "required": false,
@@ -350,6 +356,12 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "header.replica",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -438,6 +450,12 @@
             "required": true,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "header.replica",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -481,6 +499,12 @@
             "required": true,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "header.replica",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -1273,6 +1297,9 @@
           "type": "string"
         },
         "partition": {
+          "type": "string"
+        },
+        "replica": {
           "type": "string"
         }
       }
