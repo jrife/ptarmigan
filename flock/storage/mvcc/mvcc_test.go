@@ -12,13 +12,160 @@ import (
 
 var errAnyError = errors.New("Any error")
 
+type storeChangeset map[string]replicaChangeset
+
+func (changeset storeChangeset) compile() storeState {
+	store := storeState{}
+
+	for replicaName, replicaChangeset := range changeset {
+		replica := replicaState{metadata: replicaChangeset.metadata, revisions: []revision{}}
+
+		if replica.metadata == nil {
+			replica.metadata = []byte{}
+		}
+
+		lastRevision := revision{revision: 0, kvs: map[string]flockpb.KeyValue{}}
+
+		for _, changeset := range replicaChangeset.revisions {
+			if !changeset.commit {
+				continue
+			}
+
+			lastRevision = changeset.apply(lastRevision)
+			replica.revisions = append(replica.revisions, lastRevision)
+		}
+
+		store[replicaName] = replica
+	}
+
+	return store
+}
+
+type replicaChangeset struct {
+	metadata  []byte
+	revisions []revisionChangeset
+}
+
+type revisionChangeset struct {
+	changes map[string][]byte
+	commit  bool
+}
+
+func (changeset revisionChangeset) apply(rev revision) revision {
+	newRevision := revision{revision: rev.revision, kvs: map[string]flockpb.KeyValue{}}
+
+	// Make a copy
+	for key, kv := range rev.kvs {
+		newRevision.kvs[key] = kv
+	}
+
+	// Modify the copy
+	for key, value := range changeset.changes {
+		if value == nil {
+			delete(newRevision.kvs, key)
+
+			continue
+		}
+
+		oldKV, ok := newRevision.kvs[key]
+		newKV := oldKV
+
+		if !ok {
+			newKV.CreateRevision = newRevision.revision
+			newKV.Key = []byte(key)
+			newKV.Version = 1
+		} else {
+
+			newKV.Value = value
+			newKV.Version++
+		}
+
+		newKV.ModRevision = newRevision.revision
+		newKV.Value = value
+
+		newRevision.kvs[key] = newKV
+	}
+
+	return newRevision
+}
+
+type storeState map[string]replicaState
+type replicaState struct {
+	metadata  []byte
+	revisions []revision
+}
+
+type revision struct {
+	revision int64
+	kvs      map[string]flockpb.KeyValue
+}
+
 func newEmptyStore(t *testing.T) mvcc.IStore {
 	return nil
 }
 
-func getAllReplicaStoreMetadata(t *testing.T, store mvcc.IStore) map[string][]byte {
+func newStore(t *testing.T, initialState storeChangeset) mvcc.IStore {
+	store := newEmptyStore(t)
+
+	for replicaStoreName, replicaChangeset := range initialState {
+		replicaStore := store.ReplicaStore(replicaStoreName)
+
+		if err := replicaStore.Create(replicaChangeset.metadata); err != nil {
+			store.Close()
+			store.Purge()
+
+			t.Fatalf("failed to create replica store %s: %s", replicaStoreName, err.Error())
+		}
+
+		// apply revisions
+		for i, revision := range replicaChangeset.revisions {
+			rev, err := replicaStore.NewRevision(flockpb.RaftStatus{})
+
+			if err != nil {
+				store.Close()
+				store.Purge()
+
+				t.Fatalf("failed to create revision %d: %s", i, err.Error())
+			}
+
+			for key, value := range revision.changes {
+				var err error
+
+				if value == nil {
+					err = rev.Delete([]byte(key))
+				} else {
+					err = rev.Put([]byte(key), value)
+				}
+
+				if err != nil {
+					store.Close()
+					store.Purge()
+
+					t.Fatalf("failed to create revision %d: %s", i, err.Error())
+				}
+			}
+
+			if revision.commit {
+				err = rev.Commit()
+			} else {
+				err = rev.Abort()
+			}
+
+			if err != nil {
+				store.Close()
+				store.Purge()
+
+				t.Fatalf("failed to create revision %d: %s", i, err.Error())
+			}
+		}
+	}
+
+	return store
+}
+
+func getStore(t *testing.T, store mvcc.IStore) storeState {
 	next := mvcc.ReplicaStoreMin
-	result := map[string][]byte{}
+	result := storeState{}
 
 	for {
 		page, err := store.ReplicaStores(next, -1)
@@ -37,30 +184,28 @@ func getAllReplicaStoreMetadata(t *testing.T, store mvcc.IStore) map[string][]by
 		for _, replicaStore := range page {
 			metadata, err := replicaStore.Metadata()
 
-			t.Fatalf("error while retrieving metadata for %s: %s", replicaStore.Name(), err.Error())
-
-			if _, ok := result[replicaStore.Name()]; ok {
-				t.Fatalf("interface violation detected: pages should not overlap: saw %s again", replicaStore.Name())
+			if err != nil {
+				t.Fatalf("error while getting metadata from replica store %s: %s", replicaStore.Name(), err.Error())
 			}
 
-			result[replicaStore.Name()] = metadata
+			result[replicaStore.Name()] = replicaState{metadata: metadata, revisions: getAllRevisions(t, replicaStore)}
 		}
 	}
 
 	return result
 }
 
-func getAllRevisions(t *testing.T, replicaStore mvcc.IReplicaStore) []map[string]flockpb.KeyValue {
-	result := []map[string]flockpb.KeyValue{}
-	revision, err := replicaStore.View(mvcc.RevisionOldest)
+func getAllRevisions(t *testing.T, replicaStore mvcc.IReplicaStore) []revision {
+	result := []revision{}
+	view, err := replicaStore.View(mvcc.RevisionOldest)
 
 	if err != nil {
 		t.Fatalf("error while trying to read oldest revision: %s", err.Error())
 	}
 
 	for {
-		result = append(result, getAllKVs(t, revision))
-		revision, err = replicaStore.View(revision.Revision() + 1)
+		result = append(result, revision{kvs: getAllKVs(t, view), revision: view.Revision()})
+		view, err = replicaStore.View(view.Revision() + 1)
 
 		if err == mvcc.ErrRevisionTooHigh {
 			break
@@ -93,98 +238,99 @@ func getAllKVs(t *testing.T, revision mvcc.IView) map[string]flockpb.KeyValue {
 	return result
 }
 
+func doMutateTest(t *testing.T, store mvcc.IStore, mutate func(), expectedFinalState storeState) {
+	mutate()
+
+	diff := cmp.Diff(expectedFinalState, getStore(t, store))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+}
+
 // TestReplicaStoreCreate tests creation of
 // replica stores inside a store.
 func TestReplicaStoreCreate(t *testing.T) {
 	testCases := map[string]struct {
-		initialState map[string][]byte
-		finalState   map[string][]byte
+		initialState storeChangeset
 		name         string
 		metadata     []byte
-		err          error
 	}{
 		"add-with-nil-metadata": {
-			initialState: map[string][]byte{
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
+			initialState: storeChangeset{
+				"b": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{4, 5, 6},
+				},
+				"c": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{7, 8, 9},
+				},
 			},
 			name:     "a",
 			metadata: nil,
-			err:      nil,
-			finalState: map[string][]byte{
-				"a": {},
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
-			},
 		},
 		"add-with-non-nil-metadata": {
-			initialState: map[string][]byte{
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
+			initialState: storeChangeset{
+				"b": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{4, 5, 6},
+				},
+				"c": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{7, 8, 9},
+				},
 			},
 			name:     "a",
 			metadata: []byte{1, 2, 3},
-			err:      nil,
-			finalState: map[string][]byte{
-				"a": {1, 2, 3},
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
-			},
 		},
 		"add-existing": {
-			initialState: map[string][]byte{
-				"a": {1, 2, 3},
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
+			initialState: storeChangeset{
+				"a": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{1, 2, 3},
+				},
+				"b": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{4, 5, 6},
+				},
+				"c": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{7, 8, 9},
+				},
 			},
 			name:     "a",
 			metadata: []byte{5, 6, 7},
-			err:      nil,
-			finalState: map[string][]byte{
-				"a": {1, 2, 3},
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
-			},
 		},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			store := newEmptyStore(t)
+			store := newStore(t, testCase.initialState)
 
 			defer store.Purge()
 			defer store.Close()
 
-			// initialize store
-			for replicaName, metadata := range testCase.initialState {
-				if err := store.ReplicaStore(replicaName).Create(metadata); err != nil {
-					t.Fatalf("failed to create replica store %s: %s", replicaName, err.Error())
+			finalState := testCase.initialState.compile()
+
+			if _, ok := finalState[testCase.name]; !ok {
+				metadata := testCase.metadata
+
+				if metadata == nil {
+					metadata = []byte{}
+				}
+
+				finalState[testCase.name] = replicaState{
+					metadata:  metadata,
+					revisions: []revision{},
 				}
 			}
 
-			// run test case: create a replica store
-			err := store.ReplicaStore(testCase.name).Create(testCase.metadata)
-
-			// make sure the error returned was correct
-			switch testCase.err {
-			case errAnyError:
-				if err == nil {
-					t.Fatalf("expected error, got nil")
+			doMutateTest(t, store, func() {
+				if err := store.ReplicaStore(testCase.name).Create(testCase.metadata); err != nil {
+					t.Fatalf("error while creating %s: %s", testCase.name, err.Error())
 				}
-			default:
-				if err != testCase.err {
-					t.Fatalf("expected err %#v, got %#v", testCase.err, err)
-				}
-			}
-
-			// make sure the final state of the store is correct
-			finalState := getAllReplicaStoreMetadata(t, store)
-
-			diff := cmp.Diff(testCase.finalState, finalState)
-
-			if diff != "" {
-				t.Fatalf(diff)
-			}
+			}, finalState)
 		})
 	}
 }
@@ -193,176 +339,90 @@ func TestReplicaStoreCreate(t *testing.T) {
 // replica stores inside a store.
 func TestReplicaStoreDelete(t *testing.T) {
 	testCases := map[string]struct {
-		initialState map[string][]byte
-		finalState   map[string][]byte
+		initialState storeChangeset
 		name         string
-		err          error
 	}{
 		"delete-existing": {
-			initialState: map[string][]byte{
-				"a": {1, 2, 3},
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
+			initialState: storeChangeset{
+				"a": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{1, 2, 3},
+				},
+				"b": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{4, 5, 6},
+				},
+				"c": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{7, 8, 9},
+				},
 			},
 			name: "a",
-			err:  nil,
-			finalState: map[string][]byte{
-				"b": {3, 4, 5},
-				"c": {7, 8, 9},
-			},
 		},
 		"delete-not-existing": {
-			initialState: map[string][]byte{
-				"a": {1, 2, 3},
-				"c": {7, 8, 9},
+			initialState: storeChangeset{
+				"b": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{4, 5, 6},
+				},
+				"c": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{7, 8, 9},
+				},
 			},
-			name: "b",
-			err:  nil,
-			finalState: map[string][]byte{
-				"a": {1, 2, 3},
-				"c": {7, 8, 9},
-			},
+			name: "a",
 		},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			store := newEmptyStore(t)
+			store := newStore(t, testCase.initialState)
 
 			defer store.Purge()
 			defer store.Close()
 
-			// initialize store
-			for replicaName, metadata := range testCase.initialState {
-				if err := store.ReplicaStore(replicaName).Create(metadata); err != nil {
-					t.Fatalf("failed to create replica store %s: %s", replicaName, err.Error())
+			finalState := testCase.initialState.compile()
+			delete(finalState, testCase.name)
+			doMutateTest(t, store, func() {
+				if err := store.ReplicaStore(testCase.name).Delete(); err != nil {
+					t.Fatalf("error while deleting %s: %s", testCase.name, err.Error())
 				}
-			}
-
-			// run test case: create a replica store
-			err := store.ReplicaStore(testCase.name).Delete()
-
-			// make sure the error returned was correct
-			switch testCase.err {
-			case errAnyError:
-				if err == nil {
-					t.Fatalf("expected error, got nil")
-				}
-			default:
-				if err != testCase.err {
-					t.Fatalf("expected err %#v, got %#v", testCase.err, err)
-				}
-			}
-
-			// make sure the final state of the store is correct
-			finalState := getAllReplicaStoreMetadata(t, store)
-
-			diff := cmp.Diff(testCase.finalState, finalState)
-
-			if diff != "" {
-				t.Fatalf(diff)
-			}
+			}, finalState)
 		})
 	}
 }
 
 func TestMVCC(t *testing.T) {
-	// Starts with some initial state
-	// Do something
-	// - Create a revision
-	// - Compact
-	// Compare to expected final state
-	type revision struct {
-		changes map[string][]byte
-		commit  bool
-	}
-
 	testCases := map[string]struct {
-		revisions  []revision
-		finalState []map[string]flockpb.KeyValue
-		err        error
+		initialState storeChangeset
 	}{
 		"put-existing": {
-			revisions: []revision{
-				{
-					changes: map[string][]byte{
-						"a": []byte("123"),
-						"b": []byte("456"),
+			initialState: storeChangeset{
+				"TEST": {
+					revisions: []revisionChangeset{
+						{
+							changes: map[string][]byte{
+								"a": []byte("123"),
+								"b": []byte("456"),
+							},
+							commit: true,
+						},
+						{
+							changes: map[string][]byte{
+								"a": []byte("456"),
+								"b": []byte("789"),
+								"c": []byte("899"),
+							},
+							commit: true,
+						},
+						{
+							changes: map[string][]byte{
+								"b": []byte("replaced"),
+							},
+							commit: true,
+						},
 					},
-					commit: true,
-				},
-				{
-					changes: map[string][]byte{
-						"a": []byte("456"),
-						"b": []byte("789"),
-						"c": []byte("899"),
-					},
-					commit: true,
-				},
-			},
-			err: nil,
-			finalState: []map[string]flockpb.KeyValue{
-				{
-					"a": flockpb.KeyValue{
-						Key:            []byte("a"),
-						Value:          []byte("123"),
-						CreateRevision: 1,
-						ModRevision:    1,
-						Version:        1,
-					},
-					"b": flockpb.KeyValue{
-						Key:            []byte("b"),
-						Value:          []byte("456"),
-						CreateRevision: 1,
-						ModRevision:    1,
-						Version:        1,
-					},
-				},
-				{
-					"a": flockpb.KeyValue{
-						Key:            []byte("a"),
-						Value:          []byte("456"),
-						CreateRevision: 1,
-						ModRevision:    2,
-						Version:        2,
-					},
-					"b": flockpb.KeyValue{
-						Key:            []byte("b"),
-						Value:          []byte("789"),
-						CreateRevision: 1,
-						ModRevision:    2,
-						Version:        2,
-					},
-					"c": flockpb.KeyValue{
-						Key:            []byte("c"),
-						Value:          []byte("899"),
-						CreateRevision: 1,
-						ModRevision:    2,
-						Version:        2,
-					},
-				},
-				{
-					"a": flockpb.KeyValue{
-						Key:            []byte("a"),
-						Value:          []byte("456"),
-						CreateRevision: 1,
-						ModRevision:    2,
-						Version:        2,
-					},
-					"b": flockpb.KeyValue{
-						Key:            []byte("b"),
-						Value:          []byte("replaced"),
-						CreateRevision: 1,
-						ModRevision:    3,
-						Version:        3,
-					},
-					"c": flockpb.KeyValue{
-						Key:            []byte("c"),
-						Value:          []byte("899"),
-						CreateRevision: 1,
-						ModRevision:    2,
-						Version:        2,
-					},
+					metadata: []byte{},
 				},
 			},
 		},
@@ -370,71 +430,72 @@ func TestMVCC(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			store := newEmptyStore(t)
+			store := newStore(t, testCase.initialState)
 
 			defer store.Purge()
 			defer store.Close()
 
-			replicaStore := store.ReplicaStore("TEST")
-
-			if err := replicaStore.Create([]byte{}); err != nil {
-				t.Fatalf("failed to create replica store TEST: %s", err.Error())
-			}
-
-			// apply revisions
-			for i, revision := range testCase.revisions {
-				rev, err := replicaStore.NewRevision(flockpb.RaftStatus{})
-
-				if err != nil {
-					t.Fatalf("failed to create revision %d: %s", i, err.Error())
-				}
-
-				for key, value := range revision.changes {
-					var err error
-
-					if value == nil {
-						err = rev.Delete([]byte(key))
-					} else {
-						err = rev.Put([]byte(key), value)
-					}
-
-					if err != nil {
-						t.Fatalf("failed to create revision %d: %s", i, err.Error())
-					}
-				}
-
-				if revision.commit {
-					err = rev.Commit()
-				} else {
-					err = rev.Abort()
-				}
-
-				if err != nil {
-					t.Fatalf("failed to create revision %d: %s", i, err.Error())
-				}
-			}
-
-			// make sure the final state of the store is correct
-			finalState := getAllRevisions(t, replicaStore)
-
-			diff := cmp.Diff(testCase.finalState, finalState)
-
-			if diff != "" {
-				t.Fatalf(diff)
-			}
+			doMutateTest(t, store, func() {}, testCase.initialState.compile())
 		})
 	}
 }
 
 func TestQuery(t *testing.T) {
+	testCases := map[string]struct {
+		initialState storeChangeset
+		query        flockpb.KVQueryRequest
+		result       flockpb.KVQueryResponse
+	}{
+		"put-existing": {
+			initialState: storeChangeset{
+				"TEST": {
+					revisions: []revisionChangeset{
+						{
+							changes: map[string][]byte{
+								"a": []byte("123"),
+								"b": []byte("456"),
+							},
+							commit: true,
+						},
+						{
+							changes: map[string][]byte{
+								"a": []byte("456"),
+								"b": []byte("789"),
+								"c": []byte("899"),
+							},
+							commit: true,
+						},
+						{
+							changes: map[string][]byte{
+								"b": []byte("replaced"),
+							},
+							commit: true,
+						},
+					},
+					metadata: []byte{},
+				},
+			},
+			query:  flockpb.KVQueryRequest{},
+			result: flockpb.KVQueryResponse{},
+		},
+	}
 
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			store := newStore(t, testCase.initialState)
+
+			defer store.Purge()
+			defer store.Close()
+
+			doMutateTest(t, store, func() {}, testCase.initialState.compile())
+		})
+	}
 }
 
 func TestLeases(t *testing.T) {
 }
 
 func TestRaftStatusEnforcement(t *testing.T) {
-
 }
 
 func TestSnapshots(t *testing.T) {
