@@ -670,6 +670,7 @@ func TestMVCC(t *testing.T) {
 func TestQuery(t *testing.T) {
 	testCases := map[string]struct {
 		initialState storeChangeset
+		err          error
 		query        flockpb.KVQueryRequest
 		result       flockpb.KVQueryResponse
 	}{
@@ -714,7 +715,31 @@ func TestQuery(t *testing.T) {
 			defer store.Purge()
 			defer store.Close()
 
-			doMutateTest(t, store, func() {}, testCase.initialState.compile())
+			view, err := store.ReplicaStore(testCase.query.Header.Replica).View(testCase.query.Revision)
+
+			if err != nil {
+				if err != testCase.err {
+					t.Fatalf("expected error %#v, got %#v", testCase.err, err)
+				}
+
+				return
+			}
+
+			response, err := view.Query(testCase.query)
+
+			if err != nil {
+				if err != testCase.err {
+					t.Fatalf("expected error %#v, got %#v", testCase.err, err)
+				}
+
+				return
+			}
+
+			diff := cmp.Diff(testCase.result, response)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
 		})
 	}
 }

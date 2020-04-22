@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
-	"github.com/jrife/ptarmigan/storage/state_machine/storage_classes/kv"
+	"github.com/jrife/ptarmigan/storage/kv"
 )
 
 var _ IReplicaStore = (*ReplicaStore)(nil)
@@ -14,12 +14,13 @@ var _ IReplicaStore = (*ReplicaStore)(nil)
 // for a single replica representing an independent
 // partition.
 type ReplicaStore struct {
-	kvStore *kv.KVStateMachineStore
+	name    string
+	kvStore kv.SubStore
 }
 
 // Name returns the name of this replica store
 func (replicaStore *ReplicaStore) Name() string {
-	return ""
+	return replicaStore.name
 }
 
 // Create initializes this replica store with some metadata.

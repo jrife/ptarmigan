@@ -1,6 +1,9 @@
 package mvcc
 
-import "github.com/jrife/ptarmigan/flock/server/flockpb"
+import (
+	"github.com/jrife/ptarmigan/flock/server/flockpb"
+	"github.com/jrife/ptarmigan/storage/kv"
+)
 
 var _ IView = (*Revision)(nil)
 var _ IRevision = (*Revision)(nil)
@@ -9,6 +12,7 @@ var _ IRevision = (*Revision)(nil)
 // you build a new revision and explore the state of
 // a replica store at some revision.
 type Revision struct {
+	transaction kv.Transaction
 }
 
 // Query executes a query on this view (ignores revision in request)
