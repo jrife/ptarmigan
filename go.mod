@@ -9,9 +9,9 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
-	github.com/kr/pretty v0.1.0 // indirect
 	go.etcd.io/bbolt v1.3.3
 	go.etcd.io/etcd v3.3.18+incompatible
+	go.uber.org/zap v1.14.1
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
 	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c
 	google.golang.org/grpc v1.28.0

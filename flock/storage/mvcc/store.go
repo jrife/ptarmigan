@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jrife/ptarmigan/storage/kv"
+	"go.uber.org/zap"
 )
 
 var (
@@ -17,6 +18,14 @@ var _ IStore = (*Store)(nil)
 // a flock node
 type Store struct {
 	kvStore kv.SubStore
+	// TODO: Use zipkin+opentracing for tracing instead of just logging
+	// https://zipkin.io/
+	// https://github.com/opentracing-contrib/go-stdlib: "OpenTracing instrumentation for packages in the Go stdlib"
+	// https://github.com/opentracing-contrib/go-zap: "go-zap - Seamless integration between Opentracing and Zap"
+	// https://github.com/openzipkin-contrib/zipkin-go-opentracing: "OpenTracing Bridge for Zipkin Go"
+	// https://github.com/openzipkin/zipkin-go: Zipkin tracer library for go
+	// https://github.com/uber-go/zap: "Blazing fast, structured, leveled logging in Go."
+	log *zap.Logger
 }
 
 // NewStore creates an instance of IStore backed by a single
