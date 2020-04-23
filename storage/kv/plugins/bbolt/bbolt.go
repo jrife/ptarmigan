@@ -226,7 +226,9 @@ func (transaction *BBoltTransaction) Rollback() error {
 var _ kv.Bucket = (*BBoltBucket)(nil)
 
 type BBoltBucket struct {
+	parent *bolt.Bucket
 	bucket *bolt.Bucket
+	name   []byte
 }
 
 func (bucket *BBoltBucket) Bucket(name []byte) kv.Bucket {
@@ -234,17 +236,33 @@ func (bucket *BBoltBucket) Bucket(name []byte) kv.Bucket {
 		return nil
 	}
 
-	return &BBoltBucket{bucket: bucket.bucket.Bucket(name)}
+	return &BBoltBucket{parent: bucket.bucket, bucket: bucket.bucket.Bucket(name)}
 }
 
-func (bucket *BBoltBucket) CreateBucket(name []byte) (kv.Bucket, error) {
-	b, err := bucket.bucket.CreateBucketIfNotExists(name)
-
-	if err != nil {
-		return nil, fmt.Errorf("Could not create bucket: %s", err.Error())
+func (bucket *BBoltBucket) Create() error {
+	if bucket.parent == nil {
+		// This is the root bucket.
+		return nil
 	}
 
-	return &BBoltBucket{bucket: b}, nil
+	b, err := bucket.parent.CreateBucket(bucket.name)
+
+	if err != nil {
+		return err
+	}
+
+	bucket.bucket = b
+
+	return nil
+}
+
+func (bucket *BBoltBucket) Purge() error {
+	if bucket.parent == nil {
+		// This is the root bucket.
+		return nil
+	}
+
+	return bucket.parent.DeleteBucket(bucket.name)
 }
 
 func (bucket *BBoltBucket) Cursor() kv.Cursor {
@@ -256,7 +274,7 @@ func (bucket *BBoltBucket) ForEachBucket(fn func(name []byte, bucket kv.Bucket) 
 
 	for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 		if v == nil {
-			if err := fn(k, &BBoltBucket{bucket: bucket.bucket.Bucket(k)}); err != nil {
+			if err := fn(k, &BBoltBucket{parent: bucket.bucket, bucket: bucket.bucket.Bucket(k)}); err != nil {
 				return err
 			}
 		}
@@ -267,10 +285,6 @@ func (bucket *BBoltBucket) ForEachBucket(fn func(name []byte, bucket kv.Bucket) 
 
 func (bucket *BBoltBucket) ForEach(fn func(key []byte, value []byte) error) error {
 	return bucket.bucket.ForEach(fn)
-}
-
-func (bucket *BBoltBucket) DeleteBucket(name []byte) error {
-	return bucket.bucket.Delete(name)
 }
 
 func (bucket *BBoltBucket) Delete(key []byte) error {
@@ -289,12 +303,12 @@ func (bucket *BBoltBucket) Put(key []byte, value []byte) error {
 	return bucket.bucket.Put(key, value)
 }
 
-func (bucket *BBoltBucket) Purge() error {
+func (bucket *BBoltBucket) Empty() error {
 	cursor := bucket.Cursor()
 
 	for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 		if v == nil {
-			if err := bucket.DeleteBucket(k); err != nil {
+			if err := bucket.Bucket(k).Purge(); err != nil {
 				return fmt.Errorf("Could not delete bucket %v: %s", k, err.Error())
 			}
 		} else {

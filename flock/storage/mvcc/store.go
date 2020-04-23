@@ -1,10 +1,12 @@
 package mvcc
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/jrife/ptarmigan/storage/kv"
 	"go.uber.org/zap"
+
+	"github.com/jrife/ptarmigan/storage/kv"
 )
 
 var (
@@ -13,28 +15,33 @@ var (
 
 var _ IStore = (*Store)(nil)
 
+// StoreConfig contains configuration
+// for a store
+type StoreConfig struct {
+	KV     kv.SubStore
+	Logger *zap.Logger
+}
+
 // Store implements IStore. It is the
 // top object for accessing storage for
 // a flock node
 type Store struct {
 	kvStore kv.SubStore
-	// TODO: Use zipkin+opentracing for tracing instead of just logging
-	// https://zipkin.io/
-	// https://github.com/opentracing-contrib/go-stdlib: "OpenTracing instrumentation for packages in the Go stdlib"
-	// https://github.com/opentracing-contrib/go-zap: "go-zap - Seamless integration between Opentracing and Zap"
-	// https://github.com/openzipkin-contrib/zipkin-go-opentracing: "OpenTracing Bridge for Zipkin Go"
-	// https://github.com/openzipkin/zipkin-go: Zipkin tracer library for go
-	// https://github.com/uber-go/zap: "Blazing fast, structured, leveled logging in Go."
-	log *zap.Logger
+	logger  *zap.Logger
 }
 
 // NewStore creates an instance of IStore backed by a single
 // kv store
-func NewStore(kvStore kv.SubStore) (*Store, error) {
-	store := &Store{kvStore: kvStore}
+func NewStore(config StoreConfig) (*Store, error) {
+	store := &Store{kvStore: config.KV, logger: config.Logger}
+
+	if store.logger == nil {
+		store.logger = zap.L()
+	}
 
 	if err := store.ensureBuckets(); err != nil {
-		return nil, fmt.Errorf("Could not ensure buckets: %s", err.Error())
+		store.logger.Error("could not ensure buckets", zap.Error(err))
+		return nil, fmt.Errorf("could not ensure buckets: %s", err.Error())
 	}
 
 	return store, nil
@@ -47,7 +54,7 @@ func (store *Store) ensureBuckets() error {
 		return fmt.Errorf("Could not start transaction to ensure existence of required buckets: %s", err.Error())
 	}
 
-	_, err = transaction.Root().CreateBucket(ReplicasBucket)
+	err = transaction.Root().Bucket(ReplicasBucket).Create()
 
 	if err != nil {
 		return fmt.Errorf("Could not ensure existence of replicas bucket: %s", err.Error())
@@ -61,7 +68,7 @@ func (store *Store) ensureBuckets() error {
 // stores are returned in order by their name.
 // Returns a list of IReplicaStores whose name is
 // > start up to the specified limit.
-func (store *Store) ReplicaStores(start string, limit int) ([]IReplicaStore, error) {
+func (store *Store) ReplicaStores(ctx context.Context, start string, limit int) ([]IReplicaStore, error) {
 	return nil, nil
 }
 
@@ -73,6 +80,7 @@ func (store *Store) ReplicaStore(name string) IReplicaStore {
 	return &ReplicaStore{
 		name:    name,
 		kvStore: store.kvStore.Namespace([]byte(ReplicasBucket)).Namespace([]byte(name)),
+		logger:  store.logger,
 	}
 }
 

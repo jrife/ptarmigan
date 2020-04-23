@@ -113,20 +113,12 @@ type Bucket interface {
 	// Bucket returns a handle to a child bucket
 	// if it exists. It returns nil otherwise
 	Bucket(name []byte) Bucket
-	// CreateBucket creates a bucket inside the
-	// current bucket. If the current bucket
-	// does not exist this should return an error
-	// and have no effect. If the child bucket
-	// already exists this should have no effect
-	// and simply return a handle to that child
-	// bucket.
-	CreateBucket(name []byte) (Bucket, error)
-	// DeleteBucket deletes a bucket inside the
-	// current bucket. If the child bucket doesn't
+	// Create creates this bucket. If the bucket
+	// already exists this should have no effect.
+	Create() error
+	// Purge deletes this bucket. If this bucket doesn't
 	// exist it just returns nil, having no effect.
-	// If the current bucket doesn't exist this
-	// should return an error.
-	DeleteBucket(name []byte) error
+	Purge() error
 	// Cursor returns a cursor that can be used
 	// to navigate the current bucket.
 	Cursor() Cursor
@@ -159,11 +151,11 @@ type Bucket interface {
 	// Put puts a key in the bucket. If the bucket
 	// does not exist then this must return an error.
 	Put(key []byte, value []byte) error
-	// Purge empties the bucket of all contents including
+	// Empty empties the bucket of all contents including
 	// keys and child buckets. If the bucket does not
 	// exist then this must return an error and have
 	// no effect.
-	Purge() error
+	Empty() error
 }
 
 type Cursor interface {

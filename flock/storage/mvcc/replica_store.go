@@ -1,10 +1,18 @@
 package mvcc
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
 	"github.com/jrife/ptarmigan/storage/kv"
+	"go.uber.org/zap"
+)
+
+var (
+	ReplicaMetadataBucket = []byte{0}
+	ReplicaKVBucket       = []byte{1}
+	MetadataKey           = []byte("metadata")
 )
 
 var _ IReplicaStore = (*ReplicaStore)(nil)
@@ -16,6 +24,7 @@ var _ IReplicaStore = (*ReplicaStore)(nil)
 type ReplicaStore struct {
 	name    string
 	kvStore kv.SubStore
+	logger  *zap.Logger
 }
 
 // Name returns the name of this replica store
@@ -26,18 +35,72 @@ func (replicaStore *ReplicaStore) Name() string {
 // Create initializes this replica store with some metadata.
 // It does nothing if the replica store already exists.
 func (replicaStore *ReplicaStore) Create(metadata []byte) error {
+	txn, err := replicaStore.kvStore.Begin(true)
+
+	if err != nil {
+		return fmt.Errorf("could not begin transaction: %s", err.Error())
+	}
+
+	defer txn.Rollback()
+
+	if err := txn.Root().Create(); err != nil {
+		return fmt.Errorf("could not create bucket %s: %s", replicaStore.name, err.Error())
+	}
+
+	if err := txn.Root().Bucket(ReplicaMetadataBucket).Create(); err != nil {
+		return fmt.Errorf("could not create metadata bucket: %s", err.Error())
+	}
+
+	if err := txn.Root().Bucket(ReplicaKVBucket).Create(); err != nil {
+		return fmt.Errorf("could not create kv bucket: %s", err.Error())
+	}
+
+	if err := txn.Commit(); err != nil {
+		return fmt.Errorf("could not commit transaction: %s", err.Error())
+	}
+
 	return nil
 }
 
 // Delete deletes this replica store. It does nothing if the
 // replica store doesn't exist.
 func (replicaStore *ReplicaStore) Delete() error {
+	txn, err := replicaStore.kvStore.Begin(true)
+
+	if err != nil {
+		return fmt.Errorf("could not begin transaction: %s", err.Error())
+	}
+
+	defer txn.Rollback()
+
+	if err := txn.Root().Purge(); err != nil {
+		return fmt.Errorf("could not purge bucket %s: %s", replicaStore.name, err.Error())
+	}
+
+	if err := txn.Commit(); err != nil {
+		return fmt.Errorf("could not commit transaction: %s", err.Error())
+	}
+
 	return nil
 }
 
 // Metadata retrieves the metadata associated with this replica store
 func (replicaStore *ReplicaStore) Metadata() ([]byte, error) {
-	return nil, nil
+	txn, err := replicaStore.kvStore.Begin(false)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
+	}
+
+	defer txn.Rollback()
+
+	metadata, err := txn.Root().Bucket(ReplicaMetadataBucket).Get(MetadataKey)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve metadata: %s", err.Error())
+	}
+
+	return metadata, nil
 }
 
 // RaftStatus returns the latest raft status for this replica store.

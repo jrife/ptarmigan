@@ -1,6 +1,7 @@
 package mvcc
 
 import (
+	"context"
 	"errors"
 	"io"
 
@@ -54,7 +55,7 @@ type IStore interface {
 	// stores are returned in order by their name.
 	// Returns a list of IReplicaStores whose name is
 	// > start up to the specified limit.
-	ReplicaStores(start string, limit int) ([]IReplicaStore, error)
+	ReplicaStores(ctx context.Context, start string, limit int) ([]IReplicaStore, error)
 	// ReplicaStore returns a handle to the replica
 	// store with the given name. Calling methods on
 	// the handle will return ErrNoSuchReplicaStore

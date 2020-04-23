@@ -97,7 +97,7 @@ func writeKVPairs(ctx context.Context, transaction Transaction, kvPairs <-chan k
 		defer close(errors)
 
 		// Purge the store. Make sure we're starting with a clean slate
-		err := transaction.Root().Purge()
+		err := transaction.Root().Empty()
 
 		if err != nil {
 			errors <- fmt.Errorf("Could not purge store: %s", err.Error())
@@ -128,8 +128,9 @@ func writeBucket(ctx context.Context, bucket Bucket, kvPairs <-chan kvpb.KVPair)
 					return fmt.Errorf("Could not write key %v: %s", kvPair.Key, err.Error())
 				}
 			} else if kvPair.Key != nil && kvPair.Value == nil {
+				innerBucket := bucket.Bucket(kvPair.Key)
 				// Bucket start for inner bucket
-				innerBucket, err := bucket.CreateBucket(kvPair.Key)
+				err := innerBucket.Create()
 
 				if err != nil {
 					return fmt.Errorf("Could not create inner bucket %v: %s", kvPair.Key, err.Error())
