@@ -265,6 +265,10 @@ func (bucket *BBoltBucket) Purge() error {
 	return bucket.parent.DeleteBucket(bucket.name)
 }
 
+func (bucket *BBoltBucket) Exists() bool {
+	return bucket.parent.Bucket(bucket.name) == nil
+}
+
 func (bucket *BBoltBucket) Cursor() kv.Cursor {
 	return &BBoltCursor{cursor: bucket.bucket.Cursor()}
 }

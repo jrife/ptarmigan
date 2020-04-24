@@ -119,6 +119,8 @@ type Bucket interface {
 	// Purge deletes this bucket. If this bucket doesn't
 	// exist it just returns nil, having no effect.
 	Purge() error
+	// Return true if this bucket exists
+	Exists() bool
 	// Cursor returns a cursor that can be used
 	// to navigate the current bucket.
 	Cursor() Cursor
