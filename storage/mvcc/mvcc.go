@@ -46,7 +46,7 @@ func min(a int, b int) int {
 }
 
 // New creates a new mvcc store
-func New(kvStore kv.SubStore) Store {
+func New(kvStore kv.Store) Store {
 	store := &store{
 		kvStore: kvStore,
 	}
