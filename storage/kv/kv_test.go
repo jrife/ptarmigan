@@ -1,6 +1,8 @@
 package kv_test
 
 import (
+	"bytes"
+	"fmt"
 	"sort"
 	"sync"
 	"testing"
@@ -78,6 +80,75 @@ func initializePartitionState(partition kv.Partition, initialState partitionMode
 	return transaction.Commit()
 }
 
+func rootStoreToModel(rootStore kv.RootStore) (rootStoreModel, error) {
+	model := rootStoreModel{}
+	stores, err := rootStore.Stores()
+
+	if err != nil {
+		return rootStoreModel{}, fmt.Errorf("could not list stores: %s", err.Error())
+	}
+
+	for _, storeName := range stores {
+		storeModel, err := storeToModel(rootStore.Store(storeName))
+
+		if err != nil {
+			return rootStoreModel{}, fmt.Errorf("storeToModel failed for store %s: %s", storeName, err.Error())
+		}
+
+		model[string(storeName)] = storeModel
+	}
+
+	return model, nil
+}
+
+func storeToModel(store kv.Store) (storeModel, error) {
+	model := storeModel{}
+	partitions, err := store.Partitions(nil, nil, -1)
+
+	if err != nil {
+		return storeModel{}, fmt.Errorf("could not list partitions: %s", err.Error())
+	}
+
+	for _, partitionName := range partitions {
+		partitionModel, err := partitionToModel(store.Partition(partitionName))
+
+		if err != nil {
+			return storeModel{}, fmt.Errorf("partitionToModel failed for partition %s: %s", partitionName, err.Error())
+		}
+
+		model[string(partitionName)] = partitionModel
+	}
+
+	return model, nil
+}
+
+func partitionToModel(partition kv.Partition) (partitionModel, error) {
+	model := partitionModel{}
+	transaction, err := partition.Begin(false)
+
+	if err != nil {
+		return partitionModel{}, fmt.Errorf("could not begin transaction: %s", err.Error())
+	}
+
+	defer transaction.Rollback()
+
+	iter, err := transaction.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		return partitionModel{}, fmt.Errorf("could not create key iterator: %s", err.Error())
+	}
+
+	for iter.Next() {
+		model[string(iter.Key())] = string(iter.Value())
+	}
+
+	if iter.Error() != nil {
+		return partitionModel{}, fmt.Errorf("iteration error: %s", err.Error())
+	}
+
+	return model, nil
+}
+
 func TestDrivers(t *testing.T) {
 	pluginManager := plugins.NewKVPluginManager()
 
@@ -125,12 +196,9 @@ func testPartition(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testTransaction(builder tempStoreBuilder, t *testing.T) {
-	t.Run("Put", func(t *testing.T) { testTransactionPut(builder, t) })
-	t.Run("Get", func(t *testing.T) { testTransactionGet(builder, t) })
-	t.Run("Delete", func(t *testing.T) { testTransactionDelete(builder, t) })
+	t.Run("Read-Write", func(t *testing.T) { testTransactionReadWrite(builder, t) })
 	t.Run("Keys", func(t *testing.T) { testTransactionKeys(builder, t) })
-	t.Run("Commit", func(t *testing.T) { testTransactionCommit(builder, t) })
-	t.Run("Rollback", func(t *testing.T) { testTransactionRollback(builder, t) })
+	t.Run("Namespace", func(t *testing.T) { testTransactionNamespace(builder, t) })
 }
 
 func testIterator(builder tempStoreBuilder, t *testing.T) {
@@ -217,28 +285,28 @@ func testRootStoreStores(builder tempStoreBuilder, t *testing.T) {
 		},
 		"several-empty-stores": {
 			initialState: rootStoreModel{
-				"store1": storeModel{},
-				"store2": storeModel{},
-				"store3": storeModel{},
+				"store1": {},
+				"store2": {},
+				"store3": {},
 			},
 		},
 		"several-stores-with-data": {
 			initialState: rootStoreModel{
-				"store1": storeModel{
-					"p1": partitionModel{
+				"store1": {
+					"p1": {
 						"a": "b",
 					},
-					"p2": partitionModel{},
+					"p2": {},
 				},
-				"store2": storeModel{
-					"p1": partitionModel{
+				"store2": {
+					"p1": {
 						"a": "b",
 					},
-					"p2": partitionModel{
+					"p2": {
 						"c": "d",
 					},
 				},
-				"store3": storeModel{},
+				"store3": {},
 			},
 		},
 	}
@@ -288,35 +356,656 @@ func testRootStoreStores(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testRootStoreStore(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+	}{}
+
+	for name, _ := range testCases {
+		t.Run(name, func(t *testing.T) {
+			// TODO: Maybe just some test cases to ensure that the Store
+			// function doesn't return nil under several cases
+		})
+	}
 }
 
 // Store
 func testStoreName(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		name         []byte
+	}{
+		"store-that-doesn't-exist": {
+			initialState: rootStoreModel{},
+			name:         []byte("a"),
+		},
+		"store-that-exists": {
+			initialState: rootStoreModel{
+				"store1": {},
+				"store2": {},
+				"store3": {},
+			},
+			name: []byte("store2"),
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			if bytes.Compare(rootStore.Store(testCase.name).Name(), testCase.name) != 0 {
+				t.Errorf("expected name %#v, got #%v", testCase.name, rootStore.Store(testCase.name).Name())
+			}
+		})
+	}
 }
 
 func testStoreCreate(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		finalState   rootStoreModel
+		name         []byte
+	}{
+		"new-store": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+				"store2": {},
+			},
+			name: []byte("store2"),
+		},
+		"existing-store": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			name: []byte("store2"),
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			if err := rootStore.Store(testCase.name).Create(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			finalState, err := rootStoreToModel(rootStore)
+
+			if err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+
+			diff := cmp.Diff(testCase.finalState, finalState)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func testStoreDelete(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		finalState   rootStoreModel
+		name         []byte
+	}{
+		"not-existing-store": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+				"store2": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+				"store2": {},
+			},
+			name: []byte("store3"),
+		},
+		"existing-store": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store3": {},
+			},
+			name: []byte("store2"),
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			if err := rootStore.Store(testCase.name).Delete(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			finalState, err := rootStoreToModel(rootStore)
+
+			if err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+
+			diff := cmp.Diff(testCase.finalState, finalState)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		partitions   [][]byte
+		err          error
+		store        []byte
+		min          []byte
+		max          []byte
+		limit        int
+	}{
+		"all-partitions": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store: []byte("store1"),
+			min:   nil,
+			max:   nil,
+			limit: -1,
+			err:   nil,
+			partitions: [][]byte{
+				[]byte("p1"),
+				[]byte("p2"),
+				[]byte("p3"),
+				[]byte("p4"),
+				[]byte("p5"),
+				[]byte("p6"),
+			},
+		},
+		"some-partitions-limit-only": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store: []byte("store1"),
+			min:   nil,
+			max:   nil,
+			limit: 3,
+			err:   nil,
+			partitions: [][]byte{
+				[]byte("p1"),
+				[]byte("p2"),
+				[]byte("p3"),
+			},
+		},
+		"some-partitions-middle-to-end": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store: []byte("store1"),
+			min:   []byte("p4"),
+			max:   nil,
+			limit: -1,
+			err:   nil,
+			partitions: [][]byte{
+				[]byte("p4"),
+				[]byte("p5"),
+				[]byte("p6"),
+			},
+		},
+		"some-partitions-start-to-middle": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store: []byte("store1"),
+			min:   nil,
+			max:   []byte("p4"),
+			limit: -1,
+			err:   nil,
+			partitions: [][]byte{
+				[]byte("p1"),
+				[]byte("p2"),
+				[]byte("p3"),
+			},
+		},
+		"some-partitions-middle-to-middle": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store: []byte("store1"),
+			min:   []byte("p2"),
+			max:   []byte("p4"),
+			limit: -1,
+			err:   nil,
+			partitions: [][]byte{
+				[]byte("p2"),
+				[]byte("p3"),
+			},
+		},
+		"store-that-doesn't-exist": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store:      []byte("store2"),
+			min:        nil,
+			max:        nil,
+			limit:      -1,
+			err:        kv.ErrNoSuchStore,
+			partitions: nil,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			partitions, err := rootStore.Store(testCase.store).Partitions(testCase.min, testCase.max, testCase.limit)
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be %#v, got #%v", testCase.err, err)
+			}
+
+			diff := cmp.Diff(testCase.partitions, partitions)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func testStorePartition(builder tempStoreBuilder, t *testing.T) {
+	// TODO: maybe some test to make sure Partition() doesn't return nil
 }
 
 // Partition
 func testPartitionName(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		store        []byte
+		name         []byte
+	}{
+		"store-that-doesn't-exist": {
+			initialState: rootStoreModel{},
+			store:        []byte("store1"),
+			name:         []byte("p1"),
+		},
+		"partition-that-doesn't-exist": {
+			initialState: rootStoreModel{
+				"store1": {},
+			},
+			store: []byte("store1"),
+			name:  []byte("p1"),
+		},
+		"store-and-partition-exist": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			store: []byte("store1"),
+			name:  []byte("p1"),
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			if bytes.Compare(rootStore.Store(testCase.store).Partition(testCase.name).Name(), testCase.name) != 0 {
+				t.Errorf("expected name %#v, got #%v", testCase.name, rootStore.Store(testCase.store).Partition(testCase.name).Name())
+			}
+		})
+	}
 }
 
 func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		finalState   rootStoreModel
+		err          error
+		store        []byte
+		name         []byte
+	}{
+		"new-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+				},
+			},
+			store: []byte("store1"),
+			name:  []byte("p2"),
+		},
+		"existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store2"),
+			name:  []byte("p1"),
+		},
+		"store-doesn't-exist": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store4"),
+			name:  []byte("p1"),
+			err:   kv.ErrNoSuchStore,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			err := rootStore.Store(testCase.store).Partition(testCase.name).Create()
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
+			}
+
+			finalState, err := rootStoreToModel(rootStore)
+
+			if err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+
+			diff := cmp.Diff(testCase.finalState, finalState)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		finalState   rootStoreModel
+		err          error
+		store        []byte
+		name         []byte
+	}{
+		"not-existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			store: []byte("store1"),
+			name:  []byte("p2"),
+		},
+		"existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store2"),
+			name:  []byte("p1"),
+		},
+		"store-doesn't-exist": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store4"),
+			name:  []byte("p1"),
+			err:   kv.ErrNoSuchStore,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			err := rootStore.Store(testCase.store).Partition(testCase.name).Delete()
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
+			}
+
+			finalState, err := rootStoreToModel(rootStore)
+
+			if err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+
+			diff := cmp.Diff(testCase.finalState, finalState)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func testPartitionBegin(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		err          error
+		store        []byte
+		name         []byte
+	}{
+		"not-existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			store: []byte("store1"),
+			name:  []byte("p2"),
+			err:   kv.ErrNoSuchPartition,
+		},
+		"existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store2"),
+			name:  []byte("p1"),
+		},
+		"store-doesn't-exist": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store4"),
+			name:  []byte("p1"),
+			err:   kv.ErrNoSuchStore,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			transaction, err := rootStore.Store(testCase.store).Partition(testCase.name).Begin(false)
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
+			} else if err != nil {
+				return
+			}
+
+			if err := transaction.Rollback(); err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+		})
+	}
 }
 
 func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
@@ -325,21 +1014,411 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 }
 
+func getKeys(txn kv.Transaction, keys [][]byte) [][]byte {
+	values := make([][]byte, len(keys))
+
+	for i, key := range keys {
+		values[i], _ = txn.Get(key)
+	}
+
+	return values
+}
+
+func getSequence(iter kv.Iterator) [][2][]byte {
+	kvs := [][2][]byte{}
+
+	for iter.Next() {
+		kvs = append(kvs, [2][]byte{
+			iter.Key(),
+			iter.Value(),
+		})
+	}
+
+	return kvs
+}
+
 // Transaction
-func testTransactionPut(builder tempStoreBuilder, t *testing.T) {
-}
+func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
+	initialState := rootStoreModel{
+		"store1": {
+			"p1": {
+				"a": "b",
+				"c": "d",
+			},
+		},
+	}
+	rootStore := builder(t, initialState)
+	defer rootStore.Delete()
 
-func testTransactionGet(builder tempStoreBuilder, t *testing.T) {
-}
+	rw, err := rootStore.Store([]byte("store1")).Partition([]byte("p1")).Begin(true)
 
-func testTransactionDelete(builder tempStoreBuilder, t *testing.T) {
+	if err != nil {
+		t.Fatalf("expected err to be nil, got #%v", err)
+	}
+
+	defer rw.Rollback()
+
+	ro, err := rootStore.Store([]byte("store1")).Partition([]byte("p1")).Begin(false)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got #%v", err)
+	}
+
+	defer ro.Rollback()
+
+	// Changes within the transaction should be observable to that transaction before commit
+	// but not to other transactions
+	rw.Put([]byte("a"), []byte("z"))
+	rw.Put([]byte("e"), []byte("f"))
+
+	diff := cmp.Diff([][]byte{[]byte("z"), []byte("d"), []byte("f")}, getKeys(rw, [][]byte{[]byte("a"), []byte("c"), []byte("e")}))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+
+	diff = cmp.Diff([][]byte{[]byte("b"), []byte("d"), nil}, getKeys(ro, [][]byte{[]byte("a"), []byte("c"), []byte("e")}))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+
+	rwIter, err := rw.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got #%v", err)
+	}
+
+	roIter, err := ro.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got #%v", err)
+	}
+
+	diff = cmp.Diff([][2][]byte{
+		[2][]byte{[]byte("a"), []byte("z")},
+		[2][]byte{[]byte("c"), []byte("d")},
+		[2][]byte{[]byte("e"), []byte("f")},
+	}, getSequence(rwIter))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+
+	diff = cmp.Diff([][2][]byte{
+		[2][]byte{[]byte("a"), []byte("b")},
+		[2][]byte{[]byte("c"), []byte("d")},
+	}, getSequence(roIter))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
 }
 
 func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		store        []byte
+		partition    []byte
+		min          []byte
+		max          []byte
+		order        kv.SortOrder
+		kvs          [][2][]byte
+		err          error
+	}{
+		"all-keys-asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       nil,
+			max:       nil,
+			order:     kv.SortOrderAsc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("a"), []byte("b")},
+				[2][]byte{[]byte("c"), []byte("d")},
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("g"), []byte("h")},
+				[2][]byte{[]byte("i"), []byte("j")},
+				[2][]byte{[]byte("k"), []byte("l")},
+			},
+		},
+		"all-keys-desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       nil,
+			max:       nil,
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("k"), []byte("l")},
+				[2][]byte{[]byte("i"), []byte("j")},
+				[2][]byte{[]byte("g"), []byte("h")},
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("c"), []byte("d")},
+				[2][]byte{[]byte("a"), []byte("b")},
+			},
+		},
+		"bottom-half-keys-asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       nil,
+			max:       []byte("g"),
+			order:     kv.SortOrderAsc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("a"), []byte("b")},
+				[2][]byte{[]byte("c"), []byte("d")},
+				[2][]byte{[]byte("e"), []byte("f")},
+			},
+		},
+		"bottom-half-keys-desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       nil,
+			max:       []byte("g"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("c"), []byte("d")},
+				[2][]byte{[]byte("a"), []byte("b")},
+			},
+		},
+		"top-half-keys-asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("g"),
+			max:       []byte("z"),
+			order:     kv.SortOrderAsc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("g"), []byte("h")},
+				[2][]byte{[]byte("i"), []byte("j")},
+				[2][]byte{[]byte("k"), []byte("l")},
+			},
+		},
+		"top-half-keys-desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("g"),
+			max:       []byte("z"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("k"), []byte("l")},
+				[2][]byte{[]byte("i"), []byte("j")},
+				[2][]byte{[]byte("g"), []byte("h")},
+			},
+		},
+		"middle-keys-asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("c"),
+			max:       []byte("i"),
+			order:     kv.SortOrderAsc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("c"), []byte("d")},
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("g"), []byte("h")},
+			},
+		},
+		"middle-keys-desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("c"),
+			max:       []byte("i"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("g"), []byte("h")},
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("c"), []byte("d")},
+			},
+		},
+		"sparse-keys-asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("b"),
+			max:       []byte("j"),
+			order:     kv.SortOrderAsc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("c"), []byte("d")},
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("g"), []byte("h")},
+				[2][]byte{[]byte("i"), []byte("j")},
+			},
+		},
+		"sparse-keys-desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("b"),
+			max:       []byte("j"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs: [][2][]byte{
+				[2][]byte{[]byte("i"), []byte("j")},
+				[2][]byte{[]byte("g"), []byte("h")},
+				[2][]byte{[]byte("e"), []byte("f")},
+				[2][]byte{[]byte("c"), []byte("d")},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			transaction, err := rootStore.Store(testCase.store).Partition(testCase.partition).Begin(false)
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be %#v, got #%v", testCase.err, err)
+			}
+
+			defer transaction.Rollback()
+
+			iter, err := transaction.Keys(testCase.min, testCase.max, testCase.order)
+
+			if err != testCase.err {
+				t.Fatalf("expected error to be #%v, got %#v", testCase.err, err)
+			} else if err != nil {
+				return
+			}
+
+			diff := cmp.Diff(testCase.kvs, getSequence(iter))
+
+			if iter.Error() != nil {
+				t.Fatalf("expected error to be #%v, got #%v", testCase.err, iter.Error())
+			}
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
-func testTransactionCommit(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testTransactionRollback(builder tempStoreBuilder, t *testing.T) {
+func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 }

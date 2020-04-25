@@ -134,13 +134,25 @@ func (rootStore *RootStore) Close() error {
 func (rootStore *RootStore) Stores() ([][]byte, error) {
 	stores := [][]byte{}
 
-	rootStore.db.View(func(txn *bolt.Tx) error {
-		return txn.ForEach(func(name []byte, b *bolt.Bucket) error {
+	if err := rootStore.db.View(func(txn *bolt.Tx) error {
+		storesBucket := txn.Bucket(storesBucket)
+
+		if storesBucket == nil {
+			return fmt.Errorf("unexpected error: could not retrieve stores bucket")
+		}
+
+		return storesBucket.ForEach(func(name []byte, value []byte) error {
 			stores = append(stores, name)
 
 			return nil
 		})
-	})
+	}); err != nil {
+		if err == bolt.ErrDatabaseNotOpen {
+			err = kv.ErrClosed
+		}
+
+		return nil, err
+	}
 
 	return stores, nil
 }
@@ -190,11 +202,9 @@ func (store *Store) Create() error {
 		}
 
 		if bucket, err := stores.CreateBucketIfNotExists(store.name); err != nil {
-			if _, err := bucket.CreateBucketIfNotExists(partitionsBucket); err != nil {
-				return fmt.Errorf("could not create kv bucket inside store bucket %s: %s", store.name, err.Error())
-			}
-
 			return fmt.Errorf("could not create bucket %s: %s", store.name, err.Error())
+		} else if _, err := bucket.CreateBucketIfNotExists(partitionsBucket); err != nil {
+			return fmt.Errorf("could not create kv bucket inside store bucket %s: %s", store.name, err.Error())
 		}
 
 		return nil
@@ -211,6 +221,10 @@ func (store *Store) Delete() error {
 		}
 
 		if err := stores.DeleteBucket(store.name); err != nil {
+			if err == bolt.ErrBucketNotFound {
+				return nil
+			}
+
 			return fmt.Errorf("could not delete bucket %s: %s", store.name, err.Error())
 		}
 
@@ -245,7 +259,7 @@ func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
 			nextPartition, _ = cursor.Seek(min)
 		}
 
-		for nextPartition != nil && len(partitions) < limit && (max == nil || bytes.Compare(nextPartition, max) >= 0) {
+		for nextPartition != nil && (limit < 0 || len(partitions) < limit) && (max == nil || bytes.Compare(nextPartition, max) < 0) {
 			partitions = append(partitions, nextPartition)
 			nextPartition, _ = cursor.Next()
 		}
@@ -364,6 +378,8 @@ func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
 	partitionBucket, err := partition.bucket(txn)
 
 	if err != nil {
+		txn.Rollback()
+
 		return nil, err
 	}
 
@@ -417,10 +433,10 @@ func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.It
 	}
 	end := func(key []byte) bool {
 		if order == kv.SortOrderDesc {
-			return min == nil || bytes.Compare(key, min) >= 0
+			return min != nil && bytes.Compare(key, min) < 0
 		}
 
-		return max == nil || bytes.Compare(key, max) < 0
+		return max != nil && bytes.Compare(key, max) >= 0
 	}
 
 	iter.next = func() ([]byte, []byte) {
@@ -439,7 +455,8 @@ func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.It
 				return cursor.Last()
 			}
 
-			return cursor.Seek(max)
+			cursor.Seek(max)
+			return cursor.Prev()
 		}
 
 		if min == nil {
@@ -454,12 +471,12 @@ func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.It
 
 // Commit implements Transaction.Commit
 func (transaction *Transaction) Commit() error {
-	return transaction.Commit()
+	return transaction.txn.Commit()
 }
 
 // Rollback implements Transaction.Rollback
 func (transaction *Transaction) Rollback() error {
-	return transaction.Rollback()
+	return transaction.txn.Rollback()
 }
 
 // Iterator implements kv.Iterator on top of a
