@@ -1,6 +1,7 @@
 package bbolt
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -11,28 +12,43 @@ import (
 )
 
 const (
+	// DriverName describes the name for this driver
 	DriverName = "bbolt"
 )
 
+var (
+	storesBucket     = []byte{0}
+	kvBucket         = []byte{0}
+	partitionsBucket = []byte{0}
+)
+
+// Plugins returns a list of kv plugins
+// implemented by this package.
 func Plugins() []kv.Plugin {
 	return []kv.Plugin{
-		&BBoltPlugin{},
+		&Plugin{},
 	}
 }
 
-type BBoltPlugin struct {
+var _ kv.Plugin = (*Plugin)(nil)
+
+// Plugin implements kv.Plugin for bbolt
+type Plugin struct {
 }
 
-func (plugin *BBoltPlugin) Init(options kv.PluginOptions) error {
+// Init implements Plugin.Init
+func (plugin *Plugin) Init(options kv.PluginOptions) error {
 	return nil
 }
 
-func (plugin *BBoltPlugin) Name() string {
+// Name implements Plugin.Name
+func (plugin *Plugin) Name() string {
 	return DriverName
 }
 
-func (plugin *BBoltPlugin) NewStore(options kv.PluginOptions) (kv.Store, error) {
-	var config BBoltStoreConfig
+// NewRootStore implements Plugin.NewRootStore
+func (plugin *Plugin) NewRootStore(options kv.PluginOptions) (kv.RootStore, error) {
+	var config RootStoreConfig
 
 	if path, ok := options["path"]; !ok {
 		return nil, fmt.Errorf("\"path\" is required")
@@ -42,7 +58,7 @@ func (plugin *BBoltPlugin) NewStore(options kv.PluginOptions) (kv.Store, error) 
 		config.Path = pathString
 	}
 
-	store, err := New(config)
+	store, err := NewRootStore(config)
 
 	if err != nil {
 		return nil, err
@@ -51,310 +67,441 @@ func (plugin *BBoltPlugin) NewStore(options kv.PluginOptions) (kv.Store, error) 
 	return store, nil
 }
 
-func (plugin *BBoltPlugin) NewTempStore() (kv.Store, error) {
-	return plugin.NewStore(kv.PluginOptions{
+// NewTempRootStore implements Plugin.NewTempRootStore
+func (plugin *Plugin) NewTempRootStore() (kv.RootStore, error) {
+	return plugin.NewRootStore(kv.PluginOptions{
 		"path": fmt.Sprintf("/tmp/bbolt-%s", uuid.MustUUID()),
 	})
 }
 
-type BBoltStoreConfig struct {
+// RootStoreConfig contains configuration
+// options for a bbolt root store
+type RootStoreConfig struct {
+	// Path is the path to the bbolt data directory
 	Path string
 }
 
-var _ kv.Store = (*BBoltStore)(nil)
+var _ kv.RootStore = (*RootStore)(nil)
 
-func New(config BBoltStoreConfig) (*BBoltStore, error) {
+// RootStore implements kv.RootStore on top of a single
+// bbolt store.
+type RootStore struct {
+	db *bolt.DB
+}
+
+// NewRootStore creates a new bbolt root store
+func NewRootStore(config RootStoreConfig) (*RootStore, error) {
 	db, err := bolt.Open(config.Path, 0666, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not open bbolt store at %s: %s", config.Path, err.Error())
+		return nil, fmt.Errorf("could not open bbolt store at %s: %s", config.Path, err.Error())
 	}
 
 	if err := db.Update(func(txn *bolt.Tx) error {
-		_, err := txn.CreateBucketIfNotExists([]byte{0})
+		_, err := txn.CreateBucketIfNotExists(storesBucket)
 
 		return err
 	}); err != nil {
 		db.Close()
 
-		return nil, fmt.Errorf("Could not ensure root bucket exists: %s", err.Error())
+		return nil, fmt.Errorf("could not ensure stores bucket exists: %s", err.Error())
 	}
 
-	return &BBoltStore{
-		BBoltSubStore: BBoltSubStore{
-			db:        db,
-			namespace: [][]byte{[]byte{0}},
-		},
+	return &RootStore{
+		db: db,
 	}, nil
 }
 
-type BBoltStore struct {
-	BBoltSubStore
-}
-
-func (store *BBoltStore) Close() error {
-	return store.db.Close()
-}
-
-func (store *BBoltStore) Delete() error {
-	path := store.db.Path()
-
-	if err := store.Close(); err != nil {
-		return fmt.Errorf("Could not close store: %s", err.Error())
+// Delete implements RootStore.Delete
+func (rootStore *RootStore) Delete() error {
+	if err := rootStore.Close(); err != nil {
+		return fmt.Errorf("could not close root store: %s", err.Error())
 	}
 
-	if err := os.RemoveAll(path); err != nil {
-		return fmt.Errorf("Could not remove path %s: %s", path, err.Error())
+	if err := os.RemoveAll(rootStore.db.Path()); err != nil {
+		return fmt.Errorf("could not remove directory: %s", err.Error())
 	}
 
 	return nil
 }
 
-var _ kv.SubStore = (*BBoltSubStore)(nil)
-
-type BBoltSubStore struct {
-	db        *bolt.DB
-	namespace [][]byte
+// Close implements RootStore.Close
+func (rootStore *RootStore) Close() error {
+	return rootStore.db.Close()
 }
 
-func (store *BBoltSubStore) Begin(writable bool) (kv.Transaction, error) {
-	transaction, err := store.db.Begin(writable)
+// Stores implements RootStore.Stores
+func (rootStore *RootStore) Stores() ([][]byte, error) {
+	stores := [][]byte{}
 
-	if err != nil {
-		return nil, fmt.Errorf("Could not begin transaction: %s", err.Error())
+	rootStore.db.View(func(txn *bolt.Tx) error {
+		return txn.ForEach(func(name []byte, b *bolt.Bucket) error {
+			stores = append(stores, name)
+
+			return nil
+		})
+	})
+
+	return stores, nil
+}
+
+// Store implements RootStore.Store
+func (rootStore *RootStore) Store(name []byte) kv.Store {
+	return &Store{rootStore: rootStore, name: name}
+}
+
+var _ kv.Store = (*Store)(nil)
+
+// Store implements kv.Store on top of a bbolt store
+// bucket
+type Store struct {
+	rootStore *RootStore
+	name      []byte
+}
+
+func (store *Store) bucket(txn *bolt.Tx) (*bolt.Bucket, error) {
+	stores := txn.Bucket(storesBucket)
+
+	if stores == nil {
+		return nil, fmt.Errorf("unexpected error: could not retrieve stores bucket")
 	}
 
-	txn := &BBoltTransaction{transaction: transaction, namespace: store.namespace}
+	storeBucket := stores.Bucket(store.name)
 
-	return txn, nil
-}
-
-func (store *BBoltSubStore) Snapshot() (io.ReadCloser, error) {
-	transaction, err := store.Begin(false)
-
-	if err != nil {
-		return nil, fmt.Errorf("Could not begin transaction: %s", err.Error())
+	if storeBucket == nil {
+		return nil, kv.ErrNoSuchStore
 	}
 
-	snapshotter := kv.Snapshotter{Transaction: transaction}
-
-	return snapshotter.Snapshot()
+	return storeBucket, nil
 }
 
-func (store *BBoltSubStore) ApplySnapshot(snapshot io.Reader) error {
-	transaction, err := store.Begin(true)
+// Name implements Store.Name
+func (store *Store) Name() []byte {
+	return store.name
+}
 
-	if err != nil {
-		return fmt.Errorf("Could not begin transaction: %s", err.Error())
+// Create implements Store.Create
+func (store *Store) Create() error {
+	return store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		stores := txn.Bucket(storesBucket)
+
+		if stores == nil {
+			return fmt.Errorf("unexpected error: could not retrieve stores bucket")
+		}
+
+		if bucket, err := stores.CreateBucketIfNotExists(store.name); err != nil {
+			if _, err := bucket.CreateBucketIfNotExists(partitionsBucket); err != nil {
+				return fmt.Errorf("could not create kv bucket inside store bucket %s: %s", store.name, err.Error())
+			}
+
+			return fmt.Errorf("could not create bucket %s: %s", store.name, err.Error())
+		}
+
+		return nil
+	})
+}
+
+// Delete implements Store.Delete
+func (store *Store) Delete() error {
+	return store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		stores := txn.Bucket(storesBucket)
+
+		if stores == nil {
+			return fmt.Errorf("unexpected error: could not retrieve stores bucket")
+		}
+
+		if err := stores.DeleteBucket(store.name); err != nil {
+			return fmt.Errorf("could not delete bucket %s: %s", store.name, err.Error())
+		}
+
+		return nil
+	})
+}
+
+// Partitions implements Store.Partitions
+func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
+	partitions := [][]byte{}
+
+	if err := store.rootStore.db.View(func(txn *bolt.Tx) error {
+		storeBucket, err := store.bucket(txn)
+
+		if err != nil {
+			return err
+		}
+
+		partBucket := storeBucket.Bucket(partitionsBucket)
+
+		if partBucket == nil {
+			return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", store.name)
+		}
+
+		cursor := partBucket.Cursor()
+
+		var nextPartition []byte
+
+		if min == nil {
+			nextPartition, _ = cursor.First()
+		} else {
+			nextPartition, _ = cursor.Seek(min)
+		}
+
+		for nextPartition != nil && len(partitions) < limit && (max == nil || bytes.Compare(nextPartition, max) >= 0) {
+			partitions = append(partitions, nextPartition)
+			nextPartition, _ = cursor.Next()
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
-	snapshotter := kv.Snapshotter{Transaction: transaction}
+	return partitions, nil
+}
 
-	err = snapshotter.ApplySnapshot(snapshot)
+// Partition implements Store.Partition
+func (store *Store) Partition(name []byte) kv.Partition {
+	return &Partition{store: store, name: name}
+}
+
+var _ kv.Partition = (*Partition)(nil)
+
+// Partition implements kv.Partition on top of a bbolt store
+// bucket
+type Partition struct {
+	store *Store
+	name  []byte
+}
+
+func (partition *Partition) bucket(txn *bolt.Tx) (*bolt.Bucket, error) {
+	storeBucket, err := partition.store.bucket(txn)
 
 	if err != nil {
-		return fmt.Errorf("Could not apply snapshot: %s", err.Error())
+		return nil, err
 	}
 
-	return nil
+	partBucket := storeBucket.Bucket(partitionsBucket)
+
+	if partBucket == nil {
+		return nil, fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
+	}
+
+	myBucket := partBucket.Bucket(partition.name)
+
+	if myBucket == nil {
+		return nil, kv.ErrNoSuchPartition
+	}
+
+	return myBucket, nil
 }
 
-func (store *BBoltSubStore) Namespace(bucket []byte) kv.SubStore {
-	namespace := make([][]byte, len(store.namespace)+1)
-
-	copy(namespace, store.namespace)
-	namespace[len(namespace)-1] = bucket
-
-	return &BBoltSubStore{db: store.db, namespace: namespace}
+// Name implements Partition.Name
+func (partition *Partition) Name() []byte {
+	return partition.name
 }
 
-var _ kv.Transaction = (*BBoltTransaction)(nil)
+// Create implemenets Partition.Create
+func (partition *Partition) Create() error {
+	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		storeBucket, err := partition.store.bucket(txn)
 
-type BBoltTransaction struct {
-	transaction *bolt.Tx
-	namespace   [][]byte
+		if err != nil {
+			return err
+		}
+
+		partBucket := storeBucket.Bucket(partitionsBucket)
+
+		if partBucket == nil {
+			return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
+		}
+
+		_, err = partBucket.CreateBucketIfNotExists(partition.name)
+
+		if err != nil {
+			return fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err.Error())
+		}
+
+		return nil
+	})
 }
 
-func (transaction *BBoltTransaction) bucket() *bolt.Bucket {
-	var bucket *bolt.Bucket = transaction.transaction.Bucket(transaction.namespace[0])
+// Delete implements Partition.Delete
+func (partition *Partition) Delete() error {
+	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		storeBucket, err := partition.store.bucket(txn)
 
-	for i := 1; i < len(transaction.namespace); i++ {
-		if bucket == nil {
+		if err != nil {
+			return err
+		}
+
+		partBucket := storeBucket.Bucket(partitionsBucket)
+
+		if partBucket == nil {
+			return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
+		}
+
+		partitionBucket := partBucket.Bucket(partition.name)
+
+		if partitionBucket == nil {
 			return nil
 		}
 
-		bucket = bucket.Bucket(transaction.namespace[i])
-	}
+		if err := partBucket.DeleteBucket(partition.name); err != nil {
+			return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err.Error())
+		}
 
-	return bucket
-}
-
-func (transaction *BBoltTransaction) Root() kv.Bucket {
-	if transaction.bucket() == nil {
 		return nil
-	}
-
-	return &BBoltBucket{bucket: transaction.bucket()}
+	})
 }
 
-func (transaction *BBoltTransaction) Namespace(bucket []byte) kv.Transaction {
-	namespace := make([][]byte, len(transaction.namespace)+1)
-
-	copy(namespace, transaction.namespace)
-	namespace[len(namespace)-1] = bucket
-
-	txn := &BBoltTransaction{
-		transaction: transaction.transaction,
-		namespace:   namespace,
-	}
-
-	return txn
-}
-
-func (transaction *BBoltTransaction) Commit() error {
-	return transaction.transaction.Commit()
-}
-
-func (transaction *BBoltTransaction) OnCommit(cb func()) {
-	transaction.transaction.OnCommit(cb)
-}
-
-func (transaction *BBoltTransaction) Rollback() error {
-	return transaction.transaction.Rollback()
-}
-
-var _ kv.Bucket = (*BBoltBucket)(nil)
-
-type BBoltBucket struct {
-	parent *bolt.Bucket
-	bucket *bolt.Bucket
-	name   []byte
-}
-
-func (bucket *BBoltBucket) Bucket(name []byte) kv.Bucket {
-	if bucket.bucket.Bucket(name) == nil {
-		return nil
-	}
-
-	return &BBoltBucket{parent: bucket.bucket, bucket: bucket.bucket.Bucket(name)}
-}
-
-func (bucket *BBoltBucket) Create() error {
-	if bucket.parent == nil {
-		// This is the root bucket.
-		return nil
-	}
-
-	b, err := bucket.parent.CreateBucket(bucket.name)
+// Begin implements Partition.Begin
+func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
+	txn, err := partition.store.rootStore.db.Begin(writable)
 
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
 	}
 
-	bucket.bucket = b
+	partitionBucket, err := partition.bucket(txn)
 
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{txn: txn, bucket: partitionBucket}, nil
+}
+
+// Snapshot implements Partition.Snapshot
+func (partition *Partition) Snapshot() (io.ReadCloser, error) {
+	return nil, nil
+}
+
+// ApplySnapshot implements Partition.ApplySnapshot
+func (partition *Partition) ApplySnapshot(io.Reader) error {
 	return nil
 }
 
-func (bucket *BBoltBucket) Purge() error {
-	if bucket.parent == nil {
-		// This is the root bucket.
-		return nil
-	}
+var _ kv.Transaction = (*Transaction)(nil)
 
-	return bucket.parent.DeleteBucket(bucket.name)
+// Transaction implements kv.Transaction on top of
+// a bbolt transaction.
+type Transaction struct {
+	txn    *bolt.Tx
+	bucket *bolt.Bucket
 }
 
-func (bucket *BBoltBucket) Exists() bool {
-	return bucket.parent.Bucket(bucket.name) == nil
+// Put implements Transaction.Put
+func (transaction *Transaction) Put(key, value []byte) error {
+	return transaction.bucket.Put(key, value)
 }
 
-func (bucket *BBoltBucket) Cursor() kv.Cursor {
-	return &BBoltCursor{cursor: bucket.bucket.Cursor()}
+// Get implements Transaction.Get
+func (transaction *Transaction) Get(key []byte) ([]byte, error) {
+	return transaction.bucket.Get(key), nil
 }
 
-func (bucket *BBoltBucket) ForEachBucket(fn func(name []byte, bucket kv.Bucket) error) error {
-	cursor := bucket.bucket.Cursor()
+// Delete implements Transaction.Delete
+func (transaction *Transaction) Delete(key []byte) error {
+	return transaction.bucket.Delete(key)
+}
 
-	for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-		if v == nil {
-			if err := fn(k, &BBoltBucket{parent: bucket.bucket, bucket: bucket.bucket.Bucket(k)}); err != nil {
-				return err
-			}
+// Keys implements Transaction.Keys
+func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.Iterator, error) {
+	iter := &Iterator{}
+	cursor := transaction.bucket.Cursor()
+	advance := func() ([]byte, []byte) {
+		if order == kv.SortOrderDesc {
+			return cursor.Prev()
 		}
+
+		return cursor.Next()
 	}
-
-	return nil
-}
-
-func (bucket *BBoltBucket) ForEach(fn func(key []byte, value []byte) error) error {
-	return bucket.bucket.ForEach(fn)
-}
-
-func (bucket *BBoltBucket) Delete(key []byte) error {
-	return bucket.bucket.Delete(key)
-}
-
-func (bucket *BBoltBucket) Get(key []byte) ([]byte, error) {
-	return bucket.bucket.Get(key), nil
-}
-
-func (bucket *BBoltBucket) NextSequence() (uint64, error) {
-	return bucket.bucket.NextSequence()
-}
-
-func (bucket *BBoltBucket) Put(key []byte, value []byte) error {
-	return bucket.bucket.Put(key, value)
-}
-
-func (bucket *BBoltBucket) Empty() error {
-	cursor := bucket.Cursor()
-
-	for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-		if v == nil {
-			if err := bucket.Bucket(k).Purge(); err != nil {
-				return fmt.Errorf("Could not delete bucket %v: %s", k, err.Error())
-			}
-		} else {
-			if err := bucket.Delete(k); err != nil {
-				return fmt.Errorf("Could not delete key %v: %s", k, err.Error())
-			}
+	end := func(key []byte) bool {
+		if order == kv.SortOrderDesc {
+			return min == nil || bytes.Compare(key, min) >= 0
 		}
+
+		return max == nil || bytes.Compare(key, max) < 0
 	}
 
+	iter.next = func() ([]byte, []byte) {
+		iter.next = func() ([]byte, []byte) {
+			k, v := advance()
+
+			if k == nil || end(k) {
+				return nil, nil
+			}
+
+			return k, v
+		}
+
+		if order == kv.SortOrderDesc {
+			if max == nil {
+				return cursor.Last()
+			}
+
+			return cursor.Seek(max)
+		}
+
+		if min == nil {
+			return cursor.First()
+		}
+
+		return cursor.Seek(min)
+	}
+
+	return iter, nil
+}
+
+// Commit implements Transaction.Commit
+func (transaction *Transaction) Commit() error {
+	return transaction.Commit()
+}
+
+// Rollback implements Transaction.Rollback
+func (transaction *Transaction) Rollback() error {
+	return transaction.Rollback()
+}
+
+// Iterator implements kv.Iterator on top of a
+// bbolt cursor
+type Iterator struct {
+	next  func() ([]byte, []byte)
+	key   []byte
+	value []byte
+	done  bool
+}
+
+// Next implements Iterator.Next
+func (iterator *Iterator) Next() bool {
+	if iterator.done {
+		return false
+	}
+
+	k, v := iterator.next()
+
+	if k == nil {
+		iterator.done = true
+
+		return false
+	}
+
+	iterator.key = k
+	iterator.value = v
+
+	return true
+}
+
+// Key implements Iterator.Key
+func (iterator *Iterator) Key() []byte {
+	return iterator.key
+}
+
+// Value implements Iterator.Value
+func (iterator *Iterator) Value() []byte {
+	return iterator.value
+}
+
+// Error implements Iterator.Error
+func (iterator *Iterator) Error() error {
 	return nil
-}
-
-var _ kv.Cursor = (*BBoltCursor)(nil)
-
-type BBoltCursor struct {
-	cursor *bolt.Cursor
-}
-
-func (cursor *BBoltCursor) Error() error {
-	return nil
-}
-
-func (cursor *BBoltCursor) Delete() error {
-	return cursor.cursor.Delete()
-}
-
-func (cursor *BBoltCursor) First() (key []byte, value []byte) {
-	return cursor.cursor.First()
-}
-
-func (cursor *BBoltCursor) Last() (key []byte, value []byte) {
-	return cursor.cursor.Last()
-}
-
-func (cursor *BBoltCursor) Next() (key []byte, value []byte) {
-	return cursor.cursor.Next()
-}
-
-func (cursor *BBoltCursor) Prev() (key []byte, value []byte) {
-	return cursor.cursor.Prev()
-}
-
-func (cursor *BBoltCursor) Seek(seek []byte) (key []byte, value []byte) {
-	return cursor.cursor.Seek(seek)
 }
