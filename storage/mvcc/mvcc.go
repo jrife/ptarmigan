@@ -5,15 +5,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/jrife/ptarmigan/storage/kv"
 )
 
 var (
-	metadataBucket  = []byte{0}
-	keysBucket      = []byte{1}
-	revisionsBucket = []byte{2}
+	metadataPrefix  = []byte{0}
+	keysPrefix      = []byte{1}
+	revisionsPrefix = []byte{2}
 	metadataKey     = []byte{0}
 )
 
@@ -23,26 +22,42 @@ func bytesToInt64(b []byte) int64 {
 		panic("b must be length 8")
 	}
 
-	n, _ := binary.Varint(b)
-
-	return n
+	return int64(binary.BigEndian.Uint64(b))
 }
 
 // b must be a byte slice of length 8
+// n must be >= 0
 func int64ToBytes(b []byte, n int64) {
 	if len(b) != 8 {
 		panic("b must be length 8")
 	}
 
-	binary.PutVarint(b, n)
-}
-
-func min(a int, b int) int {
-	if a > b {
-		return b
+	if n < 0 {
+		panic("n must be positive")
 	}
 
-	return a
+	binary.BigEndian.PutUint64(b, uint64(n))
+}
+
+// revision must be >= 0
+func combineKeyAndRevision(key []byte, revision int64) []byte {
+	keyAndRevision := make([]byte, len(key)+9)
+	int64ToBytes(keyAndRevision[len(key)+1:], revision)
+
+	copy(keyAndRevision[:len(key)], key)
+	keyAndRevision[len(key)+1] = 0
+
+	return keyAndRevision
+}
+
+func splitKeyAndRevision(keyAndRevision []byte) ([]byte, int64, error) {
+	if len(keyAndRevision) < 9 {
+		return nil, 0, fmt.Errorf("keyAndRevision not long enough to be valid")
+	}
+
+	revision := bytesToInt64(keyAndRevision[len(keyAndRevision)-8:])
+
+	return keyAndRevision[:len(keyAndRevision)-9], revision, nil
 }
 
 // New creates a new mvcc store
@@ -51,64 +66,20 @@ func New(kvStore kv.Store) Store {
 		kvStore: kvStore,
 	}
 
-	store.revisions.revisions = map[string]int64{}
-
 	return store
 }
 
 var _ Store = (*store)(nil)
 
 type store struct {
-	kvStore   kv.SubStore
-	revisions struct {
-		sync.Mutex
-		revisions map[string]int64
-	}
+	kvStore kv.Store
 }
 
 // Open and initialize store
 func (store *store) Open() error {
-	transaction, err := store.kvStore.Begin(true)
-
-	if err != nil {
-		return fmt.Errorf("could not begin transaction: %s", err.Error())
-	}
-
-	defer transaction.Rollback()
-
-	// Always ensure that the root bucket exists
-	if err := transaction.Root().Create(); err != nil {
-		return fmt.Errorf("could not ensure root bucket exists: %s", err.Error())
-	}
-
-	// Figure out the last revision for each partition
-	partitionNames, err := store.Partitions(nil, nil, -1)
-
-	if err != nil {
-		return fmt.Errorf("could not list partition names: %s", err.Error())
-	}
-
-	for _, name := range partitionNames {
-		partitionBucket := transaction.Root().Bucket(name)
-		lastRevisionKey, _ := partitionBucket.Bucket(revisionsBucket).Cursor().Last()
-		var lastRevision int64 = 0
-
-		// nil key indicates an empty partition that has not yet had any revisions
-		// added to it
-		if lastRevisionKey != nil {
-
-			if len(lastRevisionKey) < 8 {
-				return fmt.Errorf("revision key in partition %s was too short. expected it to be >= 8 bytes long: %#v", string(name), lastRevisionKey)
-			}
-
-			lastRevision = bytesToInt64(lastRevisionKey)
-		}
-
-		store.revisions.revisions[string(name)] = lastRevision
-	}
-
-	if err := transaction.Commit(); err != nil {
-		return fmt.Errorf("could not commit transaction: %s", err.Error())
+	// Always ensure that the store exists
+	if err := store.kvStore.Create(); err != nil {
+		return fmt.Errorf("could not ensure store exists: %s", err.Error())
 	}
 
 	return nil
@@ -123,30 +94,8 @@ func (store *store) Close() error {
 // lexocographical order where names are >= start and < end. start = nil
 // means the lowest name. end = nil means the highest name. limit <= -1
 // means no limit.
-func (store *store) Partitions(start []byte, end []byte, limit int) ([][]byte, error) {
-	transaction, err := store.kvStore.Begin(false)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
-	}
-
-	defer transaction.Rollback()
-
-	var partitions [][]byte
-
-	if limit < -1 {
-		partitions = make([][]byte, 0, len(store.revisions.revisions))
-	} else {
-		partitions = make([][]byte, 0, limit)
-	}
-
-	cursor := transaction.Root().Cursor()
-
-	for k, _ := cursor.Seek(start); k != nil && len(partitions) < limit && bytes.Compare(k, end) < 0; k, _ = cursor.Next() {
-		partitions = append(partitions, k)
-	}
-
-	return partitions, nil
+func (store *store) Partitions(min []byte, max []byte, limit int) ([][]byte, error) {
+	return store.kvStore.Partitions(min, max, limit)
 }
 
 // Partition returns a handle to the named partition
@@ -159,8 +108,90 @@ type partition struct {
 	name  []byte
 }
 
-func (partition *partition) beginTxn(write bool) (kv.Transaction, error) {
-	return partition.store.kvStore.Namespace(partition.name).Begin(write)
+func (partition *partition) beginTxn(writable bool) (kv.Transaction, error) {
+	return partition.store.kvStore.Partition(partition.name).Begin(writable)
+}
+
+func (partition *partition) newestRevision(transaction kv.Transaction) (int64, error) {
+	transaction = kv.Namespace(transaction, revisionsPrefix)
+	iter, err := transaction.Keys(nil, nil, kv.SortOrderDesc)
+
+	if err != nil {
+		return 0, fmt.Errorf("could not create iterator: %s", err.Error())
+	}
+
+	var newestRevision int64 = 0
+
+	if !iter.Next() {
+		if iter.Error() != nil {
+			return 0, fmt.Errorf("iteration error: %s", err.Error())
+		}
+
+		return 0, nil
+	}
+
+	newestRevisionBytes := iter.Key()
+
+	if len(newestRevisionBytes) < 8 {
+		return 0, fmt.Errorf("could not extract revision number from revision key: it is too short")
+	}
+
+	newestRevision = bytesToInt64(newestRevisionBytes[:8])
+
+	if newestRevision < 0 {
+		return 0, fmt.Errorf("newestRevision is negative, this shouldn't happen")
+	}
+
+	return newestRevision, nil
+}
+
+func (partition *partition) oldestRevision(transaction kv.Transaction) (int64, error) {
+	transaction = kv.Namespace(transaction, revisionsPrefix)
+	iter, err := transaction.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		return 0, fmt.Errorf("could not create iterator: %s", err.Error())
+	}
+
+	var oldestRevision int64 = 0
+
+	if !iter.Next() {
+		if iter.Error() != nil {
+			return 0, fmt.Errorf("iteration error: %s", err.Error())
+		}
+
+		return 0, nil
+	}
+
+	oldestRevisionBytes := iter.Key()
+
+	if len(oldestRevisionBytes) < 8 {
+		return 0, fmt.Errorf("could not extract revision number from revision key: it is too short")
+	}
+
+	oldestRevision = bytesToInt64(oldestRevisionBytes[:8])
+
+	if oldestRevision < 0 {
+		return 0, fmt.Errorf("oldestRevision is negative, this shouldn't happen")
+	}
+
+	return oldestRevision, nil
+}
+
+func (partition *partition) nextRevision(transaction kv.Transaction) (int64, error) {
+	lastRevision, err := partition.newestRevision(transaction)
+
+	if err != nil {
+		return 0, err
+	}
+
+	nextRevision := lastRevision + 1
+
+	if nextRevision < 0 {
+		return 0, fmt.Errorf("rollover detected, this should not happen")
+	}
+
+	return nextRevision, nil
 }
 
 // Return partition name
@@ -172,49 +203,9 @@ func (partition *partition) Name() []byte {
 // assigns it some metadata that can be retrieved with
 // Metadata()
 func (partition *partition) Create(metadata []byte) error {
-	transaction, err := partition.beginTxn(true)
-
-	if err != nil {
-		return fmt.Errorf("could not begin transaction: %s", err.Error())
+	if err := partition.store.kvStore.Partition(partition.name).Create(); err != nil {
+		return fmt.Errorf("could not create partition: %s", err.Error())
 	}
-
-	defer transaction.Rollback()
-
-	// do nothing if this partition already exists
-	if transaction.Root().Exists() {
-		return nil
-	}
-
-	// initialize empty state
-	if err := transaction.Root().Create(); err != nil {
-		return fmt.Errorf("could not create partition bucket: %s", err.Error())
-	}
-
-	for _, bucket := range [][]byte{metadataBucket, keysBucket, revisionsBucket} {
-		if err := transaction.Root().Bucket(bucket).Create(); err != nil {
-			return fmt.Errorf("could not create bucket inside of partition bucket %#v: %s", bucket, err.Error())
-		}
-	}
-
-	if err := transaction.Root().Bucket(metadataBucket).Put(metadataKey, metadata); err != nil {
-		return fmt.Errorf("could not set metadata for partition: %s", err.Error())
-	}
-
-	// release the lock only after commit for every read-write
-	// transaction so that the next transaction observes a map
-	// state that is consistent with the kv store state. It is
-	// possible that another transaction is waiting to start but
-	// is currently blocked by this transaction. Once commit
-	// returns the next transaction may start and try to read
-	// the revisions map. That map state must be consistent with
-	// the current disk state.
-	partition.store.revisions.Lock()
-	defer partition.store.revisions.Unlock()
-	if err := transaction.Commit(); err != nil {
-		return fmt.Errorf("could not commit transaction: %s", err.Error())
-	}
-
-	partition.store.revisions.revisions[string(partition.name)] = 0
 
 	return nil
 }
@@ -222,38 +213,9 @@ func (partition *partition) Create(metadata []byte) error {
 // Delete deletes this partition and all its data if it
 // exists.
 func (partition *partition) Delete() error {
-	transaction, err := partition.beginTxn(true)
-
-	if err != nil {
-		return fmt.Errorf("could not begin transaction: %s", err.Error())
+	if err := partition.store.kvStore.Partition(partition.name).Delete(); err != nil {
+		return fmt.Errorf("could not delete partition: %s", err.Error())
 	}
-
-	defer transaction.Rollback()
-
-	// do nothing if this partition doesn't exists
-	if !transaction.Root().Exists() {
-		return nil
-	}
-
-	if err := transaction.Root().Purge(); err != nil {
-		return fmt.Errorf("could not delete partition bucket: %s", err.Error())
-	}
-
-	// release the lock only after commit for every read-write
-	// transaction so that the next transaction observes a map
-	// state that is consistent with the kv store state. It is
-	// possible that another transaction is waiting to start but
-	// is currently blocked by this transaction. Once commit
-	// returns the next transaction may start and try to read
-	// the revisions map. That map state must be consistent with
-	// the current disk state.
-	partition.store.revisions.Lock()
-	defer partition.store.revisions.Unlock()
-	if err := transaction.Commit(); err != nil {
-		return fmt.Errorf("could not commit transaction: %s", err.Error())
-	}
-
-	delete(partition.store.revisions.revisions, string(partition.name))
 
 	return nil
 }
@@ -269,22 +231,9 @@ func (partition *partition) Metadata() ([]byte, error) {
 
 	defer transaction.Rollback()
 
-	// do nothing if this partition already exists
-	if !transaction.Root().Exists() {
-		return nil, ErrNoSuchPartition
-	}
+	transaction = kv.Namespace(transaction, metadataPrefix)
 
-	if !transaction.Root().Bucket(metadataBucket).Exists() {
-		return nil, fmt.Errorf("could not find metadata bucket")
-	}
-
-	metadata, err := transaction.Root().Bucket(metadataBucket).Get(metadataKey)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not get metadata key: %s", err.Error())
-	}
-
-	return metadata, nil
+	return transaction.Get(metadataKey)
 }
 
 // Transaction starts a read-write transaction. Only
@@ -300,36 +249,28 @@ func (partition *partition) Transaction() (Transaction, error) {
 		return nil, fmt.Errorf("could not begin transaction: %s", err)
 	}
 
-	if !txn.Root().Exists() {
+	nextRevision, err := partition.nextRevision(txn)
+
+	if err != nil {
 		txn.Rollback()
 
-		return nil, ErrNoSuchPartition
+		return nil, fmt.Errorf("could not calculate next revision number: %s", err.Error())
 	}
 
-	partition.store.revisions.Lock()
-	lastRevision, ok := partition.store.revisions.revisions[string(partition.name)]
-	partition.store.revisions.Unlock()
-
-	if !ok {
-		txn.Rollback()
-
-		return nil, ErrNoSuchPartition
-	}
-
-	return &transaction{partition: partition, txn: txn, revisionNumber: lastRevision + 1}, nil
+	return &transaction{partition: partition, txn: txn, revisionNumber: nextRevision}, nil
 }
 
 // View generates a handle that lets a user
 // inspect the state of the store at some
 // revision
 func (partition *partition) View(revision int64) View {
-	return &view{partition: partition, revision: revision, kvStore: partition.store.kvStore.Namespace(partition.name)}
+	return &view{partition: partition, revision: revision, kvPartition: partition.store.kvStore.Partition(partition.name)}
 }
 
 // ApplySnapshot completely replaces the contents of this
 // store with those in this snapshot.
 func (partition *partition) ApplySnapshot(snap io.Reader) error {
-	return partition.store.kvStore.Namespace(partition.name).ApplySnapshot(snap)
+	return partition.store.kvStore.Partition(partition.name).ApplySnapshot(snap)
 }
 
 // Snapshot takes a snapshot of this store's current state
@@ -337,7 +278,7 @@ func (partition *partition) ApplySnapshot(snap io.Reader) error {
 // ApplySnapshot() such that its return value could be applied
 // to ApplySnapshot() in order to replicate its state elsewhere.
 func (partition *partition) Snapshot() (io.Reader, error) {
-	return partition.store.kvStore.Namespace(partition.name).Snapshot()
+	return partition.store.kvStore.Partition(partition.name).Snapshot()
 }
 
 type transaction struct {
@@ -350,7 +291,7 @@ type transaction struct {
 // NewRevision creates a new revision. Each transaction
 // can create at most one new revision. Calling this
 // more than once on a transaction must return an error.
-// The revision number for the returned revision must
+// The revision number for the returned revision mustkvStore
 // be exactly one more than the newest revision, or if this
 // store is brand new the first revision applied to it
 // must have a revision number of 1. Revision numbers must
@@ -416,10 +357,10 @@ func (revision *revision) Delete(key []byte) error {
 }
 
 type view struct {
-	revision  int64
-	partition *partition
-	kvStore   kv.SubStore
-	txn       kv.Transaction
+	revision    int64
+	partition   *partition
+	kvPartition kv.Partition
+	txn         kv.Transaction
 }
 
 func (view *view) transaction() (kv.Transaction, bool, error) {
@@ -427,7 +368,7 @@ func (view *view) transaction() (kv.Transaction, bool, error) {
 		return view.txn, false, nil
 	}
 
-	txn, err := view.kvStore.Begin(false)
+	txn, err := view.kvPartition.Begin(false)
 
 	if err != nil {
 		return nil, false, fmt.Errorf("could not begin transaction: %s", err.Error())
@@ -440,7 +381,7 @@ func (view *view) transaction() (kv.Transaction, bool, error) {
 // lexocographical order where keys are >= start and < end. start = nil
 // means the lowest key. end = nil means the highest key. limit <= -1
 // means no limit.
-func (view *view) Keys(start []byte, end []byte, limit int) ([]KV, error) {
+func (view *view) Keys(min []byte, max []byte, limit int) ([]KV, error) {
 	txn, rollback, err := view.transaction()
 
 	if err != nil {
@@ -453,38 +394,155 @@ func (view *view) Keys(start []byte, end []byte, limit int) ([]KV, error) {
 
 	b := make([]byte, 8)
 	int64ToBytes(b, view.revision)
-	revisionBucket := view.txn.Root().Bucket(revisionsBucket).Bucket(b)
+	txn = kv.Namespace(txn, keysPrefix)
+	iter, err := txn.Keys(min, max, kv.SortOrderAsc)
 
-	// determine which error to return. this should only be a concern
-	// when the view is created directly from a partition as opposed to
-	// when it is being called from within a revision
-	if !revisionBucket.Exists() {
-		view.partition.store.revisions.Lock()
-		latestRevision, ok := view.partition.store.revisions.revisions[string(view.partition.name)]
-		view.partition.store.revisions.Unlock()
-
-		if !ok {
-			return nil, ErrNoSuchPartition
-		}
-
-		if view.revision < latestRevision {
-			return nil, ErrCompacted
-		}
-
-		if view.revision > latestRevision {
-			return nil, ErrRevisionTooHigh
-		}
+	if err != nil {
+		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
 	}
 
-	return nil, nil
+	newestRevision, err := view.partition.newestRevision(txn)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve current revision: %s", err.Error())
+	}
+
+	oldestRevision, err := view.partition.oldestRevision(txn)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve oldest revision: %s", err.Error())
+	}
+
+	if view.revision > newestRevision {
+		return nil, ErrRevisionTooHigh
+	}
+
+	if view.revision < oldestRevision {
+		return nil, ErrCompacted
+	}
+
+	var kvs []KV
+
+	if limit >= 0 {
+		kvs = make([]KV, 0, limit)
+	} else {
+		kvs = make([]KV, 0, 0)
+	}
+
+	var prevKey []byte
+	var prevValue []byte
+	var prevRev int64
+
+	for iter.Next() && (limit < 0 || len(kvs) < limit) {
+		key, revision, err := splitKeyAndRevision(iter.Key())
+
+		if err != nil {
+			return nil, fmt.Errorf("key format was not valid: %#v: %s", iter.Key(), err)
+		}
+
+		if revision <= 0 {
+			return nil, fmt.Errorf("invalid revision %d detected for key %#v: %s", revision, key, err)
+		}
+
+		// The first iteration
+		if prevKey == nil && prevValue == nil && prevRev == 0 {
+			prevKey = key
+			prevValue = iter.Value()
+			prevRev = revision
+
+			continue
+		}
+
+		switch bytes.Compare(prevKey, key) {
+		case 0:
+			if revision < prevRev {
+				return nil, fmt.Errorf("consistency violation detected: both previous and current key are %#v, but previous revision %#v > current revision %#v", key, prevRev, revision)
+			}
+
+			if revision > view.revision {
+			}
+
+			prevValue = iter.Value()
+			prevRev = revision
+		case -1:
+		case 1:
+			return nil, fmt.Errorf("consistency violation detected: previous key #%v is > current key #%v", prevKey, key)
+		}
+
+		kvs = append(kvs, KV{
+			prevKey,
+			prevValue,
+		})
+	}
+	// For each
+
+	return kvs, nil
 }
 
 // Changes returns up to limit keys changed in this revision
 // lexocographical order where keys are >= start and < end.
 // start = nil means the lowest key end = nil means the highest key.
 // limit <= -1 means no limit.
-func (view *view) Changes(start []byte, end []byte, limit int) ([]KV, error) {
-	return nil, nil
+func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
+	txn, rollback, err := view.transaction()
+
+	if err != nil {
+		return nil, fmt.Errorf("could not obtain transaction for request: %s", err.Error())
+	}
+
+	if rollback {
+		defer txn.Rollback()
+	}
+
+	b := make([]byte, 8)
+	int64ToBytes(b, view.revision)
+	txn = kv.Namespace(kv.Namespace(txn, revisionsPrefix), b)
+	iter, err := txn.Keys(min, max, kv.SortOrderAsc)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
+	}
+
+	newestRevision, err := view.partition.newestRevision(txn)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve current revision: %s", err.Error())
+	}
+
+	if view.revision > newestRevision {
+		return nil, ErrRevisionTooHigh
+	}
+
+	// Read empty revision marker first to get to the actual data
+	if !iter.Next() {
+		if iter.Error() != nil {
+			return nil, fmt.Errorf("iteration error: %s", err.Error())
+		}
+
+		return nil, ErrCompacted
+	}
+
+	if len(iter.Key()) != 0 {
+		return nil, fmt.Errorf("consistency problem: the first key of each revision should be empty")
+	}
+
+	var kvs []KV
+
+	if limit >= 0 {
+		kvs = make([]KV, 0, limit)
+	} else {
+		kvs = make([]KV, 0, 0)
+	}
+
+	for iter.Next() && (limit < 0 || len(kvs) < limit) {
+		kvs = append(kvs, KV{iter.Key(), iter.Value()})
+	}
+
+	if iter.Error() != nil {
+		return nil, fmt.Errorf("iteration error: %s", err.Error())
+	}
+
+	return kvs, nil
 }
 
 // Return the revision for this view.

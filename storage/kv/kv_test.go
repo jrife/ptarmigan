@@ -1009,9 +1009,241 @@ func testPartitionBegin(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialState rootStoreModel
+		err          error
+		store        []byte
+		name         []byte
+	}{
+		"not-existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			store: []byte("store1"),
+			name:  []byte("p2"),
+			err:   kv.ErrNoSuchPartition,
+		},
+		"existing-partition": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store2"),
+			name:  []byte("p1"),
+		},
+		"store-doesn't-exist": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store4"),
+			name:  []byte("p1"),
+			err:   kv.ErrNoSuchStore,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStore := builder(t, testCase.initialState)
+			defer rootStore.Delete()
+
+			snap, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot()
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
+			} else if err != nil {
+				return
+			}
+
+			if err := snap.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+		})
+	}
 }
 
 func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		initialSourceState rootStoreModel
+		initialDestState   rootStoreModel
+		finalDestState     rootStoreModel
+		sourceStore        []byte
+		destStore          []byte
+		sourcePartition    []byte
+		destPartition      []byte
+		err                error
+		store              []byte
+		name               []byte
+	}{
+		"store-does-not-exist-at-dest": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalDestState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store2"),
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p1"),
+			err:             kv.ErrNoSuchStore,
+		},
+		"create-new-empty-partition-at-dest-same-store-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store1": {},
+			},
+			finalDestState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store1"),
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p1"),
+			err:             nil,
+		},
+		"create-new-empty-partition-at-dest-different-store-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p1": {},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store2"),
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p1"),
+			err:             nil,
+		},
+		"create-new-empty-partition-at-dest-different-partition-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p2": {},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store2"),
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p2"),
+			err:             nil,
+		},
+		"overwrite-keys-at-dest": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "1",
+						"2": "3",
+						"4": "5",
+					},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "1",
+						"2": "3",
+						"4": "5",
+					},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store2"),
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p1"),
+			err:             nil,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			rootStoreSource := builder(t, testCase.initialSourceState)
+			rootStoreDest := builder(t, testCase.initialDestState)
+			defer rootStoreSource.Delete()
+			defer rootStoreDest.Delete()
+
+			snap, err := rootStoreSource.Store(testCase.sourceStore).Partition(testCase.sourcePartition).Snapshot()
+
+			if err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			defer snap.Close()
+
+			err = rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap)
+
+			if err != testCase.err {
+				t.Fatalf("expected err to be %#v, got %#v", testCase.err, err)
+			} else if err != nil {
+				return
+			}
+
+			finalState, err := rootStoreToModel(rootStoreDest)
+
+			if err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+
+			diff := cmp.Diff(testCase.finalDestState, finalState)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func getKeys(txn kv.Transaction, keys [][]byte) [][]byte {
@@ -1421,4 +1653,137 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
+	initialState := rootStoreModel{
+		"store1": {
+			"p1": {
+				"aaa123": "1",
+				"aaa456": "2",
+				"aaa789": "3",
+				"bbb123": "4",
+				"bbb456": "5",
+				"bbb789": "6",
+				"ccc123": "7",
+				"ccc456": "8",
+				"ccc789": "9",
+			},
+		},
+	}
+	rootStore := builder(t, initialState)
+	defer rootStore.Delete()
+
+	transaction, err := rootStore.Store([]byte("store1")).Partition([]byte("p1")).Begin(true)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	defer transaction.Rollback()
+
+	aaaTxn := kv.Namespace(transaction, []byte("aaa"))
+	bbbTxn := kv.Namespace(transaction, []byte("bbb"))
+	cccTxn := kv.Namespace(transaction, []byte("ccc"))
+
+	aaa123, err := aaaTxn.Get([]byte("123"))
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if bytes.Compare(aaa123, []byte("1")) != 0 {
+		t.Fatalf("expected #%v, got %#v", []byte("1"), aaa123)
+	}
+
+	bbb123, err := bbbTxn.Get([]byte("123"))
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if bytes.Compare(bbb123, []byte("4")) != 0 {
+		t.Fatalf("expected #%v, got %#v", []byte("4"), bbb123)
+	}
+
+	ccc123, err := cccTxn.Get([]byte("123"))
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if bytes.Compare(ccc123, []byte("7")) != 0 {
+		t.Fatalf("expected #%v, got %#v", []byte("7"), ccc123)
+	}
+
+	aaaIter, err := aaaTxn.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	bbbIter, err := bbbTxn.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	cccIter, err := cccTxn.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	diff := cmp.Diff([][2][]byte{
+		[2][]byte{[]byte("123"), []byte("1")},
+		[2][]byte{[]byte("456"), []byte("2")},
+		[2][]byte{[]byte("789"), []byte("3")},
+	}, getSequence(aaaIter))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+
+	diff = cmp.Diff([][2][]byte{
+		[2][]byte{[]byte("123"), []byte("4")},
+		[2][]byte{[]byte("456"), []byte("5")},
+		[2][]byte{[]byte("789"), []byte("6")},
+	}, getSequence(bbbIter))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+
+	diff = cmp.Diff([][2][]byte{
+		[2][]byte{[]byte("123"), []byte("7")},
+		[2][]byte{[]byte("456"), []byte("8")},
+		[2][]byte{[]byte("789"), []byte("9")},
+	}, getSequence(cccIter))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
+
+	aaaTxn.Put([]byte("123"), []byte{})
+	aaaTxn.Put([]byte("new"), []byte("stuff"))
+	bbbTxn.Delete([]byte("456"))
+
+	iter, err := transaction.Keys(nil, nil, kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	diff = cmp.Diff([][2][]byte{
+		[2][]byte{[]byte("aaa123"), []byte{}},
+		[2][]byte{[]byte("aaa456"), []byte("2")},
+		[2][]byte{[]byte("aaa789"), []byte("3")},
+		[2][]byte{[]byte("aaanew"), []byte("stuff")},
+		[2][]byte{[]byte("bbb123"), []byte("4")},
+		[2][]byte{[]byte("bbb789"), []byte("6")},
+		[2][]byte{[]byte("ccc123"), []byte("7")},
+		[2][]byte{[]byte("ccc456"), []byte("8")},
+		[2][]byte{[]byte("ccc789"), []byte("9")},
+	}, getSequence(iter))
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
 }

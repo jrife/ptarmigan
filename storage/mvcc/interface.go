@@ -37,10 +37,10 @@ type Store interface {
 	// Close store
 	Close() error
 	// Partitions returns up to limit partition names in
-	// lexocographical order where names are >= start and < end. start = nil
-	// means the lowest name. end = nil means the highest name. limit <= -1
+	// lexocographical order where names are >= min and < max. min = nil
+	// means the lowest name. max = nil means the highest name. limit < 0
 	// means no limit.
-	Partitions(start []byte, end []byte, limit int) ([][]byte, error)
+	Partitions(min []byte, max []byte, limit int) ([][]byte, error)
 	// Partition returns a handle to the named partition
 	Partition(name []byte) Partition
 }
@@ -121,15 +121,15 @@ type Revision interface {
 // at a certain revision.
 type View interface {
 	// Get returns up to limit keys at the revision seen by this view
-	// lexocographical order where keys are >= start and < end. start = nil
-	// means the lowest key. end = nil means the highest key. limit <= -1
+	// lexocographical order where keys are >= min and < max. min = nil
+	// means the lowest key. max = nil means the highest key. limit < 0
 	// means no limit.
-	Keys(start []byte, end []byte, limit int) ([]KV, error)
+	Keys(min []byte, max []byte, limit int) ([]KV, error)
 	// Changes returns up to limit keys changed in this revision
-	// lexocographical order where keys are >= start and < end.
-	// start = nil means the lowest key end = nil means the highest key.
-	// limit <= -1 means no limit.
-	Changes(start []byte, end []byte, limit int) ([]KV, error)
+	// lexocographical order where keys are >= min and < max.
+	// min = nil means the lowest key max = nil means the highest key.
+	// limit < 0 means no limit.
+	Changes(min []byte, max []byte, limit int) ([]KV, error)
 	// Return the revision for this view.
 	Revision() int64
 }

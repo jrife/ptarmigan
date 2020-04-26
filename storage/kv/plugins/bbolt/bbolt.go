@@ -3,7 +3,6 @@ package bbolt
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/jrife/ptarmigan/storage/kv"
@@ -274,7 +273,16 @@ func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
 
 // Partition implements Store.Partition
 func (store *Store) Partition(name []byte) kv.Partition {
-	return &Partition{store: store, name: name}
+	partition := &Partition{
+		store: store,
+		name:  name,
+	}
+
+	// Use generic snapshotter
+	partition.Snapshotter.Begin = partition.begin
+	partition.Snapshotter.Purge = partition.purge
+
+	return partition
 }
 
 var _ kv.Partition = (*Partition)(nil)
@@ -282,6 +290,7 @@ var _ kv.Partition = (*Partition)(nil)
 // Partition implements kv.Partition on top of a bbolt store
 // bucket
 type Partition struct {
+	kv.Snapshotter
 	store *Store
 	name  []byte
 }
@@ -306,6 +315,82 @@ func (partition *Partition) bucket(txn *bolt.Tx) (*bolt.Bucket, error) {
 	}
 
 	return myBucket, nil
+}
+
+func (partition *Partition) purge(transaction kv.Transaction) error {
+	txn, ok := transaction.(*Transaction)
+
+	if !ok {
+		return fmt.Errorf("transaction must be an instance of bbolt.Transaction")
+	}
+
+	storeBucket, err := partition.store.bucket(txn.txn)
+
+	if err != nil {
+		return err
+	}
+
+	partBucket := storeBucket.Bucket(partitionsBucket)
+
+	if partBucket == nil {
+		return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
+	}
+
+	if err := partBucket.DeleteBucket(partition.name); err != nil && err != bolt.ErrBucketNotFound {
+		return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err.Error())
+	}
+
+	if bucket, err := partBucket.CreateBucket(partition.name); err != nil {
+		return fmt.Errorf("could not create partition bucket %s: %s", partition.name, err.Error())
+	} else {
+		txn.bucket = bucket
+	}
+
+	return nil
+}
+
+func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv.Transaction, error) {
+	txn, err := partition.store.rootStore.db.Begin(writable)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
+	}
+
+	storeBucket, err := partition.store.bucket(txn)
+
+	if err != nil {
+		txn.Rollback()
+
+		return nil, err
+	}
+
+	partBucket := storeBucket.Bucket(partitionsBucket)
+
+	if partBucket == nil {
+		txn.Rollback()
+
+		return nil, fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
+	}
+
+	partitionBucket := partBucket.Bucket(partition.name)
+
+	if partitionBucket == nil {
+		if ensurePartitionExists {
+			partitionBucket, err = partBucket.CreateBucket(partition.name)
+
+			if err != nil {
+				txn.Rollback()
+
+				return nil, fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err.Error())
+			}
+		} else {
+			txn.Rollback()
+
+			return nil, kv.ErrNoSuchPartition
+		}
+	}
+
+	return &Transaction{txn: txn, bucket: partitionBucket}, nil
 }
 
 // Name implements Partition.Name
@@ -384,16 +469,6 @@ func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
 	}
 
 	return &Transaction{txn: txn, bucket: partitionBucket}, nil
-}
-
-// Snapshot implements Partition.Snapshot
-func (partition *Partition) Snapshot() (io.ReadCloser, error) {
-	return nil, nil
-}
-
-// ApplySnapshot implements Partition.ApplySnapshot
-func (partition *Partition) ApplySnapshot(io.Reader) error {
-	return nil
 }
 
 var _ kv.Transaction = (*Transaction)(nil)

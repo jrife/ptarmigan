@@ -1,203 +1,188 @@
 package kv
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"io"
+import (
+	"context"
+	"fmt"
+	"io"
 
-// 	"github.com/jrife/ptarmigan/storage/kv/kvpb"
-// 	"github.com/jrife/ptarmigan/utils/lvstream"
-// )
+	"github.com/jrife/ptarmigan/storage/kv/kvpb"
+	"github.com/jrife/ptarmigan/utils/lvstream"
+)
 
-// type Snapshotter struct {
-// 	Transaction Transaction
-// }
+// Snapshotter implements a generic implementation
+// for Snapshot() and ApplySnapshot() that should
+// be suitable for most kv plugins. Some plugins
+// may offer more efficient ways to do this and may
+// choose not to use this implementation.
+type Snapshotter struct {
+	// Partition should be the partition that is
+	// to be snapshotted or to which a snapshot is
+	// to be applied
+	Begin func(writable bool, ensurePartitionExists bool) (Transaction, error)
+	// Purge must be configured to a function which
+	// completely erases all data in this partition using
+	// the given transaction. Purge is used in the first
+	// phase in applying a snapshot where the partition
+	// is reverted to a blank slate on top of which the
+	// snapshot is written.
+	Purge func(transaction Transaction) error
+}
 
-// func (snapshotter *Snapshotter) Snapshot() (io.ReadCloser, error) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	kvPairs, errors := readKVPairs(ctx, snapshotter.Transaction)
+// Snapshot implements Partition.Snapshot
+func (snapshotter *Snapshotter) Snapshot() (io.ReadCloser, error) {
+	transaction, err := snapshotter.Begin(false, false)
 
-// 	lvStreamEncoder := lvstream.NewLVStreamEncoder(func() ([]byte, error) {
-// 		select {
-// 		case kvPair, ok := <-kvPairs:
-// 			if !ok {
-// 				return nil, io.EOF
-// 			}
+	if err != nil {
+		return nil, err
+	}
 
-// 			marshaled, err := kvPair.Marshal()
+	ctx, cancel := context.WithCancel(context.Background())
+	kvPairs, errors := readKVPairs(ctx, transaction)
 
-// 			if err != nil {
-// 				return nil, fmt.Errorf("Could not marshal kv pair: %s", err.Error())
-// 			}
+	lvStreamEncoder := lvstream.NewLVStreamEncoder(func() ([]byte, error) {
+		select {
+		case kvPair, ok := <-kvPairs:
+			if !ok {
+				return nil, io.EOF
+			}
 
-// 			return marshaled, nil
-// 		case err, ok := <-errors:
-// 			if !ok {
-// 				return nil, io.EOF
-// 			}
+			marshaled, err := kvPair.Marshal()
 
-// 			return nil, err
-// 		}
-// 	}, func() {
-// 		cancel()
-// 		for _ = range kvPairs {
-// 		}
-// 		snapshotter.Transaction.Rollback()
-// 	})
+			if err != nil {
+				return nil, fmt.Errorf("could not marshal kv pair: %s", err.Error())
+			}
 
-// 	return lvStreamEncoder, nil
-// }
+			return marshaled, nil
+		case err, ok := <-errors:
+			if !ok {
+				return nil, io.EOF
+			}
 
-// func (snapshotter *Snapshotter) ApplySnapshot(snapshot io.Reader) error {
-// 	defer snapshotter.Transaction.Rollback()
+			return nil, err
+		}
+	}, func() {
+		cancel()
+		for range errors {
+		}
+		for range kvPairs {
+		}
 
-// 	kvPairs := make(chan kvpb.KVPair)
-// 	ctx, cancel := context.WithCancel(context.Background())
+		transaction.Rollback()
+	})
 
-// 	errors := writeKVPairs(ctx, snapshotter.Transaction, kvPairs)
+	return lvStreamEncoder, nil
+}
 
-// 	lvStreamDecoder := lvstream.NewLVStreamDecoder(func(value []byte) error {
-// 		var kvPair kvpb.KVPair
+// ApplySnapshot implements Partition.ApplySnapshot
+func (snapshotter *Snapshotter) ApplySnapshot(snapshot io.Reader) error {
+	transaction, err := snapshotter.Begin(true, true)
 
-// 		if err := kvPair.Unmarshal(value); err != nil {
-// 			return fmt.Errorf("Could not unmarshal kv pair: %s", err.Error())
-// 		}
+	if err != nil {
+		return err
+	}
 
-// 		select {
-// 		case kvPairs <- kvPair:
-// 			return nil
-// 		case err := <-errors:
-// 			return err
-// 		}
-// 	})
+	defer transaction.Rollback()
 
-// 	_, err := io.Copy(lvStreamDecoder, snapshot)
-// 	cancel()
+	if err := snapshotter.Purge(transaction); err != nil {
+		return fmt.Errorf("could not purge partition: %s", err.Error())
+	}
 
-// 	for _ = range errors {
-// 	}
+	kvPairs := make(chan kvpb.KVPair)
+	ctx, cancel := context.WithCancel(context.Background())
 
-// 	if err == nil {
-// 		err = snapshotter.Transaction.Commit()
+	errors := writeKVPairs(ctx, transaction, kvPairs)
 
-// 		if err != nil {
-// 			err = fmt.Errorf("Could not commit transaction: %s", err.Error())
-// 		}
-// 	} else {
-// 		err = fmt.Errorf("Copy failed: %s", err.Error())
-// 	}
+	lvStreamDecoder := lvstream.NewLVStreamDecoder(func(value []byte) error {
+		var kvPair kvpb.KVPair
 
-// 	return err
-// }
+		if err := kvPair.Unmarshal(value); err != nil {
+			return fmt.Errorf("could not unmarshal kv pair: %s", err.Error())
+		}
 
-// func writeKVPairs(ctx context.Context, transaction Transaction, kvPairs <-chan kvpb.KVPair) <-chan error {
-// 	errors := make(chan error)
+		select {
+		case kvPairs <- kvPair:
+			return nil
+		case err := <-errors:
+			return err
+		}
+	})
 
-// 	go func() {
-// 		defer close(errors)
+	_, err = io.Copy(lvStreamDecoder, snapshot)
+	cancel()
 
-// 		// Purge the store. Make sure we're starting with a clean slate
-// 		err := transaction.Root().Empty()
+	for range errors {
+	}
 
-// 		if err != nil {
-// 			errors <- fmt.Errorf("Could not purge store: %s", err.Error())
+	if err == nil {
+		err = transaction.Commit()
 
-// 			return
-// 		}
+		if err != nil {
+			err = fmt.Errorf("could not commit transaction: %s", err.Error())
+		}
+	} else {
+		err = fmt.Errorf("copy failed: %s", err.Error())
+	}
 
-// 		// Populate the store with the snapshot
-// 		err = writeBucket(ctx, transaction.Root(), kvPairs)
+	return err
+}
 
-// 		if err != nil {
-// 			errors <- err
+func writeKVPairs(ctx context.Context, transaction Transaction, kvPairs <-chan kvpb.KVPair) <-chan error {
+	errors := make(chan error)
 
-// 			return
-// 		}
-// 	}()
+	go func() {
+		defer close(errors)
 
-// 	return errors
-// }
+		for {
+			select {
+			case kvPair := <-kvPairs:
+				if err := transaction.Put(kvPair.Key, kvPair.Value); err != nil {
+					errors <- fmt.Errorf("could not write key %v: %s", kvPair.Key, err.Error())
 
-// func writeBucket(ctx context.Context, bucket Bucket, kvPairs <-chan kvpb.KVPair) error {
-// 	for {
-// 		select {
-// 		case kvPair := <-kvPairs:
-// 			if kvPair.Key != nil && kvPair.Value != nil {
-// 				// This is a regular key-value pair
-// 				if err := bucket.Put(kvPair.Key, kvPair.Value); err != nil {
-// 					return fmt.Errorf("Could not write key %v: %s", kvPair.Key, err.Error())
-// 				}
-// 			} else if kvPair.Key != nil && kvPair.Value == nil {
-// 				innerBucket := bucket.Bucket(kvPair.Key)
-// 				// Bucket start for inner bucket
-// 				err := innerBucket.Create()
+					return
+				}
+			case <-ctx.Done():
+				errors <- context.Canceled
 
-// 				if err != nil {
-// 					return fmt.Errorf("Could not create inner bucket %v: %s", kvPair.Key, err.Error())
-// 				}
+				return
+			}
+		}
+	}()
 
-// 				err = writeBucket(ctx, innerBucket, kvPairs)
+	return errors
+}
 
-// 				if err != nil {
-// 					return fmt.Errorf("Could not write inner bucket %v: %s", kvPair.Key, err.Error())
-// 				}
-// 			} else if kvPair.Key == nil && kvPair.Value == nil {
-// 				return nil
-// 			} else {
-// 				return fmt.Errorf("Expected bucket start or key value pair")
-// 			}
-// 		case <-ctx.Done():
-// 			return context.Canceled
-// 		}
-// 	}
-// }
+func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPair, <-chan error) {
+	kvPairs := make(chan kvpb.KVPair)
+	errors := make(chan error)
 
-// func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPair, <-chan error) {
-// 	kvPairs := make(chan kvpb.KVPair)
-// 	errors := make(chan error)
+	go func() {
+		defer close(kvPairs)
+		defer close(errors)
 
-// 	go func() {
-// 		if err := traverseBucket(ctx, transaction.Root(), kvPairs); err != nil {
-// 			errors <- err
-// 		}
+		iter, err := transaction.Keys(nil, nil, SortOrderAsc)
 
-// 		close(kvPairs)
-// 		close(errors)
-// 	}()
+		if err != nil {
+			errors <- fmt.Errorf("could not create iterator: %s", err.Error())
 
-// 	return kvPairs, errors
-// }
+			return
+		}
 
-// func traverseBucket(ctx context.Context, bucket Bucket, kvPairs chan kvpb.KVPair) error {
-// 	cursor := bucket.Cursor()
+		for iter.Next() {
+			select {
+			case kvPairs <- kvpb.KVPair{Key: iter.Key(), Value: iter.Value()}:
+			case <-ctx.Done():
+				errors <- context.Canceled
 
-// 	for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-// 		if v == nil {
-// 			// This is a bucket.
-// 			select {
-// 			case kvPairs <- kvpb.KVPair{Key: k}:
-// 			case <-ctx.Done():
-// 				return context.Canceled
-// 			}
+				return
+			}
+		}
 
-// 			if err := traverseBucket(ctx, bucket.Bucket(k), kvPairs); err != nil {
-// 				return err
-// 			}
+		if iter.Error() != nil {
+			errors <- fmt.Errorf("iteration error: %s", err.Error())
 
-// 			select {
-// 			case kvPairs <- kvpb.KVPair{}:
-// 			case <-ctx.Done():
-// 				return context.Canceled
-// 			}
-// 			continue
-// 		}
+			return
+		}
+	}()
 
-// 		select {
-// 		case kvPairs <- kvpb.KVPair{Key: k, Value: v}:
-// 		case <-ctx.Done():
-// 			return context.Canceled
-// 		}
-// 	}
-
-// 	return nil
-// }
+	return kvPairs, errors
+}

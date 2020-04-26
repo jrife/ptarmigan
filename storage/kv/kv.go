@@ -181,8 +181,9 @@ type Partition interface {
 	Snapshot() (io.ReadCloser, error)
 	// ApplySnapshot applies a snapshot to this partition. If ApplySnapshot() is called
 	// after Close() on the root store returns it must return ErrClosed. Otherwise if
-	// the parent store does not exist it must return ErrNoSuchStore. Otherwise if
-	// this partition does not exist it must return ErrNoSuchPartition. ApplySnapshot
+	// the parent store does not exist it must return ErrNoSuchStore. If this partition
+	// doesn't exist ApplySnapshot will create it. If the partition does exist ApplySnapshot
+	// overwrites the state currently stored in the partition. ApplySnapshot
 	// is like a self-contained read-write transaction. Until all calls to ApplySnapshot()
 	// return Close() on the root store must not return. Calls to ApplySnapshot() started
 	// after Close() is called may return ErrClosed right away. Strict-serializability must
@@ -218,6 +219,8 @@ type Transaction interface {
 // used by one goroutine at a time. Consumers should not
 // attempt to use an iterator once its parent transaction
 // has been rolled back. Behavior is undefined in this case.
+// The transaction must not mutate the store when the iterator
+// is in use. This may cause inconsistent behavior.
 type Iterator interface {
 	// Next advances the iterator to the next key
 	// A fresh iterator must call Next once to
@@ -274,7 +277,7 @@ func (nsTxn *namespacedTxn) Keys(min, max []byte, order SortOrder) (Iterator, er
 		min = nsTxn.key(min)
 	}
 
-	iterator, err := nsTxn.Keys(min, max, order)
+	iterator, err := nsTxn.txn.Keys(min, max, order)
 
 	if err != nil {
 		return nil, err
