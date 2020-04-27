@@ -3,9 +3,19 @@ package mvcc
 import (
 	"errors"
 	"io"
+
+	"github.com/jrife/ptarmigan/storage/kv"
 )
 
+// SortOrder describes sort order for keys
+// Either SortOrderAsc or SortOrderDesc
+type SortOrder kv.SortOrder
+
 const (
+	// SortOrderAsc sorts in increasing order
+	SortOrderAsc = SortOrder(kv.SortOrderAsc)
+	// SortOrderDesc sorts in decreasing order
+	SortOrderDesc = SortOrder(kv.SortOrderDesc)
 	// RevisionOldest can be used in place of a revision
 	// number to access the oldest revision
 	RevisionOldest int64 = -1
@@ -120,13 +130,15 @@ type Revision interface {
 // View lets a user read the state of the store
 // at a certain revision.
 type View interface {
-	// Get returns up to limit keys at the revision seen by this view
-	// lexocographical order where keys are >= min and < max. min = nil
-	// means the lowest key. max = nil means the highest key. limit < 0
-	// means no limit.
-	Keys(min []byte, max []byte, limit int) ([]KV, error)
+	// Keys returns up to limit keys at the revision seen by this view
+	// where keys are >= min and < max. min = nil means the lowest key.
+	// max = nil means the highest key. limit < 0 means no limit. sort
+	// = SortOrderAsc means return keys in lexicographically increasing order
+	// sort = SortOrderDesc means return keys in lexicographically decreasing
+	// order.
+	Keys(min []byte, max []byte, limit int, sort SortOrder) ([]KV, error)
 	// Changes returns up to limit keys changed in this revision
-	// lexocographical order where keys are >= min and < max.
+	// lexocographically increasing order where keys are >= min and < max.
 	// min = nil means the lowest key max = nil means the highest key.
 	// limit < 0 means no limit.
 	Changes(min []byte, max []byte, limit int) ([]KV, error)
