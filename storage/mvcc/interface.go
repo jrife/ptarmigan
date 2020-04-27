@@ -19,9 +19,9 @@ const (
 	// RevisionOldest can be used in place of a revision
 	// number to access the oldest revision
 	RevisionOldest int64 = -1
-	// RevisionNeweset can be used in place of a revision
+	// RevisionNewest can be used in place of a revision
 	// number to access the neweset revision
-	RevisionNeweset int64 = 0
+	RevisionNewest int64 = 0
 )
 
 var (
@@ -34,6 +34,10 @@ var (
 	// ErrNoSuchPartition is returned when a function tries to access a partition
 	// that does not exist.
 	ErrNoSuchPartition = errors.New("partition does not exist")
+	// ErrNoRevisions is returned when a consumer requests a view of either the oldest
+	// or newest revision, but the partition is empty having had no revisions
+	// written to it yet.
+	ErrNoRevisions = errors.New("partition has no revision")
 )
 
 // KV is a key-value pair
@@ -78,8 +82,10 @@ type Partition interface {
 	Transaction() (Transaction, error)
 	// View generates a handle that lets a user
 	// inspect the state of the store at some
-	// revision
-	View(revision int64) View
+	// revision. If revision == 0 it selects the
+	// the newest revision. If revisino < 0 it selects
+	// the oldest revision.
+	View(revision int64) (View, error)
 	// ApplySnapshot completely replaces the contents of this
 	// store with those in this snapshot.
 	ApplySnapshot(snap io.Reader) error
@@ -144,4 +150,6 @@ type View interface {
 	Changes(min []byte, max []byte, limit int) ([]KV, error)
 	// Return the revision for this view.
 	Revision() int64
+	// Close must be called when a user is done with a view.
+	Close() error
 }

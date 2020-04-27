@@ -398,8 +398,8 @@ func (partition *Partition) Name() []byte {
 	return partition.name
 }
 
-// Create implemenets Partition.Create
-func (partition *Partition) Create() error {
+// Create implements Partition.Create
+func (partition *Partition) Create(metadata []byte) error {
 	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
 		storeBucket, err := partition.store.bucket(txn)
 
@@ -450,6 +450,11 @@ func (partition *Partition) Delete() error {
 
 		return nil
 	})
+}
+
+// Metadata implements Partition.Metadata
+func (partition *Partition) Metadata() ([]byte, error) {
+	return nil, nil
 }
 
 // Begin implements Partition.Begin

@@ -154,12 +154,19 @@ type Partition interface {
 	// effect if the partition already exists. It must return ErrClosed
 	// if its invocation starts after Close() on the root store returns.
 	// Otherwise it must return ErrNoSuchStore if the parent store does not exist.
-	Create() error
+	// metadata is set only if this call actually creates the partition.
+	Create(metadata []byte) error
 	// Delete deletes this partition if it exists. It has no effect if
 	// the partition does not exist. It must return ErrClosed if its
 	// invocation starts after Close() on the root store returns. Otherwise it
 	// must return ErrNoSuchStore if the parent store does not exist.
 	Delete() error
+	// Metadata lets a user retrieve the metadata associated with this partition
+	// It must return ErrClosed if its invocation starts after Close() on the
+	// root store returns. Otherwise if the parent store does not exist it must
+	// return ErrNoSuchStore. Otherwise if this partition does not exist it must
+	// return ErrNoSuchPartition.
+	Metadata() ([]byte, error)
 	// Begin starts a transaction for this partition. writable should be
 	// true for read-write transactions and false for read-only transactions.
 	// If Begin() is called after Close() on the root store returns it must

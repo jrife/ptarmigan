@@ -237,16 +237,6 @@ func (partition *partition) metadataNamespace(transaction kv.Transaction) kv.Tra
 	return kv.Namespace(transaction, metadataPrefix)
 }
 
-// revision must be positive
-func (partition *partition) revisionNamespace(transaction kv.Transaction, revision int64) kv.Transaction {
-	revisionBytes := make([]byte, 9)
-	int64ToBytes(revisionBytes, revision)
-	// This extra 0 ensures that Put using an empty key
-	// won't overwrite the value of marker for the start of this revision.
-	revisionBytes[8] = 0
-	return partition.revisionsNamespace(kv.Namespace(transaction, revisionBytes))
-}
-
 func (partition *partition) keysNamespace(transaction kv.Transaction) kv.Transaction {
 	return kv.Namespace(transaction, keysPrefix)
 }
@@ -294,17 +284,64 @@ func (partition *partition) Transaction() (Transaction, error) {
 	txn, err := partition.beginTxn(true)
 
 	if err != nil {
-		txn.Rollback()
-
-		return nil, fmt.Errorf("could not begin transaction: %s", err)
+		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
 	}
 
 	return &transaction{partition: partition, txn: txn}, nil
 }
 
 // View implements Partition.View
-func (partition *partition) View(revision int64) View {
-	return &view{partition: partition, revision: revision, kvPartition: partition.store.kvStore.Partition(partition.name)}
+func (partition *partition) View(revision int64) (View, error) {
+	txn, err := partition.beginTxn(false)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
+	}
+
+	newestRevision, err := partition.newestRevision(txn)
+
+	if err != nil {
+		txn.Rollback()
+
+		return nil, fmt.Errorf("unable to retrieve current revision: %s", err.Error())
+	}
+
+	oldestRevision, err := partition.oldestRevision(txn)
+
+	if err != nil {
+		txn.Rollback()
+
+		return nil, fmt.Errorf("unable to retrieve oldest revision: %s", err.Error())
+	}
+
+	if revision == RevisionNewest {
+		revision = newestRevision
+	} else if revision <= RevisionOldest {
+		revision = oldestRevision
+	}
+
+	// it's possible that both newestRevision
+	// and oldestRevision are 0. In such cases
+	// this indicates that this partition is new
+	// and has not had any revisions written to
+	// it yet.
+	if revision == 0 {
+		txn.Rollback()
+
+		return nil, ErrNoRevisions
+	}
+
+	if revision > newestRevision {
+		txn.Rollback()
+
+		return nil, ErrRevisionTooHigh
+	} else if revision < oldestRevision {
+		txn.Rollback()
+
+		return nil, ErrCompacted
+	}
+
+	return &view{partition: partition, revision: revision, txn: txn}, nil
 }
 
 // ApplySnapshot implements Partition.ApplySnapshot
@@ -320,7 +357,6 @@ func (partition *partition) Snapshot() (io.Reader, error) {
 type transaction struct {
 	partition *partition
 	txn       kv.Transaction
-	revision  Revision
 }
 
 // NewRevision implements Transaction.NewRevision
@@ -331,11 +367,9 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 		return nil, fmt.Errorf("could not calculate next revision number: %s", err.Error())
 	}
 
-	b := make([]byte, 8)
-	int64ToBytes(b, nextRevision)
 	revisionsTxn := transaction.partition.revisionsNamespace(transaction.txn)
 
-	if err := revisionsTxn.Put(b, []byte{}); err != nil {
+	if err := revisionsTxn.Put(newRevisionsKey(nextRevision, nil), []byte{}); err != nil {
 		return nil, fmt.Errorf("could not insert revision start market: %s", err.Error())
 	}
 
@@ -400,59 +434,14 @@ func (revision *revision) Delete(key []byte) error {
 }
 
 type view struct {
-	revision    int64
-	partition   *partition
-	kvPartition kv.Partition
-	txn         kv.Transaction
-}
-
-func (view *view) transaction() (kv.Transaction, bool, error) {
-	if view.txn != nil {
-		return view.txn, false, nil
-	}
-
-	txn, err := view.kvPartition.Begin(false)
-
-	if err != nil {
-		return nil, false, fmt.Errorf("could not begin transaction: %s", err.Error())
-	}
-
-	return txn, true, nil
+	revision  int64
+	partition *partition
+	txn       kv.Transaction
 }
 
 // Keys implements View.Keys
 func (view *view) Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV, error) {
-	txn, rollback, err := view.transaction()
-
-	if err != nil {
-		return nil, fmt.Errorf("could not obtain transaction for request: %s", err.Error())
-	}
-
-	if rollback {
-		defer txn.Rollback()
-	}
-
-	newestRevision, err := view.partition.newestRevision(txn)
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve current revision: %s", err.Error())
-	}
-
-	oldestRevision, err := view.partition.oldestRevision(txn)
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve oldest revision: %s", err.Error())
-	}
-
-	if view.revision > newestRevision {
-		return nil, ErrRevisionTooHigh
-	}
-
-	if view.revision < oldestRevision {
-		return nil, ErrCompacted
-	}
-
-	iter, err := newViewRevisionsIterator(txn, min, max, view.revision, order)
+	iter, err := newViewRevisionsIterator(view.txn, min, max, view.revision, order)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
@@ -479,28 +468,7 @@ func (view *view) Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV
 
 // Changes implements View.Changes
 func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
-	txn, rollback, err := view.transaction()
-
-	if err != nil {
-		return nil, fmt.Errorf("could not obtain transaction for request: %s", err.Error())
-	}
-
-	if rollback {
-		defer txn.Rollback()
-	}
-
-	newestRevision, err := view.partition.newestRevision(txn)
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve newest revision: %s", err.Error())
-	}
-
-	if view.revision > newestRevision {
-		return nil, ErrRevisionTooHigh
-	}
-
-	txn = view.partition.revisionsNamespace(txn)
-	iter, err := newRevisionsIterator(txn, &revisionsCursor{revision: view.revision}, &revisionsCursor{revision: view.revision, key: max}, SortOrderAsc)
+	iter, err := newRevisionsIterator(view.partition.revisionsNamespace(view.txn), &revisionsCursor{revision: view.revision}, &revisionsCursor{revision: view.revision, key: max}, SortOrderAsc)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create revisions iterator: %s", err.Error())
@@ -514,7 +482,7 @@ func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
 
 		// There is no revision marker for this revision so it must have been
 		// compacted
-		return nil, ErrCompacted
+		return nil, fmt.Errorf("consistency violation: revision %d should exist, but a record of it was not found", view.revision)
 	}
 
 	if iter.key() != nil {
@@ -556,6 +524,11 @@ func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
 // Revision implements View.Revision
 func (view *view) Revision() int64 {
 	return view.revision
+}
+
+// Close implements View.Close
+func (view *view) Close() error {
+	return view.txn.Rollback()
 }
 
 type mvccIterator struct {

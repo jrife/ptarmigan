@@ -50,7 +50,7 @@ func initializeRootStoreState(rootStore kv.RootStore, initialState rootStoreMode
 
 func initializeStoreState(store kv.Store, initialState storeModel) error {
 	for partition, partitionModel := range initialState {
-		if err := store.Partition([]byte(partition)).Create(); err != nil {
+		if err := store.Partition([]byte(partition)).Create([]byte{}); err != nil {
 			return err
 		}
 
@@ -749,6 +749,7 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 		err          error
 		store        []byte
 		name         []byte
+		metadata     []byte
 	}{
 		"new-partition": {
 			initialState: rootStoreModel{
@@ -762,8 +763,9 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 					"p2": {},
 				},
 			},
-			store: []byte("store1"),
-			name:  []byte("p2"),
+			store:    []byte("store1"),
+			name:     []byte("p2"),
+			metadata: []byte("ok"),
 		},
 		"existing-partition": {
 			initialState: rootStoreModel{
@@ -786,8 +788,9 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 				},
 				"store3": {},
 			},
-			store: []byte("store2"),
-			name:  []byte("p1"),
+			store:    []byte("store2"),
+			name:     []byte("p1"),
+			metadata: []byte("aaa"),
 		},
 		"store-doesn't-exist": {
 			initialState: rootStoreModel{
@@ -810,9 +813,10 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 				},
 				"store3": {},
 			},
-			store: []byte("store4"),
-			name:  []byte("p1"),
-			err:   kv.ErrNoSuchStore,
+			store:    []byte("store4"),
+			name:     []byte("p1"),
+			metadata: []byte("ok"),
+			err:      kv.ErrNoSuchStore,
 		},
 	}
 
@@ -821,7 +825,7 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			err := rootStore.Store(testCase.store).Partition(testCase.name).Create()
+			err := rootStore.Store(testCase.store).Partition(testCase.name).Create(testCase.metadata)
 
 			if err != testCase.err {
 				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
