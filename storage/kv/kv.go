@@ -161,12 +161,6 @@ type Partition interface {
 	// invocation starts after Close() on the root store returns. Otherwise it
 	// must return ErrNoSuchStore if the parent store does not exist.
 	Delete() error
-	// Metadata lets a user retrieve the metadata associated with this partition
-	// It must return ErrClosed if its invocation starts after Close() on the
-	// root store returns. Otherwise if the parent store does not exist it must
-	// return ErrNoSuchStore. Otherwise if this partition does not exist it must
-	// return ErrNoSuchPartition.
-	Metadata() ([]byte, error)
 	// Begin starts a transaction for this partition. writable should be
 	// true for read-write transactions and false for read-only transactions.
 	// If Begin() is called after Close() on the root store returns it must
@@ -213,6 +207,10 @@ type Transaction interface {
 	// is nil or empty. If the key doesn't exist it has no effect
 	// and returns nil.
 	Delete(key []byte) error
+	// Metadata returns the metadata for this partition
+	Metadata() ([]byte, error)
+	// SetMetadata sets the metadata for this partition
+	SetMetadata(metadata []byte) error
 	// Keys creates an iterator that iterates over the range
 	// of keys specified by the
 	Keys(min, max []byte, order SortOrder) (Iterator, error)
@@ -269,6 +267,14 @@ func (nsTxn *namespacedTxn) Get(key []byte) ([]byte, error) {
 
 func (nsTxn *namespacedTxn) Delete(key []byte) error {
 	return nsTxn.txn.Delete(nsTxn.key(key))
+}
+
+func (nsTxn *namespacedTxn) Metadata() ([]byte, error) {
+	return nsTxn.txn.Metadata()
+}
+
+func (nsTxn *namespacedTxn) SetMetadata(metadata []byte) error {
+	return nsTxn.txn.SetMetadata(metadata)
 }
 
 func (nsTxn *namespacedTxn) Keys(min, max []byte, order SortOrder) (Iterator, error) {

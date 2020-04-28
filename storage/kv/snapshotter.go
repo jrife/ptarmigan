@@ -132,6 +132,19 @@ func writeKVPairs(ctx context.Context, transaction Transaction, kvPairs <-chan k
 	go func() {
 		defer close(errors)
 
+		select {
+		case kvPair := <-kvPairs:
+			if err := transaction.SetMetadata(kvPair.Value); err != nil {
+				errors <- fmt.Errorf("could not write metadata %v: %s", kvPair.Value, err.Error())
+
+				return
+			}
+		case <-ctx.Done():
+			errors <- context.Canceled
+
+			return
+		}
+
 		for {
 			select {
 			case kvPair := <-kvPairs:
@@ -158,6 +171,22 @@ func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPa
 	go func() {
 		defer close(kvPairs)
 		defer close(errors)
+
+		metadata, err := transaction.Metadata()
+
+		if err != nil {
+			errors <- fmt.Errorf("could not create iterator: %s", err.Error())
+
+			return
+		}
+
+		select {
+		case kvPairs <- kvpb.KVPair{Key: []byte{}, Value: metadata}:
+		case <-ctx.Done():
+			errors <- context.Canceled
+
+			return
+		}
 
 		iter, err := transaction.Keys(nil, nil, SortOrderAsc)
 

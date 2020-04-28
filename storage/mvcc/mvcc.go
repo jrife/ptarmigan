@@ -10,10 +10,8 @@ import (
 )
 
 var (
-	metadataPrefix  = []byte{0}
 	keysPrefix      = []byte{1}
 	revisionsPrefix = []byte{2}
-	metadataKey     = []byte{0}
 )
 
 // b must be a byte slice of length 8
@@ -233,10 +231,6 @@ func (partition *partition) revisionsNamespace(transaction kv.Transaction) kv.Tr
 	return kv.Namespace(transaction, revisionsPrefix)
 }
 
-func (partition *partition) metadataNamespace(transaction kv.Transaction) kv.Transaction {
-	return kv.Namespace(transaction, metadataPrefix)
-}
-
 func (partition *partition) keysNamespace(transaction kv.Transaction) kv.Transaction {
 	return kv.Namespace(transaction, keysPrefix)
 }
@@ -248,7 +242,7 @@ func (partition *partition) Name() []byte {
 
 // Create implements Partition.Create
 func (partition *partition) Create(metadata []byte) error {
-	if err := partition.store.kvStore.Partition(partition.name).Create(); err != nil {
+	if err := partition.store.kvStore.Partition(partition.name).Create(metadata); err != nil {
 		return fmt.Errorf("could not create partition: %s", err.Error())
 	}
 
@@ -274,9 +268,7 @@ func (partition *partition) Metadata() ([]byte, error) {
 
 	defer transaction.Rollback()
 
-	transaction = partition.metadataNamespace(transaction)
-
-	return transaction.Get(metadataKey)
+	return transaction.Metadata()
 }
 
 // Transaction implements Partition.Transaction

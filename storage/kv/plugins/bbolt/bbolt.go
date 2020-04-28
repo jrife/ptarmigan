@@ -452,11 +452,6 @@ func (partition *Partition) Delete() error {
 	})
 }
 
-// Metadata implements Partition.Metadata
-func (partition *Partition) Metadata() ([]byte, error) {
-	return nil, nil
-}
-
 // Begin implements Partition.Begin
 func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
 	txn, err := partition.store.rootStore.db.Begin(writable)
@@ -498,6 +493,16 @@ func (transaction *Transaction) Get(key []byte) ([]byte, error) {
 // Delete implements Transaction.Delete
 func (transaction *Transaction) Delete(key []byte) error {
 	return transaction.bucket.Delete(key)
+}
+
+// Metadata implements Transaction.Metadata
+func (transaction *Transaction) Metadata() ([]byte, error) {
+	return nil, nil
+}
+
+// SetMetadata implements Transaction.SetMetadata
+func (transaction *Transaction) SetMetadata(metadata []byte) error {
+	return nil
 }
 
 // Keys implements Transaction.Keys
