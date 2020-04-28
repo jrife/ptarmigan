@@ -18,6 +18,8 @@ const (
 var (
 	storesBucket     = []byte{0}
 	kvBucket         = []byte{0}
+	metaBucket       = []byte{1}
+	metaKey          = []byte{0}
 	partitionsBucket = []byte{0}
 )
 
@@ -111,6 +113,16 @@ func NewRootStore(config RootStoreConfig) (*RootStore, error) {
 	}, nil
 }
 
+func (rootStore *RootStore) storesBucket(txn *bolt.Tx) (*bolt.Bucket, error) {
+	stores := txn.Bucket(storesBucket)
+
+	if stores == nil {
+		return nil, fmt.Errorf("unexpected error: could not retrieve stores bucket")
+	}
+
+	return stores, nil
+}
+
 // Delete implements RootStore.Delete
 func (rootStore *RootStore) Delete() error {
 	if err := rootStore.Close(); err != nil {
@@ -171,10 +183,10 @@ type Store struct {
 }
 
 func (store *Store) bucket(txn *bolt.Tx) (*bolt.Bucket, error) {
-	stores := txn.Bucket(storesBucket)
+	stores, err := store.rootStore.storesBucket(txn)
 
-	if stores == nil {
-		return nil, fmt.Errorf("unexpected error: could not retrieve stores bucket")
+	if err != nil {
+		return nil, err
 	}
 
 	storeBucket := stores.Bucket(store.name)
@@ -186,6 +198,22 @@ func (store *Store) bucket(txn *bolt.Tx) (*bolt.Bucket, error) {
 	return storeBucket, nil
 }
 
+func (store *Store) partitionsBucket(txn *bolt.Tx) (*bolt.Bucket, error) {
+	storeBucket, err := store.bucket(txn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	partBucket := storeBucket.Bucket(partitionsBucket)
+
+	if partBucket == nil {
+		return nil, fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", store.name)
+	}
+
+	return partBucket, nil
+}
+
 // Name implements Store.Name
 func (store *Store) Name() []byte {
 	return store.name
@@ -194,10 +222,10 @@ func (store *Store) Name() []byte {
 // Create implements Store.Create
 func (store *Store) Create() error {
 	return store.rootStore.db.Update(func(txn *bolt.Tx) error {
-		stores := txn.Bucket(storesBucket)
+		stores, err := store.rootStore.storesBucket(txn)
 
-		if stores == nil {
-			return fmt.Errorf("unexpected error: could not retrieve stores bucket")
+		if err != nil {
+			return err
 		}
 
 		if bucket, err := stores.CreateBucketIfNotExists(store.name); err != nil {
@@ -213,10 +241,10 @@ func (store *Store) Create() error {
 // Delete implements Store.Delete
 func (store *Store) Delete() error {
 	return store.rootStore.db.Update(func(txn *bolt.Tx) error {
-		stores := txn.Bucket(storesBucket)
+		stores, err := store.rootStore.storesBucket(txn)
 
-		if stores == nil {
-			return fmt.Errorf("unexpected error: could not retrieve stores bucket")
+		if err != nil {
+			return err
 		}
 
 		if err := stores.DeleteBucket(store.name); err != nil {
@@ -236,16 +264,10 @@ func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
 	partitions := [][]byte{}
 
 	if err := store.rootStore.db.View(func(txn *bolt.Tx) error {
-		storeBucket, err := store.bucket(txn)
+		partBucket, err := store.partitionsBucket(txn)
 
 		if err != nil {
 			return err
-		}
-
-		partBucket := storeBucket.Bucket(partitionsBucket)
-
-		if partBucket == nil {
-			return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", store.name)
 		}
 
 		cursor := partBucket.Cursor()
@@ -296,16 +318,10 @@ type Partition struct {
 }
 
 func (partition *Partition) bucket(txn *bolt.Tx) (*bolt.Bucket, error) {
-	storeBucket, err := partition.store.bucket(txn)
+	partBucket, err := partition.store.partitionsBucket(txn)
 
 	if err != nil {
 		return nil, err
-	}
-
-	partBucket := storeBucket.Bucket(partitionsBucket)
-
-	if partBucket == nil {
-		return nil, fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
 	}
 
 	myBucket := partBucket.Bucket(partition.name)
@@ -324,27 +340,23 @@ func (partition *Partition) purge(transaction kv.Transaction) error {
 		return fmt.Errorf("transaction must be an instance of bbolt.Transaction")
 	}
 
-	storeBucket, err := partition.store.bucket(txn.txn)
+	partBucket, err := partition.store.partitionsBucket(txn.txn)
 
 	if err != nil {
 		return err
-	}
-
-	partBucket := storeBucket.Bucket(partitionsBucket)
-
-	if partBucket == nil {
-		return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
 	}
 
 	if err := partBucket.DeleteBucket(partition.name); err != nil && err != bolt.ErrBucketNotFound {
 		return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err.Error())
 	}
 
-	if bucket, err := partBucket.CreateBucket(partition.name); err != nil {
+	bucket, _, err := partition.ensureBuckets(txn.txn)
+
+	if err != nil {
 		return fmt.Errorf("could not create partition bucket %s: %s", partition.name, err.Error())
-	} else {
-		txn.bucket = bucket
 	}
+
+	txn.bucket = bucket
 
 	return nil
 }
@@ -356,7 +368,7 @@ func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv
 		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
 	}
 
-	storeBucket, err := partition.store.bucket(txn)
+	partBucket, err := partition.store.partitionsBucket(txn)
 
 	if err != nil {
 		txn.Rollback()
@@ -364,19 +376,11 @@ func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv
 		return nil, err
 	}
 
-	partBucket := storeBucket.Bucket(partitionsBucket)
-
-	if partBucket == nil {
-		txn.Rollback()
-
-		return nil, fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
-	}
-
 	partitionBucket := partBucket.Bucket(partition.name)
 
 	if partitionBucket == nil {
 		if ensurePartitionExists {
-			partitionBucket, err = partBucket.CreateBucket(partition.name)
+			partitionBucket, _, err = partition.ensureBuckets(txn)
 
 			if err != nil {
 				txn.Rollback()
@@ -393,6 +397,38 @@ func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv
 	return &Transaction{txn: txn, bucket: partitionBucket}, nil
 }
 
+func (partition *Partition) ensureBuckets(txn *bolt.Tx) (*bolt.Bucket, bool, error) {
+	partBucket, err := partition.store.partitionsBucket(txn)
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	exists := false
+	myBucket, err := partBucket.CreateBucket(partition.name)
+
+	if err == bolt.ErrBucketExists {
+		exists = true
+		myBucket = partBucket.Bucket(partition.name)
+	} else if err != nil {
+		return nil, false, fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err.Error())
+	}
+
+	_, err = myBucket.CreateBucketIfNotExists(metaBucket)
+
+	if err != nil {
+		return nil, false, fmt.Errorf("could not create metadata bucket for partition %s: %s", partition.name, err.Error())
+	}
+
+	_, err = myBucket.CreateBucketIfNotExists(kvBucket)
+
+	if err != nil {
+		return nil, false, fmt.Errorf("could not create kv bucket for partition %s: %s", partition.name, err.Error())
+	}
+
+	return myBucket, exists, nil
+}
+
 // Name implements Partition.Name
 func (partition *Partition) Name() []byte {
 	return partition.name
@@ -401,22 +437,20 @@ func (partition *Partition) Name() []byte {
 // Create implements Partition.Create
 func (partition *Partition) Create(metadata []byte) error {
 	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
-		storeBucket, err := partition.store.bucket(txn)
+		partitionBucket, exists, err := partition.ensureBuckets(txn)
 
 		if err != nil {
 			return err
 		}
 
-		partBucket := storeBucket.Bucket(partitionsBucket)
+		if !exists {
+			// This bucket was newly created. Set metadata since this
+			// is the first time
+			transaction := &Transaction{txn: txn, bucket: partitionBucket}
 
-		if partBucket == nil {
-			return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
-		}
-
-		_, err = partBucket.CreateBucketIfNotExists(partition.name)
-
-		if err != nil {
-			return fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err.Error())
+			if err := transaction.SetMetadata(metadata); err != nil {
+				return fmt.Errorf("could not set metadata: %s", err.Error())
+			}
 		}
 
 		return nil
@@ -426,16 +460,10 @@ func (partition *Partition) Create(metadata []byte) error {
 // Delete implements Partition.Delete
 func (partition *Partition) Delete() error {
 	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
-		storeBucket, err := partition.store.bucket(txn)
+		partBucket, err := partition.store.partitionsBucket(txn)
 
 		if err != nil {
 			return err
-		}
-
-		partBucket := storeBucket.Bucket(partitionsBucket)
-
-		if partBucket == nil {
-			return fmt.Errorf("unexpected error: could not retrieve partitions bucket inside store bucket %s", partition.store.name)
 		}
 
 		partitionBucket := partBucket.Bucket(partition.name)
@@ -478,37 +506,99 @@ var _ kv.Transaction = (*Transaction)(nil)
 type Transaction struct {
 	txn    *bolt.Tx
 	bucket *bolt.Bucket
+	kv     *bolt.Bucket
+	meta   *bolt.Bucket
+}
+
+func (transaction *Transaction) kvBucket() (*bolt.Bucket, error) {
+	if transaction.kv == nil {
+		transaction.kv = transaction.bucket.Bucket(kvBucket)
+
+		if transaction.kv == nil {
+			return nil, fmt.Errorf("unexpected error: could not retrieve kv bucket")
+		}
+	}
+
+	return transaction.kv, nil
+}
+
+func (transaction *Transaction) metaBucket() (*bolt.Bucket, error) {
+	if transaction.meta == nil {
+		transaction.meta = transaction.bucket.Bucket(metaBucket)
+
+		if transaction.meta == nil {
+			return nil, fmt.Errorf("unexpected error: could not retrieve meta bucket")
+		}
+	}
+
+	return transaction.meta, nil
 }
 
 // Put implements Transaction.Put
 func (transaction *Transaction) Put(key, value []byte) error {
-	return transaction.bucket.Put(key, value)
+	bucket, err := transaction.kvBucket()
+
+	if err != nil {
+		return err
+	}
+
+	return bucket.Put(key, value)
 }
 
 // Get implements Transaction.Get
 func (transaction *Transaction) Get(key []byte) ([]byte, error) {
-	return transaction.bucket.Get(key), nil
+	bucket, err := transaction.kvBucket()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bucket.Get(key), nil
 }
 
 // Delete implements Transaction.Delete
 func (transaction *Transaction) Delete(key []byte) error {
-	return transaction.bucket.Delete(key)
+	bucket, err := transaction.kvBucket()
+
+	if err != nil {
+		return err
+	}
+
+	return bucket.Delete(key)
 }
 
 // Metadata implements Transaction.Metadata
 func (transaction *Transaction) Metadata() ([]byte, error) {
-	return nil, nil
+	bucket, err := transaction.metaBucket()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bucket.Get(metaKey), nil
 }
 
 // SetMetadata implements Transaction.SetMetadata
 func (transaction *Transaction) SetMetadata(metadata []byte) error {
-	return nil
+	bucket, err := transaction.metaBucket()
+
+	if err != nil {
+		return err
+	}
+
+	return bucket.Put(metaKey, metadata)
 }
 
 // Keys implements Transaction.Keys
 func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.Iterator, error) {
+	bucket, err := transaction.kvBucket()
+
+	if err != nil {
+		return nil, err
+	}
+
 	iter := &Iterator{}
-	cursor := transaction.bucket.Cursor()
+	cursor := bucket.Cursor()
 	advance := func() ([]byte, []byte) {
 		if order == kv.SortOrderDesc {
 			return cursor.Prev()
