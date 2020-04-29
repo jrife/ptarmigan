@@ -774,19 +774,22 @@ func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revisi
 
 // return the highest revision of the current key whose revision <= iter.viewRevision
 func (iter *viewRevisionKeysIterator) highestRevision() bool {
+	if iter.k == nil {
+		return false
+	}
+
 	iter.currentKey = iter.k
 	iter.currentRev = iter.rev
 	iter.currentValue = iter.v
-	done := false
 
-	for ; !done && bytes.Compare(iter.currentKey, iter.k) == 0; done = !iter.keysIterator.next() {
+	for hasMore := true; hasMore && bytes.Compare(iter.currentKey, iter.k) == 0; hasMore = iter.keysIterator.next() {
 		if iter.rev > iter.currentRev && iter.rev <= iter.viewRevision {
 			iter.currentRev = iter.rev
 			iter.currentValue = iter.v
 		}
 	}
 
-	return !done
+	return true
 }
 
 // return the highest revision of each key whose revision <= iter.viewRevision
@@ -795,15 +798,14 @@ func (iter *viewRevisionKeysIterator) next() bool {
 		return false
 	}
 
-	done := false
+	hasMore := true
 
 	// skips keys that don't have a revision <= iter.viewRevision
 	// and keys whose most recent revision is "key deleted"
-	for done = !iter.highestRevision(); !done && (iter.currentRev > iter.viewRevision || iter.currentValue == nil); done = !iter.highestRevision() {
-		return false
+	for hasMore = iter.highestRevision(); hasMore && (iter.currentRev > iter.viewRevision || iter.currentValue == nil); hasMore = iter.highestRevision() {
 	}
 
-	return !done
+	return hasMore
 }
 
 func (iter *viewRevisionKeysIterator) key() []byte {

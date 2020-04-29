@@ -627,7 +627,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			store := builder(t, testCase.revisions)
 
-			//defer store.Close()
+			defer store.Close()
 
 			expectedFinalState := testCase.revisions.compile()
 
