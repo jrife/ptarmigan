@@ -542,6 +542,7 @@ func (transaction *Transaction) Put(key, value []byte) error {
 		return err
 	}
 
+	fmt.Printf("put(%#v, %s)\n", key, value)
 	return bucket.Put(key, value)
 }
 
@@ -591,6 +592,7 @@ func (transaction *Transaction) SetMetadata(metadata []byte) error {
 
 // Keys implements Transaction.Keys
 func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.Iterator, error) {
+	fmt.Printf("Keys(%#v, %#v, %#v)\n", min, max, order)
 	bucket, err := transaction.kvBucket()
 
 	if err != nil {

@@ -48,7 +48,7 @@ type revisionChangeset struct {
 }
 
 func (changeset revisionChangeset) apply(rev revision) revision {
-	newRevision := revision{Revision: rev.Revision, Kvs: map[string][]byte{}}
+	newRevision := revision{Revision: rev.Revision + 1, Kvs: map[string][]byte{}}
 
 	// Make a copy
 	for key, value := range rev.Kvs {
@@ -196,8 +196,6 @@ func getStore(t *testing.T, mvccStore mvcc.Store) store {
 			t.Fatalf("error while getting metadata from partition %s: %s", partitionName, err.Error())
 		}
 
-		fmt.Printf("metadata = %#v\n", metadata)
-
 		result[string(partitionName)] = partition{Metadata: metadata, Revisions: getAllRevisions(t, mvccStore.Partition(partitionName))}
 	}
 
@@ -214,10 +212,9 @@ func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 		t.Fatalf("error while trying to read oldest revision: %s", err.Error())
 	}
 
-	defer view.Close()
-
 	for {
 		result = append(result, revision{Kvs: getAllKVs(t, view), Revision: view.Revision()})
+		view.Close()
 		view, err = partition.View(view.Revision() + 1)
 
 		if err == mvcc.ErrRevisionTooHigh {
@@ -288,19 +285,18 @@ func testStore(builder tempStoreBuilder, t *testing.T) {
 func testPartition(builder tempStoreBuilder, t *testing.T) {
 	t.Run("Name", func(t *testing.T) { testPartitionName(builder, t) })
 	t.Run("Delete", func(t *testing.T) { testPartitionDelete(builder, t) })
-	t.Run("Metadata", func(t *testing.T) { testPartitionMetadata(builder, t) })
 	t.Run("Transaction", func(t *testing.T) { testPartitionTransaction(builder, t) })
 	t.Run("View", func(t *testing.T) { testPartitionView(builder, t) })
 	t.Run("ApplySnapshot", func(t *testing.T) { testPartitionApplySnapshot(builder, t) })
 	t.Run("Snapshot", func(t *testing.T) { testPartitionSnapshot(builder, t) })
 }
 
-func testTransaction(builder tempStoreBuilder, t *testing.T) {
+func testPartitionTransaction(builder tempStoreBuilder, t *testing.T) {
 	t.Run("NewRevision", func(t *testing.T) { testTransactionNewRevision(builder, t) })
 	t.Run("Compact", func(t *testing.T) { testTransactionCompact(builder, t) })
 }
 
-func testView(builder tempStoreBuilder, t *testing.T) {
+func testPartitionView(builder tempStoreBuilder, t *testing.T) {
 	t.Run("Keys", func(t *testing.T) { testViewKeys(builder, t) })
 	t.Run("Changes", func(t *testing.T) { testViewChanges(builder, t) })
 	t.Run("Revision", func(t *testing.T) { testViewRevision(builder, t) })
@@ -579,15 +575,6 @@ func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {
 	}
 }
 
-func testPartitionMetadata(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testPartitionTransaction(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testPartitionView(builder tempStoreBuilder, t *testing.T) {
-}
-
 func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 }
 
@@ -595,6 +582,62 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
+	testCases := map[string]struct {
+		revisions storeChangeset
+	}{
+		"partition-that-exists": {
+			revisions: storeChangeset{
+				"a": {
+					revisions: []revisionChangeset{
+						{
+							changes: map[string][]byte{
+								"key1": []byte("aaa"),
+								"key2": []byte("bbb"),
+								"key3": []byte("ccc"),
+							},
+							commit: true,
+						},
+						{
+							changes: map[string][]byte{
+								"key3": []byte("ddd"),
+								"key4": []byte("eee"),
+								"key5": []byte("fff"),
+							},
+							commit: true,
+						},
+						{
+							changes: map[string][]byte{
+								"key2": nil,
+								"key4": nil,
+							},
+							commit: true,
+						},
+					},
+					metadata: []byte{4, 5, 6},
+				},
+				"b": {
+					revisions: []revisionChangeset{},
+					metadata:  []byte{7, 8, 9},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			store := builder(t, testCase.revisions)
+
+			//defer store.Close()
+
+			expectedFinalState := testCase.revisions.compile()
+
+			diff := cmp.Diff(expectedFinalState, getStore(t, store))
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }
 
 func testTransactionCompact(builder tempStoreBuilder, t *testing.T) {

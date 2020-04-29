@@ -1,7 +1,6 @@
 package kv
 
 import (
-	"bytes"
 	"errors"
 	"io"
 )
@@ -257,6 +256,43 @@ func (nsTxn *namespacedTxn) key(key []byte) []byte {
 	return k
 }
 
+func (nsTxn *namespacedTxn) rangeCursorMin(key []byte) []byte {
+	if key == nil {
+		// needs to match all keys starting with
+		// the prefix nsTxn.ns.
+		k := make([]byte, 0, len(nsTxn.ns)+1)
+		k = append(k, nsTxn.ns...)
+		k = append(k, 0)
+
+		return k
+	}
+
+	return nsTxn.key(key)
+}
+
+func (nsTxn *namespacedTxn) rangeCursorMax(key []byte) []byte {
+	k := nsTxn.key(key)
+
+	carry := true
+
+	for i := len(k) - 1; i >= 0 && carry; i-- {
+		if k[i] < 0xff {
+			carry = false
+		}
+
+		k[i]++
+	}
+
+	// carry will only be true if all elements of k
+	// were equal to 0xff. The range should just go
+	// all the way to the end of the real key range.
+	if carry {
+		return nil
+	}
+
+	return k
+}
+
 func (nsTxn *namespacedTxn) Put(key, value []byte) error {
 	return nsTxn.txn.Put(nsTxn.key(key), value)
 }
@@ -282,15 +318,7 @@ func (nsTxn *namespacedTxn) Keys(min, max []byte, order SortOrder) (Iterator, er
 		order = SortOrderAsc
 	}
 
-	if order != SortOrderAsc || max != nil {
-		max = nsTxn.key(max)
-	}
-
-	if order != SortOrderDesc || min != nil {
-		min = nsTxn.key(min)
-	}
-
-	iterator, err := nsTxn.txn.Keys(min, max, order)
+	iterator, err := nsTxn.txn.Keys(nsTxn.rangeCursorMin(min), nsTxn.rangeCursorMax(max), order)
 
 	if err != nil {
 		return nil, err
@@ -309,54 +337,33 @@ func (nsTxn *namespacedTxn) Rollback() error {
 
 type namespacedIterator struct {
 	iterator Iterator
-	done     bool
 	key      []byte
-	value    []byte
 	ns       []byte
-	err      error
 }
 
 func (nsCursor *namespacedIterator) Next() bool {
-	if nsCursor.done {
-		return false
-	}
-
 	if !nsCursor.iterator.Next() {
-		nsCursor.done = true
-		nsCursor.err = nsCursor.iterator.Error()
-		return false
-	}
+		nsCursor.key = nil
 
-	if !bytes.HasPrefix(nsCursor.iterator.Key(), nsCursor.ns) {
-		nsCursor.done = true
 		return false
 	}
 
 	// strip the namespace prefix
 	nsCursor.key = nsCursor.iterator.Key()[len(nsCursor.ns):]
-	nsCursor.value = nsCursor.iterator.Value()
 
 	return true
 }
 
 func (nsCursor *namespacedIterator) Key() []byte {
-	if nsCursor.done {
-		return nil
-	}
-
 	return nsCursor.key
 }
 
 func (nsCursor *namespacedIterator) Value() []byte {
-	if nsCursor.done {
-		return nil
-	}
-
-	return nsCursor.value
+	return nsCursor.iterator.Value()
 }
 
 func (nsCursor *namespacedIterator) Error() error {
-	return nsCursor.err
+	return nsCursor.iterator.Error()
 }
 
 // Namespace ensures that all keys referenced within a transaction

@@ -65,7 +65,7 @@ func (k revisionsKey) revision() (int64, error) {
 
 func (k revisionsKey) key() ([]byte, error) {
 	if len(k) < 9 {
-		return nil, fmt.Errorf("buffer is not long enough to contain a key")
+		return nil, nil
 	}
 
 	return k[9:], nil
@@ -113,7 +113,7 @@ func (k keysKey) revision() (int64, error) {
 		return 0, fmt.Errorf("buffer is not long enough to contain a revision number")
 	}
 
-	return bytesToInt64(k[len(k)-9:]), nil
+	return bytesToInt64(k[len(k)-8:]), nil
 }
 
 func (k keysKey) key() ([]byte, error) {
@@ -121,10 +121,30 @@ func (k keysKey) key() ([]byte, error) {
 		return nil, fmt.Errorf("buffer is not long enough to contain a key")
 	}
 
-	return k[0 : len(k)-9], nil
+	return k[:len(k)-9], nil
 }
 
 type keysValue []byte
+
+func newKeysValue(value []byte) []byte {
+	if value == nil {
+		return []byte{}
+	}
+
+	v := make([]byte, len(value)+1)
+	v[0] = 0
+	copy(v[1:], value)
+
+	return v
+}
+
+func (v keysValue) value() []byte {
+	if len(v) == 0 {
+		return nil
+	}
+
+	return v[1:]
+}
 
 // New creates a new mvcc store
 func New(kvStore kv.Store) Store {
@@ -184,7 +204,7 @@ func (partition *partition) newestRevision(transaction kv.Transaction) (int64, e
 
 	if !iter.next() {
 		if iter.error() != nil {
-			return 0, fmt.Errorf("iteration error: %s", err.Error())
+			return 0, fmt.Errorf("iteration error: %s", iter.error().Error())
 		}
 
 		return 0, nil
@@ -202,7 +222,7 @@ func (partition *partition) oldestRevision(transaction kv.Transaction) (int64, e
 
 	if !iter.next() {
 		if iter.error() != nil {
-			return 0, fmt.Errorf("iteration error: %s", err.Error())
+			return 0, fmt.Errorf("iteration error: %s", iter.error().Error())
 		}
 
 		return 0, nil
@@ -417,12 +437,12 @@ type revision struct {
 
 // Put implements Revision.Put
 func (revision *revision) Put(key []byte, value []byte) error {
-	return nil
+	return revision.partition.keysNamespace(revision.txn).Put(newKeysKey(key, revision.revision), newKeysValue(value))
 }
 
 // Delete implements Revision.Delete
 func (revision *revision) Delete(key []byte) error {
-	return nil
+	return revision.partition.keysNamespace(revision.txn).Put(newKeysKey(key, revision.revision), newKeysValue(nil))
 }
 
 type view struct {
@@ -433,7 +453,7 @@ type view struct {
 
 // Keys implements View.Keys
 func (view *view) Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV, error) {
-	iter, err := newViewRevisionsIterator(view.txn, min, max, view.revision, order)
+	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), min, max, view.revision, order)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
@@ -596,7 +616,7 @@ func (iter *mvccIterator) revision() int64 {
 }
 
 func (iter *mvccIterator) error() error {
-	return nil
+	return iter.err
 }
 
 type revisionsCursor struct {
@@ -724,7 +744,7 @@ func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order
 				return k, rev, nil
 			},
 			parseValue: func(value []byte) ([]byte, error) {
-				return value, nil
+				return keysValue(value).value(), nil
 			},
 		},
 	}, nil
@@ -752,12 +772,8 @@ func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revisi
 	return &viewRevisionKeysIterator{keysIterator: *keysIterator, viewRevision: revision}, nil
 }
 
-// return the highest revision of each key whose revision <= iter.viewRevision
-func (iter *viewRevisionKeysIterator) next() bool {
-	if iter.k == nil {
-		return false
-	}
-
+// return the highest revision of the current key whose revision <= iter.viewRevision
+func (iter *viewRevisionKeysIterator) highestRevision() bool {
 	iter.currentKey = iter.k
 	iter.currentRev = iter.rev
 	iter.currentValue = iter.v
@@ -768,6 +784,23 @@ func (iter *viewRevisionKeysIterator) next() bool {
 			iter.currentRev = iter.rev
 			iter.currentValue = iter.v
 		}
+	}
+
+	return !done
+}
+
+// return the highest revision of each key whose revision <= iter.viewRevision
+func (iter *viewRevisionKeysIterator) next() bool {
+	if iter.k == nil {
+		return false
+	}
+
+	done := false
+
+	// skips keys that don't have a revision <= iter.viewRevision
+	// and keys whose most recent revision is "key deleted"
+	for done = !iter.highestRevision(); !done && (iter.currentRev > iter.viewRevision || iter.currentValue == nil); done = !iter.highestRevision() {
+		return false
 	}
 
 	return !done
