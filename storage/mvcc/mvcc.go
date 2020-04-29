@@ -437,11 +437,19 @@ type revision struct {
 
 // Put implements Revision.Put
 func (revision *revision) Put(key []byte, value []byte) error {
+	if err := revision.partition.revisionsNamespace(revision.txn).Put(newRevisionsKey(revision.revision, key), newRevisionsValue(value)); err != nil {
+		return err
+	}
+
 	return revision.partition.keysNamespace(revision.txn).Put(newKeysKey(key, revision.revision), newKeysValue(value))
 }
 
 // Delete implements Revision.Delete
 func (revision *revision) Delete(key []byte) error {
+	if err := revision.partition.revisionsNamespace(revision.txn).Put(newRevisionsKey(revision.revision, key), newRevisionsValue(nil)); err != nil {
+		return err
+	}
+
 	return revision.partition.keysNamespace(revision.txn).Put(newKeysKey(key, revision.revision), newKeysValue(nil))
 }
 
@@ -511,7 +519,7 @@ func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
 
 	// Skip to the start key
 	done := false
-	for ; !done && bytes.Compare(iter.key(), min) < 0; done = !iter.next() {
+	for iter.next(); !done && bytes.Compare(iter.key(), min) < 0; done = !iter.next() {
 	}
 
 	if iter.error() != nil {
