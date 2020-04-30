@@ -87,7 +87,8 @@ var _ kv.RootStore = (*RootStore)(nil)
 // RootStore implements kv.RootStore on top of a single
 // bbolt store.
 type RootStore struct {
-	db *bolt.DB
+	db   *bolt.DB
+	path string
 }
 
 // NewRootStore creates a new bbolt root store
@@ -109,7 +110,8 @@ func NewRootStore(config RootStoreConfig) (*RootStore, error) {
 	}
 
 	return &RootStore{
-		db: db,
+		db:   db,
+		path: config.Path,
 	}, nil
 }
 
@@ -129,7 +131,7 @@ func (rootStore *RootStore) Delete() error {
 		return fmt.Errorf("could not close root store: %s", err.Error())
 	}
 
-	if err := os.RemoveAll(rootStore.db.Path()); err != nil {
+	if err := os.Remove(rootStore.path); err != nil {
 		return fmt.Errorf("could not remove directory: %s", err.Error())
 	}
 
@@ -221,7 +223,11 @@ func (store *Store) Name() []byte {
 
 // Create implements Store.Create
 func (store *Store) Create() error {
-	return store.rootStore.db.Update(func(txn *bolt.Tx) error {
+	err := store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		if len(store.name) == 0 {
+			return fmt.Errorf("store name cannot be nil or empty")
+		}
+
 		stores, err := store.rootStore.storesBucket(txn)
 
 		if err != nil {
@@ -236,11 +242,21 @@ func (store *Store) Create() error {
 
 		return nil
 	})
+
+	if err == bolt.ErrDatabaseNotOpen {
+		return kv.ErrClosed
+	}
+
+	return err
 }
 
 // Delete implements Store.Delete
 func (store *Store) Delete() error {
-	return store.rootStore.db.Update(func(txn *bolt.Tx) error {
+	err := store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		if len(store.name) == 0 {
+			return fmt.Errorf("store name cannot be nil or empty")
+		}
+
 		stores, err := store.rootStore.storesBucket(txn)
 
 		if err != nil {
@@ -257,13 +273,23 @@ func (store *Store) Delete() error {
 
 		return nil
 	})
+
+	if err == bolt.ErrDatabaseNotOpen {
+		return kv.ErrClosed
+	}
+
+	return err
 }
 
 // Partitions implements Store.Partitions
 func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
 	partitions := [][]byte{}
 
-	if err := store.rootStore.db.View(func(txn *bolt.Tx) error {
+	err := store.rootStore.db.View(func(txn *bolt.Tx) error {
+		if len(store.name) == 0 {
+			return fmt.Errorf("store name cannot be nil or empty")
+		}
+
 		partBucket, err := store.partitionsBucket(txn)
 
 		if err != nil {
@@ -286,7 +312,11 @@ func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
 		}
 
 		return nil
-	}); err != nil {
+	})
+
+	if err == bolt.ErrDatabaseNotOpen {
+		return nil, kv.ErrClosed
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -364,8 +394,16 @@ func (partition *Partition) purge(transaction kv.Transaction) error {
 func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv.Transaction, error) {
 	txn, err := partition.store.rootStore.db.Begin(writable)
 
-	if err != nil {
+	if err == bolt.ErrDatabaseNotOpen {
+		return nil, kv.ErrClosed
+	} else if err != nil {
 		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
+	}
+
+	if len(partition.store.name) == 0 || len(partition.name) == 0 {
+		txn.Rollback()
+
+		return nil, fmt.Errorf("neither store name nor partition name can be nil or empty")
 	}
 
 	partBucket, err := partition.store.partitionsBucket(txn)
@@ -436,7 +474,11 @@ func (partition *Partition) Name() []byte {
 
 // Create implements Partition.Create
 func (partition *Partition) Create(metadata []byte) error {
-	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
+	err := partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		if len(partition.store.name) == 0 || len(partition.name) == 0 {
+			return fmt.Errorf("neither store name nor partition name can be nil or empty")
+		}
+
 		partitionBucket, exists, err := partition.ensureBuckets(txn)
 
 		if err != nil {
@@ -455,11 +497,21 @@ func (partition *Partition) Create(metadata []byte) error {
 
 		return nil
 	})
+
+	if err == bolt.ErrDatabaseNotOpen {
+		return kv.ErrClosed
+	}
+
+	return err
 }
 
 // Delete implements Partition.Delete
 func (partition *Partition) Delete() error {
-	return partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
+	err := partition.store.rootStore.db.Update(func(txn *bolt.Tx) error {
+		if len(partition.store.name) == 0 || len(partition.name) == 0 {
+			return fmt.Errorf("neither store name nor partition name can be nil or empty")
+		}
+
 		partBucket, err := partition.store.partitionsBucket(txn)
 
 		if err != nil {
@@ -478,14 +530,28 @@ func (partition *Partition) Delete() error {
 
 		return nil
 	})
+
+	if err == bolt.ErrDatabaseNotOpen {
+		return kv.ErrClosed
+	}
+
+	return err
 }
 
 // Begin implements Partition.Begin
 func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
 	txn, err := partition.store.rootStore.db.Begin(writable)
 
-	if err != nil {
+	if err == bolt.ErrDatabaseNotOpen {
+		return nil, kv.ErrClosed
+	} else if err != nil {
 		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
+	}
+
+	if len(partition.store.name) == 0 || len(partition.name) == 0 {
+		txn.Rollback()
+
+		return nil, fmt.Errorf("neither store name nor partition name can be nil or empty")
 	}
 
 	partitionBucket, err := partition.bucket(txn)
@@ -536,6 +602,14 @@ func (transaction *Transaction) metaBucket() (*bolt.Bucket, error) {
 
 // Put implements Transaction.Put
 func (transaction *Transaction) Put(key, value []byte) error {
+	if len(key) == 0 {
+		return fmt.Errorf("neither key nor value can be empty or nil")
+	}
+
+	if value == nil {
+		return fmt.Errorf("value cannot be nil")
+	}
+
 	bucket, err := transaction.kvBucket()
 
 	if err != nil {
@@ -547,6 +621,10 @@ func (transaction *Transaction) Put(key, value []byte) error {
 
 // Get implements Transaction.Get
 func (transaction *Transaction) Get(key []byte) ([]byte, error) {
+	if len(key) == 0 {
+		return nil, fmt.Errorf("key cannot be empty or nil")
+	}
+
 	bucket, err := transaction.kvBucket()
 
 	if err != nil {
@@ -558,6 +636,10 @@ func (transaction *Transaction) Get(key []byte) ([]byte, error) {
 
 // Delete implements Transaction.Delete
 func (transaction *Transaction) Delete(key []byte) error {
+	if len(key) == 0 {
+		return fmt.Errorf("key cannot be empty or nil")
+	}
+
 	bucket, err := transaction.kvBucket()
 
 	if err != nil {
@@ -625,20 +707,29 @@ func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.It
 			return k, v
 		}
 
+		var k []byte
+		var v []byte
+
 		if order == kv.SortOrderDesc {
 			if max == nil {
-				return cursor.Last()
+				k, v = cursor.Last()
+			} else {
+				cursor.Seek(max)
+				k, v = cursor.Prev()
 			}
-
-			cursor.Seek(max)
-			return cursor.Prev()
+		} else {
+			if min == nil {
+				k, v = cursor.First()
+			} else {
+				k, v = cursor.Seek(min)
+			}
 		}
 
-		if min == nil {
-			return cursor.First()
+		if end(k) {
+			k, v = nil, nil
 		}
 
-		return cursor.Seek(min)
+		return k, v
 	}
 
 	return iter, nil

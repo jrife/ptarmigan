@@ -2,6 +2,7 @@ package kv_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -11,6 +12,8 @@ import (
 	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/plugins"
 )
+
+var errAny = errors.New("any error")
 
 type rootStoreModel map[string]storeModel
 type storeModel map[string]partitionModel
@@ -404,6 +407,7 @@ func testStoreCreate(builder tempStoreBuilder, t *testing.T) {
 		initialState rootStoreModel
 		finalState   rootStoreModel
 		name         []byte
+		err          error
 	}{
 		"new-store": {
 			initialState: rootStoreModel{
@@ -442,6 +446,34 @@ func testStoreCreate(builder tempStoreBuilder, t *testing.T) {
 			},
 			name: []byte("store2"),
 		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			name: nil,
+			err:  errAny,
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			name: []byte{},
+			err:  errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -449,8 +481,14 @@ func testStoreCreate(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			if err := rootStore.Store(testCase.name).Create(); err != nil {
-				t.Fatalf("expected err to be nil, got %#v", err)
+			err := rootStore.Store(testCase.name).Create()
+
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected err to be %#v, got %#v", testCase.err, err)
 			}
 
 			finalState, err := rootStoreToModel(rootStore)
@@ -464,6 +502,14 @@ func testStoreCreate(builder tempStoreBuilder, t *testing.T) {
 			if diff != "" {
 				t.Fatalf(diff)
 			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if err := rootStore.Store(testCase.name).Create(); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
+			}
 		})
 	}
 }
@@ -472,6 +518,7 @@ func testStoreDelete(builder tempStoreBuilder, t *testing.T) {
 	testCases := map[string]struct {
 		initialState rootStoreModel
 		finalState   rootStoreModel
+		err          error
 		name         []byte
 	}{
 		"not-existing-store": {
@@ -508,6 +555,34 @@ func testStoreDelete(builder tempStoreBuilder, t *testing.T) {
 			},
 			name: []byte("store2"),
 		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			name: nil,
+			err:  errAny,
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {},
+				},
+			},
+			name: []byte{},
+			err:  errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -515,8 +590,14 @@ func testStoreDelete(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			if err := rootStore.Store(testCase.name).Delete(); err != nil {
-				t.Fatalf("expected err to be nil, got %#v", err)
+			err := rootStore.Store(testCase.name).Delete()
+
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected err to be %#v, got %#v", testCase.err, err)
 			}
 
 			finalState, err := rootStoreToModel(rootStore)
@@ -529,6 +610,14 @@ func testStoreDelete(builder tempStoreBuilder, t *testing.T) {
 
 			if diff != "" {
 				t.Fatalf(diff)
+			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if err := rootStore.Store(testCase.name).Delete(); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
 	}
@@ -674,6 +763,78 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 			err:        kv.ErrNoSuchStore,
 			partitions: nil,
 		},
+		"min=max": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store:      []byte("store1"),
+			min:        []byte("p3"),
+			max:        []byte("p3"),
+			limit:      -1,
+			err:        nil,
+			partitions: [][]byte{},
+		},
+		"min>max": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store:      []byte("store1"),
+			min:        []byte("p4"),
+			max:        []byte("p2"),
+			limit:      -1,
+			err:        nil,
+			partitions: [][]byte{},
+		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store:      nil,
+			min:        []byte("p3"),
+			max:        []byte("p3"),
+			limit:      -1,
+			err:        errAny,
+			partitions: [][]byte{},
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {},
+					"p2": {},
+					"p3": {},
+					"p4": {},
+					"p5": {},
+					"p6": {},
+				},
+			},
+			store:      []byte{},
+			min:        []byte("p3"),
+			max:        []byte("p3"),
+			limit:      -1,
+			err:        errAny,
+			partitions: [][]byte{},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -683,14 +844,28 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 
 			partitions, err := rootStore.Store(testCase.store).Partitions(testCase.min, testCase.max, testCase.limit)
 
-			if err != testCase.err {
-				t.Fatalf("expected err to be %#v, got #%v", testCase.err, err)
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected err to be %#v, got %#v", testCase.err, err)
 			}
 
-			diff := cmp.Diff(testCase.partitions, partitions)
+			if err == nil {
+				diff := cmp.Diff(testCase.partitions, partitions)
 
-			if diff != "" {
-				t.Fatalf(diff)
+				if diff != "" {
+					t.Fatalf(diff)
+				}
+			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if _, err := rootStore.Store(testCase.store).Partitions(testCase.min, testCase.max, testCase.limit); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
 	}
@@ -818,6 +993,110 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 			metadata: []byte("ok"),
 			err:      kv.ErrNoSuchStore,
 		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store:    nil,
+			name:     []byte("p1"),
+			metadata: []byte("ok"),
+			err:      errAny,
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store:    []byte{},
+			name:     []byte("p1"),
+			metadata: []byte("ok"),
+			err:      errAny,
+		},
+		"nil-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store:    []byte("store1"),
+			name:     nil,
+			metadata: []byte("ok"),
+			err:      errAny,
+		},
+		"empty-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store:    []byte("store1"),
+			name:     []byte{},
+			metadata: []byte("ok"),
+			err:      errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -827,7 +1106,11 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 
 			err := rootStore.Store(testCase.store).Partition(testCase.name).Create(testCase.metadata)
 
-			if err != testCase.err {
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
 				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
 			}
 
@@ -841,6 +1124,14 @@ func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 
 			if diff != "" {
 				t.Fatalf(diff)
+			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if err := rootStore.Store(testCase.store).Partition(testCase.name).Create(testCase.metadata); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
 	}
@@ -916,6 +1207,106 @@ func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {
 			name:  []byte("p1"),
 			err:   kv.ErrNoSuchStore,
 		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: nil,
+			name:  []byte("p1"),
+			err:   errAny,
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte{},
+			name:  []byte("p1"),
+			err:   errAny,
+		},
+		"nil-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store1"),
+			name:  nil,
+			err:   errAny,
+		},
+		"empty-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			finalState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store1"),
+			name:  []byte{},
+			err:   errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -925,7 +1316,11 @@ func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {
 
 			err := rootStore.Store(testCase.store).Partition(testCase.name).Delete()
 
-			if err != testCase.err {
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
 				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
 			}
 
@@ -940,6 +1335,14 @@ func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {
 			if diff != "" {
 				t.Fatalf(diff)
 			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if err := rootStore.Store(testCase.store).Partition(testCase.name).Delete(); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
+			}
 		})
 	}
 }
@@ -948,6 +1351,7 @@ func testPartitionBegin(builder tempStoreBuilder, t *testing.T) {
 	testCases := map[string]struct {
 		initialState rootStoreModel
 		err          error
+		writable     bool
 		store        []byte
 		name         []byte
 	}{
@@ -990,6 +1394,66 @@ func testPartitionBegin(builder tempStoreBuilder, t *testing.T) {
 			name:  []byte("p1"),
 			err:   kv.ErrNoSuchStore,
 		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: nil,
+			name:  []byte("p1"),
+			err:   errAny,
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte{},
+			name:  []byte("p1"),
+			err:   errAny,
+		},
+		"nil-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store1"),
+			name:  nil,
+			err:   errAny,
+		},
+		"empty-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store1"),
+			name:  []byte{},
+			err:   errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -997,16 +1461,28 @@ func testPartitionBegin(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			transaction, err := rootStore.Store(testCase.store).Partition(testCase.name).Begin(false)
+			transaction, err := rootStore.Store(testCase.store).Partition(testCase.name).Begin(testCase.writable)
 
-			if err != testCase.err {
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
 				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
-			} else if err != nil {
-				return
 			}
 
-			if err := transaction.Rollback(); err != nil {
-				t.Fatalf("expected err to be nil, got #%v", err)
+			if err == nil {
+				if err := transaction.Rollback(); err != nil {
+					t.Fatalf("expected err to be nil, got #%v", err)
+				}
+			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if _, err := rootStore.Store(testCase.store).Partition(testCase.name).Begin(testCase.writable); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
 	}
@@ -1058,6 +1534,66 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 			name:  []byte("p1"),
 			err:   kv.ErrNoSuchStore,
 		},
+		"nil-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: nil,
+			name:  []byte("p1"),
+			err:   errAny,
+		},
+		"empty-store-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte{},
+			name:  []byte("p1"),
+			err:   errAny,
+		},
+		"nil-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store1"),
+			name:  nil,
+			err:   errAny,
+		},
+		"empty-partition-name": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {"a": "b"},
+				},
+				"store2": {
+					"p1": {"x": "y"},
+					"p2": {"c": "d"},
+				},
+				"store3": {},
+			},
+			store: []byte("store1"),
+			name:  []byte{},
+			err:   errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -1067,14 +1603,26 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			snap, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot()
 
-			if err != testCase.err {
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
 				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
-			} else if err != nil {
-				return
 			}
 
-			if err := snap.Close(); err != nil {
-				t.Fatalf("expected err to be nil, got #%v", err)
+			if err == nil {
+				if err := snap.Close(); err != nil {
+					t.Fatalf("expected err to be nil, got #%v", err)
+				}
+			}
+
+			if err := rootStore.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if _, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
 	}
@@ -1210,6 +1758,150 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 			destPartition:   []byte("p1"),
 			err:             nil,
 		},
+		"nil-store-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "1",
+						"2": "3",
+						"4": "5",
+					},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       nil,
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p1"),
+			err:             errAny,
+		},
+		"empty-store-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "1",
+						"2": "3",
+						"4": "5",
+					},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte{},
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte("p1"),
+			err:             errAny,
+		},
+		"nil-partition-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "1",
+						"2": "3",
+						"4": "5",
+					},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store2"),
+			sourcePartition: []byte("p1"),
+			destPartition:   nil,
+			err:             errAny,
+		},
+		"empty-partition-name": {
+			initialSourceState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "1",
+						"2": "3",
+						"4": "5",
+					},
+				},
+			},
+			initialDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			finalDestState: rootStoreModel{
+				"store2": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+					},
+				},
+			},
+			sourceStore:     []byte("store1"),
+			destStore:       []byte("store2"),
+			sourcePartition: []byte("p1"),
+			destPartition:   []byte{},
+			err:             errAny,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -1229,10 +1921,12 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			err = rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap)
 
-			if err != testCase.err {
-				t.Fatalf("expected err to be %#v, got %#v", testCase.err, err)
-			} else if err != nil {
-				return
+			if testCase.err == errAny {
+				if err == nil {
+					t.Fatalf("expected err to not be nil, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected err to be #%v, got %#v", testCase.err, err)
 			}
 
 			finalState, err := rootStoreToModel(rootStoreDest)
@@ -1245,6 +1939,14 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			if diff != "" {
 				t.Fatalf(diff)
+			}
+
+			if err := rootStoreDest.Close(); err != nil {
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+
+			if err := rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap); err != kv.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
 	}
@@ -1304,8 +2006,33 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 
 	// Changes within the transaction should be observable to that transaction before commit
 	// but not to other transactions
-	rw.Put([]byte("a"), []byte("z"))
-	rw.Put([]byte("e"), []byte("f"))
+	if err := rw.Put([]byte("a"), []byte("z")); err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if err := rw.Put([]byte("e"), []byte("f")); err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if err := rw.Put(nil, []byte("f")); err == nil {
+		t.Fatalf("expected err to not be nil, got nil")
+	}
+
+	if err := rw.Put([]byte{}, []byte("f")); err == nil {
+		t.Fatalf("expected err to not be nil, got nil")
+	}
+
+	if err := rw.Put([]byte("a"), nil); err == nil {
+		t.Fatalf("expected err to not be nil, got nil")
+	}
+
+	if err := rw.Delete(nil); err == nil {
+		t.Fatalf("expected err to not be nil, got nil")
+	}
+
+	if err := rw.Delete([]byte{}); err == nil {
+		t.Fatalf("expected err to not be nil, got nil")
+	}
 
 	diff := cmp.Diff([][]byte{[]byte("z"), []byte("d"), []byte("f")}, getKeys(rw, [][]byte{[]byte("a"), []byte("c"), []byte("e")}))
 
@@ -1619,6 +2346,90 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 				[2][]byte{[]byte("e"), []byte("f")},
 				[2][]byte{[]byte("c"), []byte("d")},
 			},
+		},
+		"min=max asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("e"),
+			max:       []byte("e"),
+			order:     kv.SortOrderAsc,
+			err:       nil,
+			kvs:       [][2][]byte{},
+		},
+		"min>max asc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("g"),
+			max:       []byte("c"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs:       [][2][]byte{},
+		},
+		"min=max desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("e"),
+			max:       []byte("e"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs:       [][2][]byte{},
+		},
+		"min>max desc": {
+			initialState: rootStoreModel{
+				"store1": {
+					"p1": {
+						"a": "b",
+						"c": "d",
+						"e": "f",
+						"g": "h",
+						"i": "j",
+						"k": "l",
+					},
+				},
+			},
+			store:     []byte("store1"),
+			partition: []byte("p1"),
+			min:       []byte("g"),
+			max:       []byte("c"),
+			order:     kv.SortOrderDesc,
+			err:       nil,
+			kvs:       [][2][]byte{},
 		},
 	}
 

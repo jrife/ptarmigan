@@ -674,6 +674,8 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 	testCases := map[string]struct {
 		revisions storeChangeset
+		revision  revisionChangeset
+		err       error
 	}{
 		"no-compactions": {
 			revisions: storeChangeset{
