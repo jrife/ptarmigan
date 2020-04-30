@@ -400,25 +400,104 @@ func (transaction *transaction) Compact(revision int64) error {
 		return nil
 	}
 
-	revisionsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(transaction.txn), nil, &revisionsCursor{revision: revision - 1}, SortOrderAsc)
+	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
 
 	if err != nil {
-		return fmt.Errorf("could not create revisions iterator: %s", err.Error())
+		return fmt.Errorf("unable to retrieve current revision: %s", err.Error())
 	}
 
-	keysIter, err := newKeysIterator(transaction.partition.keysNamespace(transaction.txn), nil, nil, SortOrderAsc)
+	oldestRevision, err := transaction.partition.oldestRevision(transaction.txn)
 
 	if err != nil {
-		return fmt.Errorf("could not create keys iterator: %s", err.Error())
+		return fmt.Errorf("unable to retrieve oldest revision: %s", err.Error())
 	}
 
-	for revisionsIter.next() {
+	if revision == RevisionNewest {
+		revision = newestRevision
+	} else if revision <= RevisionOldest {
+		revision = oldestRevision
 	}
 
-	for keysIter.next() {
+	// it's possible that both newestRevision
+	// and oldestRevision are 0. In such cases
+	// this indicates that this partition is new
+	// and has not had any revisions written to
+	// it yet.
+	if revision == 0 {
+		return ErrNoRevisions
 	}
 
-	return nil
+	if revision > newestRevision {
+		return ErrRevisionTooHigh
+	} else if revision < oldestRevision {
+		return ErrCompacted
+	}
+
+	keysNs, revsNs, errors := transaction.compactKeys(revision)
+	keysTxn := transaction.partition.keysNamespace(transaction.txn)
+	revsTxn := transaction.partition.revisionsNamespace(transaction.txn)
+
+	for {
+		select {
+		case key := <-keysNs:
+			keysTxn.Delete(key)
+		case key := <-revsNs:
+			revsTxn.Delete(key)
+		case err := <-errors:
+			return err
+		}
+	}
+}
+
+func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-chan []byte, <-chan error) {
+	keysNs := make(chan []byte)
+	revsNs := make(chan []byte)
+	errors := make(chan error, 1)
+
+	go func() {
+		txn, err := transaction.partition.beginTxn(false)
+
+		if err != nil {
+			errors <- fmt.Errorf("could not begin transaction: %s", err.Error())
+
+			return
+		}
+
+		defer txn.Rollback()
+
+		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision - 1}, SortOrderAsc)
+
+		if err != nil {
+			errors <- fmt.Errorf("could not create revisions iterator: %s", err.Error())
+
+			return
+		}
+
+		keysIter, err := newKeysIterator(transaction.partition.keysNamespace(txn), nil, nil, SortOrderDesc)
+
+		if err != nil {
+			errors <- fmt.Errorf("could not create keys iterator: %s", err.Error())
+
+			return
+		}
+
+		for revsIter.next() {
+			revsNs <- newRevisionsKey(revsIter.revision(), revsIter.key())
+		}
+
+		for prevKey := []byte(nil); keysIter.next(); prevKey = keysIter.key() {
+			// Delete any key whose revision is < revision
+			// as long as it's not the newest revision for
+			// that key and not a tombstone.
+			if bytes.Compare(prevKey, keysIter.key()) == 0 || keysIter.value() == nil {
+				keysNs <- newKeysKey(keysIter.key(), keysIter.revision())
+			}
+		}
+
+		errors <- nil
+	}()
+
+	return keysNs, revsNs, errors
 }
 
 // Commit implements Transaction.Commit
