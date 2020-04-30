@@ -258,39 +258,14 @@ func (nsTxn *namespacedTxn) key(key []byte) []byte {
 
 func (nsTxn *namespacedTxn) rangeCursorMin(key []byte) []byte {
 	if key == nil {
-		// needs to match all keys starting with
-		// the prefix nsTxn.ns.
-		k := make([]byte, 0, len(nsTxn.ns)+1)
-		k = append(k, nsTxn.ns...)
-		k = append(k, 0)
-
-		return k
+		return PrefixRangeStart(nsTxn.ns)
 	}
 
 	return nsTxn.key(key)
 }
 
 func (nsTxn *namespacedTxn) rangeCursorMax(key []byte) []byte {
-	k := nsTxn.key(key)
-
-	carry := true
-
-	for i := len(k) - 1; i >= 0 && carry; i-- {
-		if k[i] < 0xff {
-			carry = false
-		}
-
-		k[i]++
-	}
-
-	// carry will only be true if all elements of k
-	// were equal to 0xff. The range should just go
-	// all the way to the end of the real key range.
-	if carry {
-		return nil
-	}
-
-	return k
+	return inc(nsTxn.key(key))
 }
 
 func (nsTxn *namespacedTxn) Put(key, value []byte) error {
@@ -370,4 +345,96 @@ func (nsCursor *namespacedIterator) Error() error {
 // are prefixed with the ns prefix. Can be chained.
 func Namespace(txn Transaction, ns []byte) Transaction {
 	return &namespacedTxn{txn: txn, ns: ns}
+}
+
+// Start can be used in place of the min
+// parameter of a range query to indicate
+// that there is no minimum.
+func Start() []byte {
+	return nil
+}
+
+// End can be used in place of the min
+// parameter of a range query to indicate
+// that there is no maximum.
+func End() []byte {
+	return nil
+}
+
+// Lte can be used in place of the max parameter
+// of a range query to indicate that the range
+// should include anything less than or equal
+// to this key.
+func Lte(k []byte) []byte {
+	return after(k)
+}
+
+// Lt can be used in place of the max parameter
+// of a range query to indicate that the range
+// should include anything less than this key.
+func Lt(k []byte) []byte {
+	return k
+}
+
+// Gte can be used in place of the min parameter
+// of a range query to indicate that the range
+// should include anything greater than or equal
+// to this key.
+func Gte(k []byte) []byte {
+	return k
+}
+
+// Gt can be used in place of the min parameter
+// of a range query to indicate that the range
+// should include anything greater this key.
+func Gt(k []byte) []byte {
+	return after(k)
+}
+
+// PrefixRangeStart can be used in place of the
+// min parameter of a range query to indicate
+// that the range should include anything that
+// has this prefix, excluding the key that
+// is exactly the prefix itself.
+func PrefixRangeStart(k []byte) []byte {
+	return after(k)
+}
+
+// PrefixRangeEnd can be used in place of the
+// max parameter of a range query to indicate
+// that the range should include anything that
+// has this prefix, excluding the key that
+// is exactly the prefix itself.
+func PrefixRangeEnd(k []byte) []byte {
+	return inc(k)
+}
+
+func after(k []byte) []byte {
+	afterK := make([]byte, len(k)+1)
+
+	copy(afterK, k)
+	afterK[len(k)] = 0
+
+	return afterK
+}
+
+func inc(k []byte) []byte {
+	carry := true
+
+	for i := len(k) - 1; i >= 0 && carry; i-- {
+		if k[i] < 0xff {
+			carry = false
+		}
+
+		k[i]++
+	}
+
+	// carry will only be true if all elements of k
+	// were equal to 0xff. The range should just go
+	// all the way to the end of the real key range.
+	if carry {
+		return nil
+	}
+
+	return k
 }

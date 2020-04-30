@@ -1,7 +1,6 @@
-package mvcc
+package flock
 
 import (
-	"context"
 	"errors"
 	"io"
 
@@ -47,20 +46,27 @@ var (
 	ErrClosed = errors.New("The store was closed")
 )
 
-// IStore describes a storage interface
+var (
+	leasesNs      = []byte{0}
+	raftStatusNs  = []byte{1}
+	kvsNs         = []byte{2}
+	raftStatusKey = []byte{0}
+)
+
+// Store describes a storage interface
 // for a flock node.
-type IStore interface {
+type Store interface {
 	// ReplicaStores lets a consumer iterate through
 	// all the replica stores for this node. Replica
 	// stores are returned in order by their name.
-	// Returns a list of IReplicaStores whose name is
+	// Returns a list of ReplicaStores whose name is
 	// > start up to the specified limit.
-	ReplicaStores(ctx context.Context, start string, limit int) ([]IReplicaStore, error)
+	ReplicaStores(start string, limit int) ([]string, error)
 	// ReplicaStore returns a handle to the replica
 	// store with the given name. Calling methods on
 	// the handle will return ErrNoSuchReplicaStore
 	// if it hasn't been created.
-	ReplicaStore(name string) IReplicaStore
+	ReplicaStore(name string) ReplicaStore
 	// Close closes the store. Function calls to any I/O objects
 	// descended from this store occurring after Close returns
 	// must have no effect and return ErrClosed. Close must not
@@ -76,8 +82,8 @@ type IStore interface {
 	Purge() error
 }
 
-// IReplicaStore describes a storage interface for a flock replica.
-type IReplicaStore interface {
+// ReplicaStore describes a storage interface for a flock replica.
+type ReplicaStore interface {
 	// Name returns the name of this replica store
 	Name() string
 	// Create initializes this replica store with some metadata.
@@ -103,14 +109,14 @@ type IReplicaStore interface {
 	// revision whose changeset includes the deleted keys.
 	RevokeLease(raftStatus flockpb.RaftStatus, id int64) error
 	// Compact compacts the history up to this revision.
-	Compact(raftStatus flockpb.RaftStatus, revision int64) error
+	Compact(revision int64) error
 	// View returns a view of the store at some revision. It returns
 	// ErrCompacted if the requested revision is too old and has been
 	// compacted away. It returns ErrRevisionTooHigh if the requested
 	// revision is higher than the newest revision.
-	View(revision int64) (IView, error)
+	View(revision int64) (View, error)
 	// NewRevision lets a consumer build a new revision.
-	NewRevision(raftStatus flockpb.RaftStatus) (IRevision, error)
+	NewRevision(raftStatus flockpb.RaftStatus) (Revision, error)
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot.
 	ApplySnapshot(snap io.Reader) error
@@ -121,10 +127,10 @@ type IReplicaStore interface {
 	Snapshot() (io.Reader, error)
 }
 
-// IView describes a view of a replica store
+// View describes a view of a replica store
 // at some revision. It lets a consumer read
 // the state of the keys at that revision.
-type IView interface {
+type View interface {
 	// Query executes a query on this view (ignores revision in request)
 	Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, error)
 	// Get reads a key at a revision. It returns ErrNotFound if the key
@@ -138,11 +144,13 @@ type IView interface {
 	// to limit. In other words, start acts as a cursor and limit
 	// limits the size of the resulting events.
 	Changes(start []byte, limit int) ([]flockpb.Event, error)
+	// Close must be called when a consumer is done with the view
+	Close() error
 }
 
-// IRevision lets a consumer build a new revision
-type IRevision interface {
-	IView
+// Revision lets a consumer build a new revision
+type Revision interface {
+	View
 	// Put creates or updates a key.
 	Put(key []byte, value []byte) error
 	// Delete deletes a key. If the key doesn't
@@ -151,7 +159,7 @@ type IRevision interface {
 	// Commit commits this revision, making its
 	// effects visible.
 	Commit() error
-	// Abort discards this revision. Its effects
+	// Rollback discards this revision. Its effects
 	// will not be visible to any observers.
-	Abort() error
+	Rollback() error
 }

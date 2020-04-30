@@ -176,6 +176,11 @@ func (store *store) Close() error {
 	return nil
 }
 
+// Close implements Store.Delete
+func (store *store) Delete() error {
+	return nil
+}
+
 // Partitions implements Store.Partitions
 func (store *store) Partitions(min []byte, max []byte, limit int) ([][]byte, error) {
 	return store.kvStore.Partitions(min, max, limit)

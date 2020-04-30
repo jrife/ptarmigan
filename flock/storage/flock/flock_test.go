@@ -1,4 +1,4 @@
-package mvcc_test
+package flock_test
 
 import (
 	"bytes"

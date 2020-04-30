@@ -50,6 +50,8 @@ type Store interface {
 	Open() error
 	// Close store
 	Close() error
+	// Delete store
+	Delete() error
 	// Partitions returns up to limit partition names in
 	// lexocographical order where names are >= min and < max. min = nil
 	// means the lowest name. max = nil means the highest name. limit < 0
@@ -152,4 +154,12 @@ type View interface {
 	Revision() int64
 	// Close must be called when a user is done with a view.
 	Close() error
+}
+
+func NamespaceView(view View, ns []byte) View {
+	return nil
+}
+
+func NamespaceRevision(revision Revision, ns []byte) Revision {
+	return nil
 }
