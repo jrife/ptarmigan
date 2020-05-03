@@ -44,6 +44,9 @@ var (
 	// ErrClosed is returned when an operation is attempted
 	// after the store is closed.
 	ErrClosed = errors.New("The store was closed")
+	// ErrKeyNotFound is returned by get when the requested key is
+	// not found
+	ErrKeyNotFound = errors.New("Key not found")
 )
 
 var (
@@ -82,8 +85,28 @@ type Store interface {
 	Purge() error
 }
 
+// RaftCommandStore contains functions that apply incoming raft
+// commands to the store. It is up to the caller to ensure only
+// one thread at a time call these functions, as raft commands
+// must be applied in the order indicated by their index.
+type RaftCommandStore interface {
+	// RaftStatus returns the latest raft status for this store.
+	// Each update operation passes in a raft status containing the raft
+	// index and raft term associated with that update.
+	RaftStatus() (flockpb.RaftStatus, error)
+	// CreateLease create a lease with the given TTL in this replica store.
+	CreateLease(raftStatus flockpb.RaftStatus, ttl int64) (flockpb.Lease, error)
+	// RevokeLease deletes the lease with this ID from the replica store
+	// and deletes any keys associated with this lease. It creates a new
+	// revision whose changeset includes the deleted keys.
+	RevokeLease(raftStatus flockpb.RaftStatus, id int64) error
+	// NewRevision lets a consumer build a new revision.
+	NewRevision(raftStatus flockpb.RaftStatus) (Revision, error)
+}
+
 // ReplicaStore describes a storage interface for a flock replica.
 type ReplicaStore interface {
+	RaftCommandStore
 	// Name returns the name of this replica store
 	Name() string
 	// Create initializes this replica store with some metadata.
@@ -94,20 +117,10 @@ type ReplicaStore interface {
 	Delete() error
 	// Metadata retrieves the metadata associated with this replica store
 	Metadata() ([]byte, error)
-	// RaftStatus returns the latest raft status for this replica store.
-	// Each update operation passes in a raft status containing the raft
-	// index and raft term associated with that update.
-	RaftStatus() (flockpb.RaftStatus, error)
-	// CreateLease create a lease with the given TTL in this replica store.
-	CreateLease(raftStatus flockpb.RaftStatus, ttl int64) (flockpb.Lease, error)
 	// Leases lists all leases stored in this replica store
 	Leases() ([]flockpb.Lease, error)
 	// GetLease reads the lease with this ID out of the replica store
 	GetLease(id int64) (flockpb.Lease, error)
-	// RevokeLease deletes the lease with this ID from the replica store
-	// and deletes any keys associated with this lease. It creates a new
-	// revision whose changeset includes the deleted keys.
-	RevokeLease(raftStatus flockpb.RaftStatus, id int64) error
 	// Compact compacts the history up to this revision.
 	Compact(revision int64) error
 	// View returns a view of the store at some revision. It returns
@@ -115,8 +128,6 @@ type ReplicaStore interface {
 	// compacted away. It returns ErrRevisionTooHigh if the requested
 	// revision is higher than the newest revision.
 	View(revision int64) (View, error)
-	// NewRevision lets a consumer build a new revision.
-	NewRevision(raftStatus flockpb.RaftStatus) (Revision, error)
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot.
 	ApplySnapshot(snap io.Reader) error
@@ -143,7 +154,7 @@ type View interface {
 	// byte order of their key. Returns events whose key is > start up
 	// to limit. In other words, start acts as a cursor and limit
 	// limits the size of the resulting events.
-	Changes(start []byte, limit int) ([]flockpb.Event, error)
+	Changes(start []byte, limit int, includePrev bool) ([]flockpb.Event, error)
 	// Close must be called when a consumer is done with the view
 	Close() error
 }
@@ -152,10 +163,10 @@ type View interface {
 type Revision interface {
 	View
 	// Put creates or updates a key.
-	Put(key []byte, value []byte) error
+	Put(req flockpb.KVPutRequest) (flockpb.KVPutResponse, error)
 	// Delete deletes a key. If the key doesn't
 	// exist no error is returned.
-	Delete(key []byte) error
+	Delete(req flockpb.KVDeleteRequest) (flockpb.KVDeleteResponse, error)
 	// Commit commits this revision, making its
 	// effects visible.
 	Commit() error

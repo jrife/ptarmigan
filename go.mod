@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/coreos/etcd v3.3.18+incompatible
+	github.com/emirpasic/gods v1.12.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.4
 	github.com/google/go-cmp v0.4.0

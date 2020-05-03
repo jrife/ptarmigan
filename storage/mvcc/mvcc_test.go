@@ -318,14 +318,14 @@ func getAllKVs(t *testing.T, revision mvcc.View) map[string][]byte {
 func getAllChanges(t *testing.T, revision mvcc.View) map[string][]byte {
 	result := map[string][]byte{}
 
-	kvs, err := revision.Changes(nil, nil, -1)
+	diffs, err := revision.Changes(nil, nil, -1, false)
 
 	if err != nil {
 		t.Fatalf("error while trying to read changes from revision %d: %s", revision.Revision(), err.Error())
 	}
 
-	for _, kv := range kvs {
-		result[string(kv[0])] = kv[1]
+	for _, diff := range diffs {
+		result[string(diff[0])] = diff[1]
 	}
 
 	return result

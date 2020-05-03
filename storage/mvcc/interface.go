@@ -41,7 +41,15 @@ var (
 )
 
 // KV is a key-value pair
+// [0] is the key
+// [1] is the value
 type KV [2][]byte
+
+// Diff is a tuple of key-value pairs
+// [0] is the key
+// [1] is the current state
+// [2] is the previous state
+type Diff [3][]byte
 
 // Store is the interface for a partitioned MVCC
 // store
@@ -144,22 +152,57 @@ type View interface {
 	// = SortOrderAsc means return keys in lexicographically increasing order
 	// sort = SortOrderDesc means return keys in lexicographically decreasing
 	// order.
-	Keys(min []byte, max []byte, limit int, sort SortOrder) ([]KV, error)
+	Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV, error)
+	// KeysIterator is like Keys but it returns an iterator that lets a consumer
+	// scan key by key. This is preferable if the consumer doesn't want to buffer
+	// lots of keys in memory.
+	KeysIterator(min []byte, max []byte, order SortOrder) (Iterator, error)
 	// Changes returns up to limit keys changed in this revision
 	// lexocographically increasing order where keys are >= min and < max.
 	// min = nil means the lowest key max = nil means the highest key.
 	// limit < 0 means no limit.
-	Changes(min []byte, max []byte, limit int) ([]KV, error)
+	Changes(min []byte, max []byte, limit int, includePrev bool) ([]Diff, error)
 	// Return the revision for this view.
 	Revision() int64
 	// Close must be called when a user is done with a view.
 	Close() error
 }
 
+// Iterator lets a consumer
+// iterate through keys in a range
+// one by one.
+type Iterator interface {
+	// Next advances the iterator. It must
+	// be called once at the start to advance
+	// to the first key-value pair. It returns
+	// true if there is a key-value pair available
+	// or false otherwise. It may return false in
+	// case of an iteration error. Error() will return
+	// an error if this is the case and must be checked
+	// after Next() returns false.
+	Next() bool
+	// Key returns the key at the current position
+	// or nil if iteration is done.
+	Key() []byte
+	// Value returns the value at the current position
+	// or nil if iteration is done.
+	Value() []byte
+	// Error returns the error that occurred, if any
+	Error() error
+}
+
 func NamespaceView(view View, ns []byte) View {
+	if len(ns) == 0 {
+		return view
+	}
+
 	return nil
 }
 
 func NamespaceRevision(revision Revision, ns []byte) Revision {
+	if len(ns) == 0 {
+		return revision
+	}
+
 	return nil
 }

@@ -570,8 +570,19 @@ func (view *view) Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV
 	return kvs, nil
 }
 
+// KeysIterator implements View.KeysIterator
+func (view *view) KeysIterator(min []byte, max []byte, order SortOrder) (Iterator, error) {
+	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), min, max, view.revision, order)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
+	}
+
+	return iter, nil
+}
+
 // Changes implements View.Changes
-func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
+func (view *view) Changes(min []byte, max []byte, limit int, includePrev bool) ([]Diff, error) {
 	iter, err := newRevisionsIterator(view.partition.revisionsNamespace(view.txn), &revisionsCursor{revision: view.revision}, &revisionsCursor{revision: view.revision, key: max}, SortOrderAsc)
 
 	if err != nil {
@@ -593,12 +604,12 @@ func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
 		return nil, fmt.Errorf("consistency violation: the first key of each revision should be nil")
 	}
 
-	var kvs []KV
+	var diffs []Diff
 
 	if limit >= 0 {
-		kvs = make([]KV, 0, limit)
+		diffs = make([]Diff, 0, limit)
 	} else {
-		kvs = make([]KV, 0, 0)
+		diffs = make([]Diff, 0, 0)
 	}
 
 	// Skip to the start key
@@ -609,20 +620,20 @@ func (view *view) Changes(min []byte, max []byte, limit int) ([]KV, error) {
 	if iter.error() != nil {
 		return nil, fmt.Errorf("iteration error: %s", err.Error())
 	} else if done {
-		return kvs, nil
+		return diffs, nil
 	}
 
-	kvs = append(kvs, KV{iter.key(), iter.value()})
+	diffs = append(diffs, Diff{iter.key(), iter.value(), nil})
 
-	for iter.next() && (limit < 0 || len(kvs) < limit) {
-		kvs = append(kvs, KV{iter.key(), iter.value()})
+	for iter.next() && (limit < 0 || len(diffs) < limit) {
+		diffs = append(diffs, Diff{iter.key(), iter.value(), nil})
 	}
 
 	if iter.error() != nil {
 		return nil, fmt.Errorf("iteration error: %s", err.Error())
 	}
 
-	return kvs, nil
+	return diffs, nil
 }
 
 // Revision implements View.Revision
@@ -842,6 +853,8 @@ func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order
 	}, nil
 }
 
+var _ Iterator = (*viewRevisionKeysIterator)(nil)
+
 // Like keysIterator but it skips anything
 type viewRevisionKeysIterator struct {
 	keysIterator
@@ -898,6 +911,23 @@ func (iter *viewRevisionKeysIterator) next() bool {
 	}
 
 	return hasMore
+}
+
+// Some public functions to implement Iterator interface
+func (iter *viewRevisionKeysIterator) Next() bool {
+	return iter.next()
+}
+
+func (iter *viewRevisionKeysIterator) Key() []byte {
+	return iter.key()
+}
+
+func (iter *viewRevisionKeysIterator) Value() []byte {
+	return iter.value()
+}
+
+func (iter *viewRevisionKeysIterator) Error() error {
+	return iter.error()
 }
 
 func (iter *viewRevisionKeysIterator) key() []byte {
