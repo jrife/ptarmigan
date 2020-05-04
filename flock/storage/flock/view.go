@@ -120,7 +120,7 @@ func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, 
 			return flockpb.KVQueryResponse{}, fmt.Errorf("could not create selection iterator: %s", err)
 		}
 
-		iter = mvcc.FilterMarshaled(iter, filter(query.Selection))
+		iter = mvcc.SortMarshaled(mvcc.FilterMarshaled(iter, filter(query.Selection)), nil, 0)
 	}
 
 	return flockpb.KVQueryResponse{}, nil
