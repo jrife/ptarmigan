@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/jrife/ptarmigan/utils/stream"
+
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
 	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/mvcc"
@@ -17,8 +19,8 @@ func sortOrder(order flockpb.KVQueryRequest_SortOrder) mvcc.SortOrder {
 	return mvcc.SortOrderAsc
 }
 
-func filter(selection *flockpb.KVSelection) func(interface{}, interface{}) bool {
-	return func(k, v interface{}) bool {
+func filter(selection *flockpb.KVSelection) func(interface{}) bool {
+	return func(v interface{}) bool {
 		if selection == nil {
 			return true
 		}
@@ -94,6 +96,7 @@ func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, 
 	// SortTarget = CREATE  -> requires full scan + windowing
 	// SortTarget = MOD     -> requires full scan + windowing
 	// SortTarget = VALUE   -> requires full scan + windowing
+	processors := []stream.Processor{}
 
 	switch query.SortTarget {
 	case flockpb.KVQueryRequest_KEY:
@@ -106,7 +109,7 @@ func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, 
 			return flockpb.KVQueryResponse{}, fmt.Errorf("could not create selection iterator: %s", err)
 		}
 
-		iter = mvcc.FilterMarshaled(iter, filter(query.Selection))
+		stream.Pipeline(mvcc.StreamMarshaled(iter), stream.Filter(filter(query.Selection)))
 	case flockpb.KVQueryRequest_VERSION:
 	case flockpb.KVQueryRequest_CREATE:
 	case flockpb.KVQueryRequest_MOD:
@@ -120,7 +123,7 @@ func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, 
 			return flockpb.KVQueryResponse{}, fmt.Errorf("could not create selection iterator: %s", err)
 		}
 
-		iter = mvcc.SortMarshaled(mvcc.FilterMarshaled(iter, filter(query.Selection)), nil, 0)
+		stream.Pipeline(mvcc.StreamMarshaled(iter), stream.Filter(filter(query.Selection)), stream.Sort(nil, int(query.Limit)))
 	}
 
 	return flockpb.KVQueryResponse{}, nil
