@@ -42,9 +42,9 @@ func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, 
 
 	if query.IncludeCount {
 		counted = stream.Pipeline(results, count(&response.Count))
-		results = stream.Pipeline(counted, after(query), stream.Limit(int(limit)))
+		results = stream.Pipeline(counted, after(query), sort(query, int(limit)), stream.Limit(int(limit)))
 	} else {
-		results = stream.Pipeline(results, after(query), stream.Limit(int(limit)))
+		results = stream.Pipeline(results, after(query), sort(query, int(limit)), stream.Limit(int(limit)))
 	}
 
 	for results.Next() {
@@ -306,4 +306,67 @@ func selection(selection *flockpb.KVSelection) stream.Processor {
 
 		return true
 	})
+}
+
+func sort(query flockpb.KVQueryRequest, limit int) stream.Processor {
+	var compare func(a interface{}, b interface{}) int
+
+	switch query.SortTarget {
+	case flockpb.KVQueryRequest_VERSION:
+		compare = func(a interface{}, b interface{}) int {
+			kvA := a.(flockpb.KeyValue)
+			kvB := b.(flockpb.KeyValue)
+
+			if kvA.Version < kvB.Version {
+				return -1
+			} else if kvA.Version > kvB.Version {
+				return 1
+			}
+
+			return 0
+		}
+	case flockpb.KVQueryRequest_CREATE:
+		compare = func(a interface{}, b interface{}) int {
+			kvA := a.(flockpb.KeyValue)
+			kvB := b.(flockpb.KeyValue)
+
+			if kvA.CreateRevision < kvB.CreateRevision {
+				return -1
+			} else if kvA.CreateRevision > kvB.CreateRevision {
+				return 1
+			}
+
+			return 0
+		}
+	case flockpb.KVQueryRequest_MOD:
+		compare = func(a interface{}, b interface{}) int {
+			kvA := a.(flockpb.KeyValue)
+			kvB := b.(flockpb.KeyValue)
+
+			if kvA.ModRevision < kvB.ModRevision {
+				return -1
+			} else if kvA.ModRevision > kvB.ModRevision {
+				return 1
+			}
+
+			return 0
+		}
+	case flockpb.KVQueryRequest_VALUE:
+		compare = func(a interface{}, b interface{}) int {
+			kvA := a.(flockpb.KeyValue)
+			kvB := b.(flockpb.KeyValue)
+
+			return bytes.Compare(kvA.Value, kvB.Value)
+		}
+	default:
+		return nil
+	}
+
+	if query.SortOrder == flockpb.KVQueryRequest_DESC {
+		compare = func(a interface{}, b interface{}) int {
+			return -1 * compare(a, b)
+		}
+	}
+
+	return stream.Sort(compare, limit)
 }
