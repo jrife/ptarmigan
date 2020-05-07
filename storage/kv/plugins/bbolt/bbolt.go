@@ -37,11 +37,6 @@ var _ kv.Plugin = (*Plugin)(nil)
 type Plugin struct {
 }
 
-// Init implements Plugin.Init
-func (plugin *Plugin) Init(options kv.PluginOptions) error {
-	return nil
-}
-
 // Name implements Plugin.Name
 func (plugin *Plugin) Name() string {
 	return DriverName

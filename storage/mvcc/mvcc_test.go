@@ -132,13 +132,15 @@ func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
 		t.Fatalf("could not initialize kv store: %s", err.Error())
 	}
 
-	mvccStore := &mvccStoreWithCloser{Store: mvcc.New(store), close: func() { rootStore.Delete() }}
+	mvccStore, err := mvcc.New(store)
 
-	if err := mvccStore.Open(); err != nil {
+	if err != nil {
 		rootStore.Delete()
 
-		return nil
+		t.Fatalf("could not create store: %s", err.Error())
 	}
+
+	mvccStore = &mvccStoreWithCloser{Store: mvccStore, close: func() { rootStore.Delete() }}
 
 	return mvccStore
 }
@@ -681,7 +683,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 			revisions: storeChangeset{
 				"a": {
 					transactions: []transaction{
-						transaction{
+						{
 							revision: revisionChangeset{
 								changes: map[string][]byte{
 									"key1": []byte("aaa"),
@@ -691,7 +693,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 							},
 							commit: true,
 						},
-						transaction{
+						{
 							revision: revisionChangeset{
 								changes: map[string][]byte{
 									"key3": []byte("ddd"),
@@ -701,7 +703,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 							},
 							commit: true,
 						},
-						transaction{
+						{
 							revision: revisionChangeset{
 								changes: map[string][]byte{
 									"key2": nil,
@@ -723,7 +725,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 			revisions: storeChangeset{
 				"a": {
 					transactions: []transaction{
-						transaction{
+						{
 							revision: revisionChangeset{
 								changes: map[string][]byte{
 									"key1": []byte("aaa"),
@@ -733,7 +735,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 							},
 							commit: true,
 						},
-						transaction{
+						{
 							revision: revisionChangeset{
 								changes: map[string][]byte{
 									"key3": []byte("ddd"),
@@ -743,7 +745,7 @@ func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
 							},
 							commit: true,
 						},
-						transaction{
+						{
 							revision: revisionChangeset{
 								changes: map[string][]byte{
 									"key2": nil,

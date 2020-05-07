@@ -4,6 +4,8 @@ import (
 	"github.com/jrife/ptarmigan/utils/stream"
 )
 
+// Stream wraps the iterator in a stream
+// whose values are KV instances
 func Stream(iter Iterator) stream.Stream {
 	return &kvStream{iter}
 }
@@ -24,6 +26,8 @@ func (stream *kvStream) Error() error {
 	return stream.iter.Error()
 }
 
+// StreamMarshaled wraps the iterator in a stream
+// whose values are UnmarshaledKV instances
 func StreamMarshaled(iter UnmarshaledIterator) stream.Stream {
 	return &unmarshaledKVStream{iter}
 }

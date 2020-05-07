@@ -153,9 +153,7 @@ func partitionToModel(partition kv.Partition) (partitionModel, error) {
 }
 
 func TestDrivers(t *testing.T) {
-	pluginManager := plugins.NewKVPluginManager()
-
-	for _, plugin := range pluginManager.Plugins() {
+	for _, plugin := range plugins.Plugins() {
 		t.Run(plugin.Name(), driverTest(builder(plugin)))
 	}
 }
@@ -258,7 +256,7 @@ func testRootStoreDelete(builder tempStoreBuilder, t *testing.T) {
 	testCases := map[string]struct {
 	}{}
 
-	for name, _ := range testCases {
+	for name := range testCases {
 		t.Run(name, func(t *testing.T) {
 			// TODO: Test cases that validate ordering guarantees of the interface
 			// such as ensuring that delete closes the store.
@@ -270,7 +268,7 @@ func testRootStoreClose(builder tempStoreBuilder, t *testing.T) {
 	testCases := map[string]struct {
 	}{}
 
-	for name, _ := range testCases {
+	for name := range testCases {
 		t.Run(name, func(t *testing.T) {
 			// TODO: Test cases that validate ordering guarantees of the interface
 			// such as ensuring that close waits until concurrent transactions have
@@ -320,7 +318,7 @@ func testRootStoreStores(builder tempStoreBuilder, t *testing.T) {
 			defer rootStore.Delete()
 			expectedStores := []string{}
 
-			for store, _ := range testCase.initialState {
+			for store := range testCase.initialState {
 				expectedStores = append(expectedStores, store)
 			}
 
@@ -359,10 +357,9 @@ func testRootStoreStores(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testRootStoreStore(builder tempStoreBuilder, t *testing.T) {
-	testCases := map[string]struct {
-	}{}
+	testCases := map[string]struct{}{}
 
-	for name, _ := range testCases {
+	for name := range testCases {
 		t.Run(name, func(t *testing.T) {
 			// TODO: Maybe just some test cases to ensure that the Store
 			// function doesn't return nil under several cases
@@ -2059,9 +2056,9 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	diff = cmp.Diff([][2][]byte{
-		[2][]byte{[]byte("a"), []byte("z")},
-		[2][]byte{[]byte("c"), []byte("d")},
-		[2][]byte{[]byte("e"), []byte("f")},
+		{[]byte("a"), []byte("z")},
+		{[]byte("c"), []byte("d")},
+		{[]byte("e"), []byte("f")},
 	}, getSequence(rwIter))
 
 	if diff != "" {
@@ -2069,8 +2066,8 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	diff = cmp.Diff([][2][]byte{
-		[2][]byte{[]byte("a"), []byte("b")},
-		[2][]byte{[]byte("c"), []byte("d")},
+		{[]byte("a"), []byte("b")},
+		{[]byte("c"), []byte("d")},
 	}, getSequence(roIter))
 
 	if diff != "" {
@@ -2109,12 +2106,12 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("a"), []byte("b")},
-				[2][]byte{[]byte("c"), []byte("d")},
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("g"), []byte("h")},
-				[2][]byte{[]byte("i"), []byte("j")},
-				[2][]byte{[]byte("k"), []byte("l")},
+				{[]byte("a"), []byte("b")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("i"), []byte("j")},
+				{[]byte("k"), []byte("l")},
 			},
 		},
 		"all-keys-desc": {
@@ -2137,12 +2134,12 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("k"), []byte("l")},
-				[2][]byte{[]byte("i"), []byte("j")},
-				[2][]byte{[]byte("g"), []byte("h")},
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("c"), []byte("d")},
-				[2][]byte{[]byte("a"), []byte("b")},
+				{[]byte("k"), []byte("l")},
+				{[]byte("i"), []byte("j")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("a"), []byte("b")},
 			},
 		},
 		"bottom-half-keys-asc": {
@@ -2165,9 +2162,9 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("a"), []byte("b")},
-				[2][]byte{[]byte("c"), []byte("d")},
-				[2][]byte{[]byte("e"), []byte("f")},
+				{[]byte("a"), []byte("b")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("e"), []byte("f")},
 			},
 		},
 		"bottom-half-keys-desc": {
@@ -2190,9 +2187,9 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("c"), []byte("d")},
-				[2][]byte{[]byte("a"), []byte("b")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("a"), []byte("b")},
 			},
 		},
 		"top-half-keys-asc": {
@@ -2215,9 +2212,9 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("g"), []byte("h")},
-				[2][]byte{[]byte("i"), []byte("j")},
-				[2][]byte{[]byte("k"), []byte("l")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("i"), []byte("j")},
+				{[]byte("k"), []byte("l")},
 			},
 		},
 		"top-half-keys-desc": {
@@ -2240,9 +2237,9 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("k"), []byte("l")},
-				[2][]byte{[]byte("i"), []byte("j")},
-				[2][]byte{[]byte("g"), []byte("h")},
+				{[]byte("k"), []byte("l")},
+				{[]byte("i"), []byte("j")},
+				{[]byte("g"), []byte("h")},
 			},
 		},
 		"middle-keys-asc": {
@@ -2265,9 +2262,9 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("c"), []byte("d")},
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("g"), []byte("h")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("g"), []byte("h")},
 			},
 		},
 		"middle-keys-desc": {
@@ -2290,9 +2287,9 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("g"), []byte("h")},
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("c"), []byte("d")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("c"), []byte("d")},
 			},
 		},
 		"sparse-keys-asc": {
@@ -2315,10 +2312,10 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("c"), []byte("d")},
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("g"), []byte("h")},
-				[2][]byte{[]byte("i"), []byte("j")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("i"), []byte("j")},
 			},
 		},
 		"sparse-keys-desc": {
@@ -2341,10 +2338,10 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
-				[2][]byte{[]byte("i"), []byte("j")},
-				[2][]byte{[]byte("g"), []byte("h")},
-				[2][]byte{[]byte("e"), []byte("f")},
-				[2][]byte{[]byte("c"), []byte("d")},
+				{[]byte("i"), []byte("j")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("c"), []byte("d")},
 			},
 		},
 		"min=max asc": {
@@ -2547,9 +2544,9 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	diff := cmp.Diff([][2][]byte{
-		[2][]byte{[]byte("123"), []byte("1")},
-		[2][]byte{[]byte("456"), []byte("2")},
-		[2][]byte{[]byte("789"), []byte("3")},
+		{[]byte("123"), []byte("1")},
+		{[]byte("456"), []byte("2")},
+		{[]byte("789"), []byte("3")},
 	}, getSequence(aaaIter))
 
 	if diff != "" {
@@ -2557,9 +2554,9 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	diff = cmp.Diff([][2][]byte{
-		[2][]byte{[]byte("123"), []byte("4")},
-		[2][]byte{[]byte("456"), []byte("5")},
-		[2][]byte{[]byte("789"), []byte("6")},
+		{[]byte("123"), []byte("4")},
+		{[]byte("456"), []byte("5")},
+		{[]byte("789"), []byte("6")},
 	}, getSequence(bbbIter))
 
 	if diff != "" {
@@ -2567,9 +2564,9 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	diff = cmp.Diff([][2][]byte{
-		[2][]byte{[]byte("123"), []byte("7")},
-		[2][]byte{[]byte("456"), []byte("8")},
-		[2][]byte{[]byte("789"), []byte("9")},
+		{[]byte("123"), []byte("7")},
+		{[]byte("456"), []byte("8")},
+		{[]byte("789"), []byte("9")},
 	}, getSequence(cccIter))
 
 	if diff != "" {
@@ -2587,15 +2584,15 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	diff = cmp.Diff([][2][]byte{
-		[2][]byte{[]byte("aaa123"), []byte{}},
-		[2][]byte{[]byte("aaa456"), []byte("2")},
-		[2][]byte{[]byte("aaa789"), []byte("3")},
-		[2][]byte{[]byte("aaanew"), []byte("stuff")},
-		[2][]byte{[]byte("bbb123"), []byte("4")},
-		[2][]byte{[]byte("bbb789"), []byte("6")},
-		[2][]byte{[]byte("ccc123"), []byte("7")},
-		[2][]byte{[]byte("ccc456"), []byte("8")},
-		[2][]byte{[]byte("ccc789"), []byte("9")},
+		{[]byte("aaa123"), []byte{}},
+		{[]byte("aaa456"), []byte("2")},
+		{[]byte("aaa789"), []byte("3")},
+		{[]byte("aaanew"), []byte("stuff")},
+		{[]byte("bbb123"), []byte("4")},
+		{[]byte("bbb789"), []byte("6")},
+		{[]byte("ccc123"), []byte("7")},
+		{[]byte("ccc456"), []byte("8")},
+		{[]byte("ccc789"), []byte("9")},
 	}, getSequence(iter))
 
 	if diff != "" {

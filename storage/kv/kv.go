@@ -31,8 +31,6 @@ type PluginOptions map[string]interface{}
 
 // Plugin represents a kv storage plugin
 type Plugin interface {
-	// Init initializes the storage plugin
-	Init(options PluginOptions) error
 	// Name returns the name of the storage plugin
 	Name() string
 	// NewStore returns an instance of the plugin store
@@ -63,8 +61,8 @@ type RootStore interface {
 	// that the state of all the stores is fixed and will not change unless
 	// this root store is reopened
 	Close() error
-	// Stores lists all the stores inside this root store. Results must
-	// be lexicographically ordered by store name. It must return
+	// Stores lists all the stores inside this root store by name. Results must
+	// be in ascending lexicographical order. It must return
 	// ErrClosed if its invocation starts after Close() returns.
 	Stores() ([][]byte, error)
 	// Store returns a handle for the store with this name. It does not
@@ -73,9 +71,9 @@ type RootStore interface {
 	Store(name []byte) Store
 }
 
-// Store is a reference to a working store
+// Store is a reference to a store
 type Store interface {
-	// Name returns the name of this store
+	// Name returns the name of this store.
 	Name() []byte
 	// Create creates this store if it does not exist. It has no
 	// effect if the store already exists. It must return ErrClosed
@@ -132,7 +130,7 @@ type Store interface {
 // and should perform their own locking to control concurrency for their own data. However, consumers
 // should assume that Begin() may block and appropriately order calls to locks within their own applications.
 //
-// Don't Do This (Possible Deadlock):
+// TL;DR Don't Do This (Possible Deadlock):
 // Thread A:
 //   1) a.Lock()
 //   2) p.Begin(true)
@@ -212,7 +210,7 @@ type Transaction interface {
 	// SetMetadata sets the metadata for this partition
 	SetMetadata(metadata []byte) error
 	// Keys creates an iterator that iterates over the range
-	// of keys specified by the
+	// of keys specified by the min and max parameters.
 	Keys(min, max []byte, order SortOrder) (Iterator, error)
 	// Commit commits the transaction
 	Commit() error
@@ -343,21 +341,21 @@ func (nsCursor *namespacedIterator) Error() error {
 }
 
 // Namespace ensures that all keys referenced within a transaction
-// are prefixed with the ns prefix. Can be chained.
+// are prefixed with ns.
 func Namespace(txn Transaction, ns []byte) Transaction {
 	return &namespacedTxn{txn: txn, ns: ns}
 }
 
 // Start can be used in place of the min
-// parameter of a range query to indicate
-// that there is no minimum.
+// parameter of a range query to start at
+// the beginning.
 func Start() []byte {
 	return nil
 }
 
-// End can be used in place of the min
-// parameter of a range query to indicate
-// that there is no maximum.
+// End can be used in place of the max
+// parameter of a range query go all the
+// way to the end.
 func End() []byte {
 	return nil
 }
@@ -396,7 +394,7 @@ func Gt(k []byte) []byte {
 // min parameter of a range query to indicate
 // that the range should include anything that
 // has this prefix, excluding the key that
-// is exactly the prefix itself.
+// is eactly this prefix.
 func PrefixRangeStart(k []byte) []byte {
 	return after(k)
 }
@@ -405,7 +403,7 @@ func PrefixRangeStart(k []byte) []byte {
 // max parameter of a range query to indicate
 // that the range should include anything that
 // has this prefix, excluding the key that
-// is exactly the prefix itself.
+// is exactly this prefix.
 func PrefixRangeEnd(k []byte) []byte {
 	return inc(k)
 }

@@ -147,28 +147,23 @@ func (v keysValue) value() []byte {
 }
 
 // New creates a new mvcc store
-func New(kvStore kv.Store) Store {
+func New(kvStore kv.Store) (Store, error) {
 	store := &store{
 		kvStore: kvStore,
 	}
 
-	return store
+	// Always ensure that the store exists
+	if err := kvStore.Create(); err != nil {
+		return nil, fmt.Errorf("could not ensure store exists: %s", err.Error())
+	}
+
+	return store, nil
 }
 
 var _ Store = (*store)(nil)
 
 type store struct {
 	kvStore kv.Store
-}
-
-// Open implements Store.Open
-func (store *store) Open() error {
-	// Always ensure that the store exists
-	if err := store.kvStore.Create(); err != nil {
-		return fmt.Errorf("could not ensure store exists: %s", err.Error())
-	}
-
-	return nil
 }
 
 // Close implements Store.Close
