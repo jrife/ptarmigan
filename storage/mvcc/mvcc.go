@@ -292,7 +292,7 @@ func (partition *partition) Metadata() ([]byte, error) {
 }
 
 // Transaction implements Partition.Transaction
-func (partition *partition) Transaction() (Transaction, error) {
+func (partition *partition) Begin() (Transaction, error) {
 	txn, err := partition.beginTxn(true)
 
 	if err != nil {

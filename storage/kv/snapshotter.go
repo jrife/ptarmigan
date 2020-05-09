@@ -9,7 +9,7 @@ import (
 	"github.com/jrife/ptarmigan/utils/lvstream"
 )
 
-// Snapshotter implements a generic implementation
+// Snapshotter contains a generic implementation
 // for Snapshot() and ApplySnapshot() that should
 // be suitable for most kv plugins. Some plugins
 // may offer more efficient ways to do this and may

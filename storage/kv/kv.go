@@ -26,7 +26,7 @@ const SortOrderAsc SortOrder = 0
 const SortOrderDesc SortOrder = 1
 
 // PluginOptions is a generic structure to pass
-// arbitrary configuration to a storage plugin
+// configuration to a storage plugin
 type PluginOptions map[string]interface{}
 
 // Plugin represents a kv storage plugin
@@ -131,20 +131,20 @@ type Store interface {
 // should assume that Begin() may block and appropriately order calls to locks within their own applications.
 //
 // TL;DR Don't Do This (Possible Deadlock):
-// Thread A:
-//   1) a.Lock()
-//   2) p.Begin(true)
-// Thread B:
-//   1) p.Begin(true)
-//   2) a.Lock()
+//   Thread A:
+//     1) a.Lock()
+//     2) p.Begin(true)
+//   Thread B:
+//     1) p.Begin(true)
+//     2) a.Lock()
 //
 // Do This
-// Thread A:
-//   1) a.Lock()
-//   2) p.Begin(true)
-// Thread B:
-//   1) a.Lock()
-//   2) p.Begin(true)
+//   Thread A:
+//     1) a.Lock()
+//     2) p.Begin(true)
+//   Thread B:
+//     1) a.Lock()
+//     2) p.Begin(true)
 type Partition interface {
 	// Name returns the name of this partition
 	Name() []byte

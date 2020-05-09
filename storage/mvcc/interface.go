@@ -54,60 +54,79 @@ type Diff [3][]byte
 // Store is the interface for a partitioned MVCC
 // store
 type Store interface {
-	// Close store
+	// Close closes the store. Function calls to any I/O objects
+	// descended from this store occurring after Close returns
+	// must have no effect and return ErrClosed. Close must not
+	// return until all concurrent I/O operations have concluded
+	// and all transactions have either rolled back or committed.
+	// Operations started after the call to Close is started but
+	// before it returns may proceed normally or may return ErrClosed.
+	// If they return ErrClosed they must have no effect. Close may
+	// return an error to indicate any problems that occurred during
+	// shutdown. Simply put, when close returns it should ensure the caller
+	// that the state of all the stores is fixed and will not change unless
+	// this root store is reopened
 	Close() error
-	// Delete store
+	// Delete closes then deletes this store and all its contents.
 	Delete() error
-	// Partitions returns up to limit partition names in
+	// Partitions returns up to limit partition names in ascending
 	// lexocographical order where names are >= min and < max. min = nil
 	// means the lowest name. max = nil means the highest name. limit < 0
-	// means no limit.
+	// means no limit. It must return ErrClosed if its invocation starts
+	// after Close() returns.
 	Partitions(min []byte, max []byte, limit int) ([][]byte, error)
-	// Partition returns a handle to the named partition
+	// Partition returns a handle to the partition with this name.
+	// It does not guarantee that this partition exists yet and
+	// should not create the partition. It must not return nil.
 	Partition(name []byte) Partition
 }
 
-// Partition represents an independent
-// partition of the store. Each partition
-// can be completely independent
+// Partition represents a partition of a store
 type Partition interface {
-	// Return partition name
+	// Name returns the name of this partition
 	Name() []byte
-	// Create creates this partition if it does not exist and
-	// assigns it some metadata that can be retrieved with
-	// Metadata()
+	// Create creates this partition if it does not exist. It has no
+	// effect if the partition already exists. It must return ErrClosed
+	// if its invocation starts after Close() on the store returns.
+	// metadata is set only if this call actually creates the partition.
 	Create(metadata []byte) error
-	// Delete deletes this partition and all its data if it
-	// exists.
+	// Delete deletes this partition if it exists. It has no effect if
+	// the partition does not exist. It must return ErrClosed if its
+	// invocation starts after Close() on the store returns.
 	Delete() error
 	// Metadata returns the metadata that was passed in during
-	// partition creation.
+	// partition creation. It must return ErrClosed if its
+	// invocation starts after Close() on the store returns. Otherwise
+	// if this partition does not exist it must return ErrNoSuchPartition.
 	Metadata() ([]byte, error)
-	// Transaction starts a read-write transaction. Only
-	// one read-write transaction can run at one time.
-	// This function must block if another transaction
+	// Begin starts a read-write transaction. Only
+	// one read-write transaction can run at one time per
+	// partition. This function must block if another transaction
 	// exists that has not yet committed or rolled back.
-	Transaction() (Transaction, error)
-	// View generates a handle that lets a user
-	// inspect the state of the store at some
-	// revision. If revision == 0 it selects the
-	// the newest revision. If revisino < 0 it selects
-	// the oldest revision.
+	// It must return ErrClosed if its invocation starts after
+	// Close() on the store returns. Otherwise if this partition
+	// does not exist it must return ErrNoSuchPartition.
+	Begin() (Transaction, error)
+	// View starts a read-only transaction that lets a user
+	// inspect the state of the store at some revision.
+	// If revision == 0 it selects the newest revision.
+	// If revision < 0 it selects the oldest revision. It
+	// must return ErrClosed if its invocation starts after
+	// Close() on the store returns. Otherwise if this partition
+	// does not exist it must return ErrNoSuchPartition.
 	View(revision int64) (View, error)
-	// ApplySnapshot completely replaces the contents of this
-	// store with those in this snapshot.
-	ApplySnapshot(snap io.Reader) error
-	// Snapshot takes a snapshot of this store's current state
-	// and encodes it as a byte stream. It must be compatible with
-	// ApplySnapshot() such that its return value could be applied
-	// to ApplySnapshot() in order to replicate its state elsewhere.
+	// Snapshot takes a consistent snapshot of this partition. If Snapshot() is called
+	// after Close() on the store returns it must return ErrClosed. Otherwise if this
+	// partition does not exist it must return ErrNoSuchPartition.
 	Snapshot() (io.Reader, error)
+	// ApplySnapshot applies a snapshot to this partition. If ApplySnapshot() is called
+	// after Close() on the root store returns it must return ErrClosed. If this partition
+	// doesn't exist ApplySnapshot will create it. If the partition does exist ApplySnapshot
+	// overwrites the state currently stored in the partition.
+	ApplySnapshot(snap io.Reader) error
 }
 
-// Transaction lets a user manipulate the state
-// of the store. Changes made inside a transaction
-// must not be visible to observers until the
-// transaction is committed.
+// Transaction lets a user manipulate the state of the partition.
 type Transaction interface {
 	// NewRevision creates a new revision. Each transaction
 	// can create at most one new revision. Calling this
@@ -132,12 +151,15 @@ type Transaction interface {
 }
 
 // Revision is created as part of a transaction. It lets
-// a user change the state of the store.
+// a user update the keys within a partition.
 type Revision interface {
 	View
-	// Put creates or updates a key
+	// Put puts a key. Put must return an error
+	// if either key or value is nil or empty.
 	Put(key []byte, value []byte) error
-	// Delete deletes a key
+	// Delete deletes a key. It must return an error if the key
+	// is nil or empty. If the key doesn't exist it has no effect
+	// and returns nil.
 	Delete(key []byte) error
 }
 
@@ -158,7 +180,9 @@ type View interface {
 	// Changes returns up to limit keys changed in this revision
 	// lexocographically increasing order where keys are >= min and < max.
 	// min = nil means the lowest key max = nil means the highest key.
-	// limit < 0 means no limit.
+	// limit < 0 means no limit. If includePrev is true the returned diffs
+	// will include the previous state for each key. Otherwise only the
+	// state as of this revision will be set.
 	Changes(min []byte, max []byte, limit int, includePrev bool) ([]Diff, error)
 	// Return the revision for this view.
 	Revision() int64
@@ -166,8 +190,7 @@ type View interface {
 	Close() error
 }
 
-// Iterator lets a consumer
-// iterate through keys in a range
+// Iterator lets a consumer iterate through keys in a range
 // one by one.
 type Iterator interface {
 	// Next advances the iterator. It must

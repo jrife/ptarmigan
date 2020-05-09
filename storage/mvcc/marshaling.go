@@ -20,6 +20,7 @@ type Marshalable interface {
 // type
 type Unmarshaler func(k []byte) (interface{}, error)
 
+// NewMarshalingView wraps a View such that keys and values are marshaled and unmarshaled automatically
 func NewMarshalingView(view View, keyUnmarshaler Unmarshaler, valueUnmarshaler Unmarshaler) *MarshalingView {
 	return &MarshalingView{
 		view:           view,
@@ -28,6 +29,7 @@ func NewMarshalingView(view View, keyUnmarshaler Unmarshaler, valueUnmarshaler U
 	}
 }
 
+// NewMarshalingRevision wraps a Revision such that keys and values are marshaled and unmarshaled automatically
 func NewMarshalingRevision(revision Revision, keyUnmarshaler Unmarshaler, valueUnmarshaler Unmarshaler) *MarshalingRevision {
 	return &MarshalingRevision{
 		MarshalingView: MarshalingView{
@@ -38,10 +40,12 @@ func NewMarshalingRevision(revision Revision, keyUnmarshaler Unmarshaler, valueU
 	}
 }
 
+// MarshalingRevision wraps a Revision such that keys and values are automatically marshaled and unmarshaled
 type MarshalingRevision struct {
 	MarshalingView
 }
 
+// Put is like Revision.Put, but it marshals the key and value.
 func (revision *MarshalingRevision) Put(key Marshalable, value Marshalable) error {
 	marshaledKey, err := key.Marshal()
 
@@ -58,6 +62,7 @@ func (revision *MarshalingRevision) Put(key Marshalable, value Marshalable) erro
 	return revision.view.(Revision).Put(marshaledKey, marshaledValue)
 }
 
+// Delete is like Revision.Delete, but it marshals the key
 func (revision *MarshalingRevision) Delete(key Marshalable) error {
 	marshaledKey, err := key.Marshal()
 
@@ -68,6 +73,7 @@ func (revision *MarshalingRevision) Delete(key Marshalable) error {
 	return revision.view.(Revision).Delete(marshaledKey)
 }
 
+// MarshalingView wraps a View such that keys and values are automatically marshaled and unmarshaled
 type MarshalingView struct {
 	view           View
 	unmarshalKey   Unmarshaler
@@ -127,6 +133,7 @@ func (view *MarshalingView) marshalKey(k Marshalable) ([]byte, error) {
 	return k.Marshal()
 }
 
+// Keys is like View.Keys, but it marshals the min and max parameters and returns unmarshaled key-value pairs.
 func (view *MarshalingView) Keys(min Marshalable, max Marshalable, limit int, sort SortOrder) ([]UnmarshaledKV, error) {
 	marshaledMin, err := view.marshalKey(min)
 
@@ -161,6 +168,7 @@ func (view *MarshalingView) Keys(min Marshalable, max Marshalable, limit int, so
 	return unmarshaledKVs, nil
 }
 
+// KeysIterator is like View.KeysIterator, but it marshals the min and max parameters and its iterator returns unmarshaled key-value pairs.
 func (view *MarshalingView) KeysIterator(min Marshalable, max Marshalable, order SortOrder) (UnmarshaledIterator, error) {
 	marshaledMin, err := view.marshalKey(min)
 
@@ -183,6 +191,7 @@ func (view *MarshalingView) KeysIterator(min Marshalable, max Marshalable, order
 	return &unmarshaledIterator{Iterator: iter, view: view}, nil
 }
 
+// Changes is like View.Changes, but it marshals the min and max parameters and it returns unmarshaled diffs.
 func (view *MarshalingView) Changes(min Marshalable, max Marshalable, limit int, includePrev bool) ([]UnmarshaledDiff, error) {
 	marshaledMin, err := view.marshalKey(min)
 
@@ -217,14 +226,17 @@ func (view *MarshalingView) Changes(min Marshalable, max Marshalable, limit int,
 	return unmarshaledDiffs, nil
 }
 
+// Revision returns this view's revision number.
 func (view *MarshalingView) Revision() int64 {
 	return view.view.Revision()
 }
 
+// Close closes this view
 func (view *MarshalingView) Close() error {
 	return view.view.Close()
 }
 
+// UnmarshaledIterator is like Iterator but it unmarshals keys and values.
 type UnmarshaledIterator interface {
 	Next() bool
 	Key() interface{}

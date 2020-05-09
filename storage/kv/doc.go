@@ -1,21 +1,14 @@
-// Package kv provides an interface and specification for implementing
-// KV driver plugins that can be used to build more complex storage
+// Package kv provides an interface for implementing
+// kv drivers that can be used to build more complex storage
 // interfaces.
 //
-// A kv plugin is essentially a factory for instances of RootStore
-// The kv interface breaks a kv store into three levels: A root store,
-// a store, and a partition. A root store is the top level container that
-// is made up of various stores. Each store is independent
-// from other stores belonging to the same root store, but stores are bound
-// to the lifecycle of their root store. In other words, if a root store
-// is closed or deleted this closes or deletes its stores as well. Stores are
-// further divided into partitions. The relationship between partition and store
-// is similar to that between store and root store: if a store is closed or
-// deleted its partitions are also closed or deleted. Partitions contain some
-// metadata, which can contain information about that partition, and a sorted
-// table of key-value pairs. Transactions for different partitions are completely
-// independent from each other: there are no ordering or consistency guarantees
-// for transactions spawned from different partitions.
+// A kv plugin is a factory for root store instances. A root store
+// contains zero or more stores and stores contain zero or more
+// partitions. Each store operates independently from other stores. Likewise,
+// partitions within a store operate independently from other partitions.
+// Transactions for different partitions are completely independent from each
+// other: there are no ordering or consistency guarantees for transactions spawned
+// from different partitions. Within a partition  transactions are stricly serializable.
 //
 //  - Root Store
 //    - Store A
@@ -36,15 +29,10 @@
 // over a list of key-value pairs, partitioning was pushed down to this layer
 // to enable the kv drivers to make more intelligent decisions on how to concurrently
 // run transactions across different partitions and to more accurately model the use
-// cases of the layers above this. An example of how partition-awareness might be used
-// for better is a root store that multiplexes stores or partitions over multiple boltdb
-// databases to avoid a transaction on one partition blocking a transaction on another
-// partition.
+// cases of the layers above this.
 //
-// Rather than having a two level hierarchy such as store/partition it was chosen that
-// there would be the three level hierarchy described above: root store/store/partition.
-// The reason for this is mainly convenience. Each store acts like a namespace, allowing
-// different components to be handed an instance of a store so that different components
-// that need to store things don't need to worry about managing different sets of partitions
-// themselves.
+// A three-level hierarchy was chosen rather than a two level hierarchy such as store/partition
+// mainly for convenience. Each store acts like a namespace, allowing different components that
+// require a kv storage interface to have their own store without needing to worry about stepping
+// on the toes of other components.
 package kv

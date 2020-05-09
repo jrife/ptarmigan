@@ -175,7 +175,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 		}
 
 		for i, transaction := range partitionChangeset.transactions {
-			txn, err := mvccPartition.Transaction()
+			txn, err := mvccPartition.Begin()
 
 			if err != nil {
 				mvccStore.Close()
@@ -352,9 +352,7 @@ func builder(plugin kv.Plugin) tempStoreBuilder {
 }
 
 func TestMVCC(t *testing.T) {
-	pluginManager := plugins.NewKVPluginManager()
-
-	for _, plugin := range pluginManager.Plugins() {
+	for _, plugin := range plugins.Plugins() {
 		t.Run(fmt.Sprintf("MVCC(%s)", plugin.Name()), testMVCC(builder(plugin)))
 	}
 }
