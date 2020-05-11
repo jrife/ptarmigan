@@ -1,55 +1,11 @@
 package mvcc
 
 import (
-	"errors"
 	"io"
 
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 )
-
-// SortOrder describes sort order for keys
-// Either SortOrderAsc or SortOrderDesc
-type SortOrder kv.SortOrder
-
-const (
-	// SortOrderAsc sorts in increasing order
-	SortOrderAsc = SortOrder(kv.SortOrderAsc)
-	// SortOrderDesc sorts in decreasing order
-	SortOrderDesc = SortOrder(kv.SortOrderDesc)
-	// RevisionOldest can be used in place of a revision
-	// number to access the oldest revision
-	RevisionOldest int64 = -1
-	// RevisionNewest can be used in place of a revision
-	// number to access the neweset revision
-	RevisionNewest int64 = 0
-)
-
-var (
-	// ErrCompacted is returned when an operation cannot be completed
-	// because it needs to read data that was compacted away.
-	ErrCompacted = errors.New("store was compacted")
-	// ErrRevisionTooHigh is returned when an operation tries to access
-	// a revision number that is higher than the newest committed revision.
-	ErrRevisionTooHigh = errors.New("revision number is higher than the newest committed revision")
-	// ErrNoSuchPartition is returned when a function tries to access a partition
-	// that does not exist.
-	ErrNoSuchPartition = errors.New("partition does not exist")
-	// ErrNoRevisions is returned when a consumer requests a view of either the oldest
-	// or newest revision, but the partition is empty having had no revisions
-	// written to it yet.
-	ErrNoRevisions = errors.New("partition has no revision")
-)
-
-// KV is a key-value pair
-// [0] is the key
-// [1] is the value
-type KV [2][]byte
-
-// Diff is a tuple of key-value pairs
-// [0] is the key
-// [1] is the current state
-// [2] is the previous state
-type Diff [3][]byte
 
 // Store is the interface for a partitioned MVCC
 // store
@@ -70,11 +26,10 @@ type Store interface {
 	// Delete closes then deletes this store and all its contents.
 	Delete() error
 	// Partitions returns up to limit partition names in ascending
-	// lexocographical order where names are >= min and < max. min = nil
-	// means the lowest name. max = nil means the highest name. limit < 0
+	// lexocographical order from the names range. limit < 0
 	// means no limit. It must return ErrClosed if its invocation starts
 	// after Close() returns.
-	Partitions(min []byte, max []byte, limit int) ([][]byte, error)
+	Partitions(names keys.Range, limit int) ([][]byte, error)
 	// Partition returns a handle to the partition with this name.
 	// It does not guarantee that this partition exists yet and
 	// should not create the partition. It must not return nil.
@@ -154,62 +109,32 @@ type Transaction interface {
 // a user update the keys within a partition.
 type Revision interface {
 	View
-	// Put puts a key. Put must return an error
-	// if either key or value is nil or empty.
-	Put(key []byte, value []byte) error
-	// Delete deletes a key. It must return an error if the key
-	// is nil or empty. If the key doesn't exist it has no effect
-	// and returns nil.
-	Delete(key []byte) error
+	kv.MapUpdater
 }
 
 // View lets a user read the state of the store
 // at a certain revision.
 type View interface {
-	// Keys returns up to limit keys at the revision seen by this view
-	// where keys are >= min and < max. min = nil means the lowest key.
-	// max = nil means the highest key. limit < 0 means no limit. sort
-	// = SortOrderAsc means return keys in lexicographically increasing order
-	// sort = SortOrderDesc means return keys in lexicographically decreasing
-	// order.
-	Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV, error)
-	// KeysIterator is like Keys but it returns an iterator that lets a consumer
-	// scan key by key. This is preferable if the consumer doesn't want to buffer
-	// lots of keys in memory.
-	KeysIterator(min []byte, max []byte, order SortOrder) (Iterator, error)
+	kv.MapReader
 	// Changes returns up to limit keys changed in this revision
-	// lexocographically increasing order where keys are >= min and < max.
-	// min = nil means the lowest key max = nil means the highest key.
-	// limit < 0 means no limit. If includePrev is true the returned diffs
-	// will include the previous state for each key. Otherwise only the
-	// state as of this revision will be set.
-	Changes(min []byte, max []byte, limit int, includePrev bool) ([]Diff, error)
+	// lexocographically increasing order from the specified range.
+	// If includePrev is true the returned diffs will include the
+	// previous state for each key. Otherwise only the state as of
+	// this revision will be set.
+	Changes(keys keys.Range, includePrev bool) (DiffIterator, error)
 	// Return the revision for this view.
 	Revision() int64
 	// Close must be called when a user is done with a view.
 	Close() error
 }
 
-// Iterator lets a consumer iterate through keys in a range
-// one by one.
-type Iterator interface {
-	// Next advances the iterator. It must
-	// be called once at the start to advance
-	// to the first key-value pair. It returns
-	// true if there is a key-value pair available
-	// or false otherwise. It may return false in
-	// case of an iteration error. Error() will return
-	// an error if this is the case and must be checked
-	// after Next() returns false.
-	Next() bool
-	// Key returns the key at the current position
-	// or nil if iteration is done.
-	Key() []byte
-	// Value returns the value at the current position
-	// or nil if iteration is done.
-	Value() []byte
-	// Error returns the error that occurred, if any
-	Error() error
+// DiffIterator lets a consumer iterate through changes made
+// at some revision.
+type DiffIterator interface {
+	kv.Iterator
+	IsPut() bool
+	IsDelete() bool
+	Prev() []byte
 }
 
 // NamespaceView returns a view that will prefix

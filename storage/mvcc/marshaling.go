@@ -2,6 +2,9 @@ package mvcc
 
 import (
 	"fmt"
+
+	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 )
 
 // UnmarshaledKV is a generic tuple for any key-value types
@@ -133,8 +136,8 @@ func (view *MarshalingView) marshalKey(k Marshalable) ([]byte, error) {
 	return k.Marshal()
 }
 
-// Keys is like View.Keys, but it marshals the min and max parameters and returns unmarshaled key-value pairs.
-func (view *MarshalingView) Keys(min Marshalable, max Marshalable, limit int, sort SortOrder) ([]UnmarshaledKV, error) {
+// Keys is like View.Keys, but it marshals the min and max parameters and its iterator returns unmarshaled key-value pairs.
+func (view *MarshalingView) Keys(min Marshalable, max Marshalable, order kv.SortOrder) (UnmarshaledIterator, error) {
 	marshaledMin, err := view.marshalKey(min)
 
 	if err != nil {
@@ -147,42 +150,7 @@ func (view *MarshalingView) Keys(min Marshalable, max Marshalable, limit int, so
 		return nil, fmt.Errorf("could not marshal max: %s", err)
 	}
 
-	kvs, err := view.view.Keys(marshaledMin, marshaledMax, limit, sort)
-
-	if err != nil {
-		return nil, err
-	}
-
-	unmarshaledKVs := make([]UnmarshaledKV, len(kvs))
-
-	for i, kv := range kvs {
-		k, v, err := view.unmarshal(kv[0], kv[1])
-
-		if err != nil {
-			return nil, fmt.Errorf("could not unmarshal kv %#v: %s", kv, err)
-		}
-
-		unmarshaledKVs[i] = UnmarshaledKV{k, v}
-	}
-
-	return unmarshaledKVs, nil
-}
-
-// KeysIterator is like View.KeysIterator, but it marshals the min and max parameters and its iterator returns unmarshaled key-value pairs.
-func (view *MarshalingView) KeysIterator(min Marshalable, max Marshalable, order SortOrder) (UnmarshaledIterator, error) {
-	marshaledMin, err := view.marshalKey(min)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal min: %s", err)
-	}
-
-	marshaledMax, err := view.marshalKey(max)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal max: %s", err)
-	}
-
-	iter, err := view.view.KeysIterator(marshaledMin, marshaledMax, order)
+	iter, err := view.view.Keys(keys.Range{Min: marshaledMin, Max: marshaledMax}, order)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create keys iterator: %s", err)
@@ -193,37 +161,7 @@ func (view *MarshalingView) KeysIterator(min Marshalable, max Marshalable, order
 
 // Changes is like View.Changes, but it marshals the min and max parameters and it returns unmarshaled diffs.
 func (view *MarshalingView) Changes(min Marshalable, max Marshalable, limit int, includePrev bool) ([]UnmarshaledDiff, error) {
-	marshaledMin, err := view.marshalKey(min)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal min: %s", err)
-	}
-
-	marshaledMax, err := view.marshalKey(max)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal max: %s", err)
-	}
-
-	diffs, err := view.view.Changes(marshaledMin, marshaledMax, limit, includePrev)
-
-	if err != nil {
-		return nil, err
-	}
-
-	unmarshaledDiffs := make([]UnmarshaledDiff, len(diffs))
-
-	for i, diff := range diffs {
-		k, c, p, err := view.unmarshalDiff(diff[0], diff[1], diff[2])
-
-		if err != nil {
-			return nil, fmt.Errorf("could not unmarshal diff %#v: %s", diff, err)
-		}
-
-		unmarshaledDiffs[i] = UnmarshaledDiff{k, c, p}
-	}
-
-	return unmarshaledDiffs, nil
+	return nil, nil
 }
 
 // Revision returns this view's revision number.
@@ -247,7 +185,7 @@ type UnmarshaledIterator interface {
 var _ UnmarshaledIterator = (*unmarshaledIterator)(nil)
 
 type unmarshaledIterator struct {
-	Iterator
+	kv.Iterator
 	view  *MarshalingView
 	key   interface{}
 	value interface{}

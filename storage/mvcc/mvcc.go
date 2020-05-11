@@ -7,6 +7,16 @@ import (
 	"io"
 
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
+)
+
+const (
+	// RevisionOldest can be used in place of a revision
+	// number to access the oldest revision
+	RevisionOldest int64 = -1
+	// RevisionNewest can be used in place of a revision
+	// number to access the neweset revision
+	RevisionNewest int64 = 0
 )
 
 var (
@@ -154,7 +164,7 @@ func New(kvStore kv.Store) (Store, error) {
 
 	// Always ensure that the store exists
 	if err := kvStore.Create(); err != nil {
-		return nil, fmt.Errorf("could not ensure store exists: %s", err.Error())
+		return nil, fmt.Errorf("could not ensure store exists: %s", err)
 	}
 
 	return store, nil
@@ -177,8 +187,10 @@ func (store *store) Delete() error {
 }
 
 // Partitions implements Store.Partitions
-func (store *store) Partitions(min []byte, max []byte, limit int) ([][]byte, error) {
-	return store.kvStore.Partitions(min, max, limit)
+func (store *store) Partitions(nameRange keys.Range, limit int) ([][]byte, error) {
+	names, err := store.kvStore.Partitions(nameRange, limit)
+
+	return names, fromKVError(err)
 }
 
 // Partition implements Store.Partition
@@ -196,10 +208,10 @@ func (partition *partition) beginTxn(writable bool) (kv.Transaction, error) {
 }
 
 func (partition *partition) newestRevision(transaction kv.Transaction) (int64, error) {
-	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, SortOrderDesc)
+	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, kv.SortOrderDesc)
 
 	if err != nil {
-		return 0, fmt.Errorf("could not create iterator: %s", err.Error())
+		return 0, fmt.Errorf("could not create iterator: %s", err)
 	}
 
 	if !iter.next() {
@@ -214,10 +226,10 @@ func (partition *partition) newestRevision(transaction kv.Transaction) (int64, e
 }
 
 func (partition *partition) oldestRevision(transaction kv.Transaction) (int64, error) {
-	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, SortOrderAsc)
+	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, kv.SortOrderAsc)
 
 	if err != nil {
-		return 0, fmt.Errorf("could not create iterator: %s", err.Error())
+		return 0, fmt.Errorf("could not create iterator: %s", err)
 	}
 
 	if !iter.next() {
@@ -263,7 +275,7 @@ func (partition *partition) Name() []byte {
 // Create implements Partition.Create
 func (partition *partition) Create(metadata []byte) error {
 	if err := partition.store.kvStore.Partition(partition.name).Create(metadata); err != nil {
-		return fmt.Errorf("could not create partition: %s", err.Error())
+		return fmt.Errorf("could not create partition: %s", err)
 	}
 
 	return nil
@@ -272,7 +284,7 @@ func (partition *partition) Create(metadata []byte) error {
 // Delete implements Partition.Delete
 func (partition *partition) Delete() error {
 	if err := partition.store.kvStore.Partition(partition.name).Delete(); err != nil {
-		return fmt.Errorf("could not delete partition: %s", err.Error())
+		return fmt.Errorf("could not delete partition: %s", err)
 	}
 
 	return nil
@@ -283,7 +295,7 @@ func (partition *partition) Metadata() ([]byte, error) {
 	transaction, err := partition.beginTxn(false)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
+		return nil, fmt.Errorf("could not begin transaction: %s", err)
 	}
 
 	defer transaction.Rollback()
@@ -296,7 +308,7 @@ func (partition *partition) Begin() (Transaction, error) {
 	txn, err := partition.beginTxn(true)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
+		return nil, fmt.Errorf("could not begin transaction: %s", err)
 	}
 
 	return &transaction{partition: partition, txn: txn}, nil
@@ -307,7 +319,7 @@ func (partition *partition) View(revision int64) (View, error) {
 	txn, err := partition.beginTxn(false)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err.Error())
+		return nil, fmt.Errorf("could not begin transaction: %s", err)
 	}
 
 	newestRevision, err := partition.newestRevision(txn)
@@ -315,7 +327,7 @@ func (partition *partition) View(revision int64) (View, error) {
 	if err != nil {
 		txn.Rollback()
 
-		return nil, fmt.Errorf("unable to retrieve current revision: %s", err.Error())
+		return nil, fmt.Errorf("unable to retrieve current revision: %s", err)
 	}
 
 	oldestRevision, err := partition.oldestRevision(txn)
@@ -323,7 +335,7 @@ func (partition *partition) View(revision int64) (View, error) {
 	if err != nil {
 		txn.Rollback()
 
-		return nil, fmt.Errorf("unable to retrieve oldest revision: %s", err.Error())
+		return nil, fmt.Errorf("unable to retrieve oldest revision: %s", err)
 	}
 
 	if revision == RevisionNewest {
@@ -376,13 +388,13 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 	nextRevision, err := transaction.partition.nextRevision(transaction.txn)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not calculate next revision number: %s", err.Error())
+		return nil, fmt.Errorf("could not calculate next revision number: %s", err)
 	}
 
 	revisionsTxn := transaction.partition.revisionsNamespace(transaction.txn)
 
 	if err := revisionsTxn.Put(newRevisionsKey(nextRevision, nil), []byte{}); err != nil {
-		return nil, fmt.Errorf("could not insert revision start market: %s", err.Error())
+		return nil, fmt.Errorf("could not insert revision start market: %s", err)
 	}
 
 	return &revision{
@@ -403,13 +415,13 @@ func (transaction *transaction) Compact(revision int64) error {
 	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
 
 	if err != nil {
-		return fmt.Errorf("unable to retrieve current revision: %s", err.Error())
+		return fmt.Errorf("unable to retrieve current revision: %s", err)
 	}
 
 	oldestRevision, err := transaction.partition.oldestRevision(transaction.txn)
 
 	if err != nil {
-		return fmt.Errorf("unable to retrieve oldest revision: %s", err.Error())
+		return fmt.Errorf("unable to retrieve oldest revision: %s", err)
 	}
 
 	if revision == RevisionNewest {
@@ -458,25 +470,25 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 		txn, err := transaction.partition.beginTxn(false)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not begin transaction: %s", err.Error())
+			errors <- fmt.Errorf("could not begin transaction: %s", err)
 
 			return
 		}
 
 		defer txn.Rollback()
 
-		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision - 1}, SortOrderAsc)
+		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision - 1}, kv.SortOrderAsc)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not create revisions iterator: %s", err.Error())
+			errors <- fmt.Errorf("could not create revisions iterator: %s", err)
 
 			return
 		}
 
-		keysIter, err := newKeysIterator(transaction.partition.keysNamespace(txn), nil, nil, SortOrderDesc)
+		keysIter, err := newKeysIterator(transaction.partition.keysNamespace(txn), nil, nil, kv.SortOrderDesc)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not create keys iterator: %s", err.Error())
+			errors <- fmt.Errorf("could not create keys iterator: %s", err)
 
 			return
 		}
@@ -538,56 +550,34 @@ type view struct {
 	txn       kv.Transaction
 }
 
-// Keys implements View.Keys
-func (view *view) Keys(min []byte, max []byte, limit int, order SortOrder) ([]KV, error) {
-	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), min, max, view.revision, order)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
-	}
-
-	var kvs []KV
-
-	if limit >= 0 {
-		kvs = make([]KV, 0, limit)
-	} else {
-		kvs = make([]KV, 0, 0)
-	}
-
-	for iter.next() && (limit < 0 || len(kvs) < limit) {
-		kvs = append(kvs, KV{iter.key(), iter.value()})
-	}
-
-	if iter.error() != nil {
-		return nil, fmt.Errorf("iteration error: %s", iter.error().Error())
-	}
-
-	return kvs, nil
+// Get implements View.Get
+func (view *view) Get(key []byte) ([]byte, error) {
+	return view.partition.keysNamespace(view.txn).Get(key)
 }
 
-// KeysIterator implements View.KeysIterator
-func (view *view) KeysIterator(min []byte, max []byte, order SortOrder) (Iterator, error) {
-	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), min, max, view.revision, order)
+// Keys implements View.Keys
+func (view *view) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error) {
+	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), keys.Min, keys.Max, view.revision, order)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
+		return nil, fmt.Errorf("could not create iterator: %s", err)
 	}
 
 	return iter, nil
 }
 
 // Changes implements View.Changes
-func (view *view) Changes(min []byte, max []byte, limit int, includePrev bool) ([]Diff, error) {
-	iter, err := newRevisionsIterator(view.partition.revisionsNamespace(view.txn), &revisionsCursor{revision: view.revision}, &revisionsCursor{revision: view.revision, key: max}, SortOrderAsc)
+func (view *view) Changes(keys keys.Range, includePrev bool) (DiffIterator, error) {
+	iter, err := newRevisionsIterator(view.partition.revisionsNamespace(view.txn), &revisionsCursor{revision: view.revision}, &revisionsCursor{revision: view.revision, key: keys.Max}, kv.SortOrderAsc)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not create revisions iterator: %s", err.Error())
+		return nil, fmt.Errorf("could not create revisions iterator: %s", err)
 	}
 
 	// Read empty revision marker first to get to the actual data
 	if !iter.next() {
 		if iter.error() != nil {
-			return nil, fmt.Errorf("iteration error: %s", err.Error())
+			return nil, fmt.Errorf("iteration error: %s", err)
 		}
 
 		// There is no revision marker for this revision so it must have been
@@ -599,36 +589,38 @@ func (view *view) Changes(min []byte, max []byte, limit int, includePrev bool) (
 		return nil, fmt.Errorf("consistency violation: the first key of each revision should be nil")
 	}
 
-	var diffs []Diff
+	return nil, nil
 
-	if limit >= 0 {
-		diffs = make([]Diff, 0, limit)
-	} else {
-		diffs = make([]Diff, 0, 0)
-	}
+	// var diffs []Diff
 
-	// Skip to the start key
-	done := false
-	for iter.next(); !done && bytes.Compare(iter.key(), min) < 0; done = !iter.next() {
-	}
+	// if limit >= 0 {
+	// 	diffs = make([]Diff, 0, limit)
+	// } else {
+	// 	diffs = make([]Diff, 0, 0)
+	// }
 
-	if iter.error() != nil {
-		return nil, fmt.Errorf("iteration error: %s", err.Error())
-	} else if done {
-		return diffs, nil
-	}
+	// // Skip to the start key
+	// done := false
+	// for iter.next(); !done && bytes.Compare(iter.key(), keys.Min) < 0; done = !iter.next() {
+	// }
 
-	diffs = append(diffs, Diff{iter.key(), iter.value(), nil})
+	// if iter.error() != nil {
+	// 	return nil, fmt.Errorf("iteration error: %s", err)
+	// } else if done {
+	// 	return diffs, nil
+	// }
 
-	for iter.next() && (limit < 0 || len(diffs) < limit) {
-		diffs = append(diffs, Diff{iter.key(), iter.value(), nil})
-	}
+	// diffs = append(diffs, Diff{iter.key(), iter.value(), nil})
 
-	if iter.error() != nil {
-		return nil, fmt.Errorf("iteration error: %s", err.Error())
-	}
+	// for iter.next() && (limit < 0 || len(diffs) < limit) {
+	// 	diffs = append(diffs, Diff{iter.key(), iter.value(), nil})
+	// }
 
-	return diffs, nil
+	// if iter.error() != nil {
+	// 	return nil, fmt.Errorf("iteration error: %s", err)
+	// }
+
+	// return diffs, nil
 }
 
 // Revision implements View.Revision
@@ -732,14 +724,14 @@ func (c *revisionsCursor) bytes() revisionsKey {
 
 type revisionsIterator struct {
 	mvccIterator
-	order SortOrder
+	order kv.SortOrder
 }
 
-func newRevisionsIterator(txn kv.Transaction, min *revisionsCursor, max *revisionsCursor, order SortOrder) (*revisionsIterator, error) {
-	iter, err := txn.Keys(min.bytes(), max.bytes(), kv.SortOrder(order))
+func newRevisionsIterator(txn kv.Transaction, min *revisionsCursor, max *revisionsCursor, order kv.SortOrder) (*revisionsIterator, error) {
+	iter, err := txn.Keys(keys.Range{Min: min.bytes(), Max: max.bytes()}, order)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
+		return nil, fmt.Errorf("could not create iterator: %s", err)
 	}
 
 	return &revisionsIterator{
@@ -787,7 +779,7 @@ func (iter *revisionsIterator) next() bool {
 	}()
 
 	if oldRev != 0 && oldRev != iter.rev {
-		if iter.order == SortOrderDesc && oldRev != iter.rev+1 {
+		if iter.order == kv.SortOrderDesc && oldRev != iter.rev+1 {
 			iter.err = fmt.Errorf("consistency violation: each revision must be exactly one less than the last: revision %d follows revision %d", iter.rev, oldRev)
 		} else if oldRev != iter.rev-1 {
 			iter.err = fmt.Errorf("consistency violation: each revision must be exactly one more than the last: revision %d follows revision %d", iter.rev, oldRev)
@@ -816,11 +808,11 @@ type keysIterator struct {
 	mvccIterator
 }
 
-func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order SortOrder) (*keysIterator, error) {
-	iter, err := txn.Keys(min.bytes(), max.bytes(), kv.SortOrder(order))
+func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order kv.SortOrder) (*keysIterator, error) {
+	iter, err := txn.Keys(keys.Range{Min: min.bytes(), Max: max.bytes()}, kv.SortOrder(order))
 
 	if err != nil {
-		return nil, fmt.Errorf("could not create iterator: %s", err.Error())
+		return nil, fmt.Errorf("could not create iterator: %s", err)
 	}
 
 	return &keysIterator{
@@ -848,7 +840,7 @@ func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order
 	}, nil
 }
 
-var _ Iterator = (*viewRevisionKeysIterator)(nil)
+var _ kv.Iterator = (*viewRevisionKeysIterator)(nil)
 
 // Like keysIterator but it skips anything
 type viewRevisionKeysIterator struct {
@@ -859,7 +851,7 @@ type viewRevisionKeysIterator struct {
 	currentRev   int64
 }
 
-func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revision int64, order SortOrder) (*viewRevisionKeysIterator, error) {
+func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revision int64, order kv.SortOrder) (*viewRevisionKeysIterator, error) {
 	keysIterator, err := newKeysIterator(txn, &keysCursor{key: min}, &keysCursor{key: max}, order)
 
 	if err != nil {
@@ -934,5 +926,89 @@ func (iter *viewRevisionKeysIterator) value() []byte {
 }
 
 func (iter *viewRevisionKeysIterator) revision() int64 {
+	return iter.currentRev
+}
+
+var _ DiffIterator = (*viewRevisionDiffsIterator)(nil)
+
+type viewRevisionDiffsIterator struct {
+	revisionsIterator
+	viewRevision int64
+	currentKey   []byte
+	currentValue []byte
+	currentRev   int64
+}
+
+func newViewRevisionDiffsIterator(txn kv.Transaction, min []byte, max []byte, revision int64) (*viewRevisionDiffsIterator, error) {
+	iter, err := newRevisionsIterator(txn, &revisionsCursor{revision: revision}, &revisionsCursor{revision: revision, key: max}, kv.SortOrderAsc)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not create revisions iterator: %s", err)
+	}
+
+	// Read empty revision marker first to get to the actual data
+	if !iter.next() {
+		if iter.error() != nil {
+			return nil, fmt.Errorf("iteration error: %s", err)
+		}
+
+		// There is no revision marker for this revision so it must have been
+		// compacted
+		return nil, fmt.Errorf("consistency violation: revision %d should exist, but a record of it was not found", revision)
+	}
+
+	if iter.key() != nil {
+		return nil, fmt.Errorf("consistency violation: the first key of each revision should be nil")
+	}
+
+	// Skip to the start key
+	for hasMore := iter.next(); hasMore && bytes.Compare(iter.key(), min) < 0; hasMore = !iter.next() {
+	}
+
+	if iter.error() != nil {
+		return nil, fmt.Errorf("iteration error: %s", err)
+	}
+
+	return &viewRevisionDiffsIterator{
+		revisionsIterator: *iter,
+		viewRevision:      revision,
+	}, nil
+}
+
+// return the highest revision of each key whose revision <= iter.viewRevision
+func (iter *viewRevisionDiffsIterator) next() bool {
+	if iter.k == nil {
+		return false
+	}
+
+	return iter.revisionsIterator.next()
+}
+
+// Some public functions to implement Iterator interface
+func (iter *viewRevisionDiffsIterator) Next() bool {
+	return iter.next()
+}
+
+func (iter *viewRevisionDiffsIterator) Key() []byte {
+	return iter.key()
+}
+
+func (iter *viewRevisionDiffsIterator) Value() []byte {
+	return iter.value()
+}
+
+func (iter *viewRevisionDiffsIterator) Error() error {
+	return iter.error()
+}
+
+func (iter *viewRevisionDiffsIterator) key() []byte {
+	return iter.currentKey
+}
+
+func (iter *viewRevisionDiffsIterator) value() []byte {
+	return iter.currentValue
+}
+
+func (iter *viewRevisionDiffsIterator) revision() int64 {
 	return iter.currentRev
 }

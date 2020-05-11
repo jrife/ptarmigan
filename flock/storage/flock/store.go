@@ -3,6 +3,7 @@ package flock
 import (
 	"fmt"
 
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/mvcc"
 	"go.uber.org/zap"
 )
@@ -25,25 +26,21 @@ type store struct {
 }
 
 // New creates an instance of Store backed by an mvcc store
-func New(config StoreConfig) (Store, error) {
+func New(config StoreConfig) Store {
 	store := &store{logger: config.Logger}
 
 	if store.logger == nil {
 		store.logger = zap.L()
 	}
 
-	if err := config.Store.Open(); err != nil {
-		return nil, fmt.Errorf("could not open mvcc store: %s", err)
-	}
-
 	store.store = config.Store
 
-	return store, nil
+	return store
 }
 
 // ReplicaStores implements Store.ReplicaStores
 func (store *store) ReplicaStores(start string, limit int) ([]string, error) {
-	partitions, err := store.store.Partitions([]byte(start), nil, -1)
+	partitions, err := store.store.Partitions(keys.All().Gte([]byte(start)), -1)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not list partitions from mvcc store: %s", err.Error())

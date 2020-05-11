@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jrife/ptarmigan/storage/kv/kvpb"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
+	kvpb "github.com/jrife/ptarmigan/storage/kv/pb"
 	"github.com/jrife/ptarmigan/utils/lvstream"
 )
 
@@ -49,7 +50,7 @@ func (snapshotter *Snapshotter) Snapshot() (io.ReadCloser, error) {
 			marshaled, err := kvPair.Marshal()
 
 			if err != nil {
-				return nil, fmt.Errorf("could not marshal kv pair: %s", err.Error())
+				return nil, fmt.Errorf("could not marshal kv pair: %s", err)
 			}
 
 			return marshaled, nil
@@ -84,7 +85,7 @@ func (snapshotter *Snapshotter) ApplySnapshot(snapshot io.Reader) error {
 	defer transaction.Rollback()
 
 	if err := snapshotter.Purge(transaction); err != nil {
-		return fmt.Errorf("could not purge partition: %s", err.Error())
+		return fmt.Errorf("could not purge partition: %s", err)
 	}
 
 	kvPairs := make(chan kvpb.KVPair)
@@ -96,7 +97,7 @@ func (snapshotter *Snapshotter) ApplySnapshot(snapshot io.Reader) error {
 		var kvPair kvpb.KVPair
 
 		if err := kvPair.Unmarshal(value); err != nil {
-			return fmt.Errorf("could not unmarshal kv pair: %s", err.Error())
+			return fmt.Errorf("could not unmarshal kv pair: %s", err)
 		}
 
 		select {
@@ -117,10 +118,10 @@ func (snapshotter *Snapshotter) ApplySnapshot(snapshot io.Reader) error {
 		err = transaction.Commit()
 
 		if err != nil {
-			err = fmt.Errorf("could not commit transaction: %s", err.Error())
+			err = fmt.Errorf("could not commit transaction: %s", err)
 		}
 	} else {
-		err = fmt.Errorf("copy failed: %s", err.Error())
+		err = fmt.Errorf("copy failed: %s", err)
 	}
 
 	return err
@@ -135,7 +136,7 @@ func writeKVPairs(ctx context.Context, transaction Transaction, kvPairs <-chan k
 		select {
 		case kvPair := <-kvPairs:
 			if err := transaction.SetMetadata(kvPair.Value); err != nil {
-				errors <- fmt.Errorf("could not write metadata %v: %s", kvPair.Value, err.Error())
+				errors <- fmt.Errorf("could not write metadata %v: %s", kvPair.Value, err)
 
 				return
 			}
@@ -149,7 +150,7 @@ func writeKVPairs(ctx context.Context, transaction Transaction, kvPairs <-chan k
 			select {
 			case kvPair := <-kvPairs:
 				if err := transaction.Put(kvPair.Key, kvPair.Value); err != nil {
-					errors <- fmt.Errorf("could not write key %v: %s", kvPair.Key, err.Error())
+					errors <- fmt.Errorf("could not write key %v: %s", kvPair.Key, err)
 
 					return
 				}
@@ -175,7 +176,7 @@ func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPa
 		metadata, err := transaction.Metadata()
 
 		if err != nil {
-			errors <- fmt.Errorf("could not create iterator: %s", err.Error())
+			errors <- fmt.Errorf("could not create iterator: %s", err)
 
 			return
 		}
@@ -188,10 +189,10 @@ func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPa
 			return
 		}
 
-		iter, err := transaction.Keys(nil, nil, SortOrderAsc)
+		iter, err := transaction.Keys(keys.All(), SortOrderAsc)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not create iterator: %s", err.Error())
+			errors <- fmt.Errorf("could not create iterator: %s", err)
 
 			return
 		}
@@ -207,7 +208,7 @@ func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPa
 		}
 
 		if iter.Error() != nil {
-			errors <- fmt.Errorf("iteration error: %s", err.Error())
+			errors <- fmt.Errorf("iteration error: %s", err)
 
 			return
 		}

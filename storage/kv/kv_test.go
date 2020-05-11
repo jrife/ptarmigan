@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/kv/plugins"
 )
 
@@ -26,11 +27,11 @@ func builder(plugin kv.Plugin) tempStoreBuilder {
 		rootStore, err := plugin.NewTempRootStore()
 
 		if err != nil {
-			t.Fatalf("could not create temp root store: %s", err.Error())
+			t.Fatalf("could not create temp root store: %s", err)
 		}
 
 		if err := initializeRootStoreState(rootStore, initialState); err != nil {
-			t.Fatalf("could not initialize root store state: %s", err.Error())
+			t.Fatalf("could not initialize root store state: %s", err)
 		}
 
 		return rootStore
@@ -88,14 +89,14 @@ func rootStoreToModel(rootStore kv.RootStore) (rootStoreModel, error) {
 	stores, err := rootStore.Stores()
 
 	if err != nil {
-		return rootStoreModel{}, fmt.Errorf("could not list stores: %s", err.Error())
+		return rootStoreModel{}, fmt.Errorf("could not list stores: %s", err)
 	}
 
 	for _, storeName := range stores {
 		storeModel, err := storeToModel(rootStore.Store(storeName))
 
 		if err != nil {
-			return rootStoreModel{}, fmt.Errorf("storeToModel failed for store %s: %s", storeName, err.Error())
+			return rootStoreModel{}, fmt.Errorf("storeToModel failed for store %s: %s", storeName, err)
 		}
 
 		model[string(storeName)] = storeModel
@@ -106,17 +107,17 @@ func rootStoreToModel(rootStore kv.RootStore) (rootStoreModel, error) {
 
 func storeToModel(store kv.Store) (storeModel, error) {
 	model := storeModel{}
-	partitions, err := store.Partitions(nil, nil, -1)
+	partitions, err := store.Partitions(keys.All(), -1)
 
 	if err != nil {
-		return storeModel{}, fmt.Errorf("could not list partitions: %s", err.Error())
+		return storeModel{}, fmt.Errorf("could not list partitions: %s", err)
 	}
 
 	for _, partitionName := range partitions {
 		partitionModel, err := partitionToModel(store.Partition(partitionName))
 
 		if err != nil {
-			return storeModel{}, fmt.Errorf("partitionToModel failed for partition %s: %s", partitionName, err.Error())
+			return storeModel{}, fmt.Errorf("partitionToModel failed for partition %s: %s", partitionName, err)
 		}
 
 		model[string(partitionName)] = partitionModel
@@ -130,15 +131,15 @@ func partitionToModel(partition kv.Partition) (partitionModel, error) {
 	transaction, err := partition.Begin(false)
 
 	if err != nil {
-		return partitionModel{}, fmt.Errorf("could not begin transaction: %s", err.Error())
+		return partitionModel{}, fmt.Errorf("could not begin transaction: %s", err)
 	}
 
 	defer transaction.Rollback()
 
-	iter, err := transaction.Keys(nil, nil, kv.SortOrderAsc)
+	iter, err := transaction.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
-		return partitionModel{}, fmt.Errorf("could not create key iterator: %s", err.Error())
+		return partitionModel{}, fmt.Errorf("could not create key iterator: %s", err)
 	}
 
 	for iter.Next() {
@@ -146,7 +147,7 @@ func partitionToModel(partition kv.Partition) (partitionModel, error) {
 	}
 
 	if iter.Error() != nil {
-		return partitionModel{}, fmt.Errorf("iteration error: %s", err.Error())
+		return partitionModel{}, fmt.Errorf("iteration error: %s", err)
 	}
 
 	return model, nil
@@ -626,8 +627,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 		partitions   [][]byte
 		err          error
 		store        []byte
-		min          []byte
-		max          []byte
+		nameRange    keys.Range
 		limit        int
 	}{
 		"all-partitions": {
@@ -641,11 +641,10 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 					"p6": {},
 				},
 			},
-			store: []byte("store1"),
-			min:   nil,
-			max:   nil,
-			limit: -1,
-			err:   nil,
+			store:     []byte("store1"),
+			nameRange: keys.All(),
+			limit:     -1,
+			err:       nil,
 			partitions: [][]byte{
 				[]byte("p1"),
 				[]byte("p2"),
@@ -666,11 +665,10 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 					"p6": {},
 				},
 			},
-			store: []byte("store1"),
-			min:   nil,
-			max:   nil,
-			limit: 3,
-			err:   nil,
+			store:     []byte("store1"),
+			nameRange: keys.All(),
+			limit:     3,
+			err:       nil,
 			partitions: [][]byte{
 				[]byte("p1"),
 				[]byte("p2"),
@@ -688,11 +686,10 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 					"p6": {},
 				},
 			},
-			store: []byte("store1"),
-			min:   []byte("p4"),
-			max:   nil,
-			limit: -1,
-			err:   nil,
+			store:     []byte("store1"),
+			nameRange: keys.All().Gte([]byte("p4")),
+			limit:     -1,
+			err:       nil,
 			partitions: [][]byte{
 				[]byte("p4"),
 				[]byte("p5"),
@@ -710,11 +707,10 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 					"p6": {},
 				},
 			},
-			store: []byte("store1"),
-			min:   nil,
-			max:   []byte("p4"),
-			limit: -1,
-			err:   nil,
+			store:     []byte("store1"),
+			nameRange: keys.All().Lt([]byte("p4")),
+			limit:     -1,
+			err:       nil,
 			partitions: [][]byte{
 				[]byte("p1"),
 				[]byte("p2"),
@@ -732,11 +728,10 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 					"p6": {},
 				},
 			},
-			store: []byte("store1"),
-			min:   []byte("p2"),
-			max:   []byte("p4"),
-			limit: -1,
-			err:   nil,
+			store:     []byte("store1"),
+			nameRange: keys.All().Gte([]byte("p2")).Lt([]byte("p4")),
+			limit:     -1,
+			err:       nil,
 			partitions: [][]byte{
 				[]byte("p2"),
 				[]byte("p3"),
@@ -754,8 +749,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 				},
 			},
 			store:      []byte("store2"),
-			min:        nil,
-			max:        nil,
+			nameRange:  keys.All(),
 			limit:      -1,
 			err:        kv.ErrNoSuchStore,
 			partitions: nil,
@@ -772,8 +766,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 				},
 			},
 			store:      []byte("store1"),
-			min:        []byte("p3"),
-			max:        []byte("p3"),
+			nameRange:  keys.All().Gte([]byte("p3")).Lt([]byte("p3")),
 			limit:      -1,
 			err:        nil,
 			partitions: [][]byte{},
@@ -790,8 +783,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 				},
 			},
 			store:      []byte("store1"),
-			min:        []byte("p4"),
-			max:        []byte("p2"),
+			nameRange:  keys.All().Gte([]byte("p4")).Lt([]byte("p2")),
 			limit:      -1,
 			err:        nil,
 			partitions: [][]byte{},
@@ -808,8 +800,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 				},
 			},
 			store:      nil,
-			min:        []byte("p3"),
-			max:        []byte("p3"),
+			nameRange:  keys.All().Gte([]byte("p3")).Lt([]byte("p3")),
 			limit:      -1,
 			err:        errAny,
 			partitions: [][]byte{},
@@ -826,8 +817,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 				},
 			},
 			store:      []byte{},
-			min:        []byte("p3"),
-			max:        []byte("p3"),
+			nameRange:  keys.All().Gte([]byte("p3")).Lt([]byte("p3")),
 			limit:      -1,
 			err:        errAny,
 			partitions: [][]byte{},
@@ -839,7 +829,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			partitions, err := rootStore.Store(testCase.store).Partitions(testCase.min, testCase.max, testCase.limit)
+			partitions, err := rootStore.Store(testCase.store).Partitions(testCase.nameRange, testCase.limit)
 
 			if testCase.err == errAny {
 				if err == nil {
@@ -861,7 +851,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 				t.Fatalf("expected err to be nil, got %#v", err)
 			}
 
-			if _, err := rootStore.Store(testCase.store).Partitions(testCase.min, testCase.max, testCase.limit); err != kv.ErrClosed {
+			if _, err := rootStore.Store(testCase.store).Partitions(testCase.nameRange, testCase.limit); err != kv.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
@@ -2043,13 +2033,13 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf(diff)
 	}
 
-	rwIter, err := rw.Keys(nil, nil, kv.SortOrderAsc)
+	rwIter, err := rw.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got #%v", err)
 	}
 
-	roIter, err := ro.Keys(nil, nil, kv.SortOrderAsc)
+	roIter, err := ro.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got #%v", err)
@@ -2080,8 +2070,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 		initialState rootStoreModel
 		store        []byte
 		partition    []byte
-		min          []byte
-		max          []byte
+		keys         keys.Range
 		order        kv.SortOrder
 		kvs          [][2][]byte
 		err          error
@@ -2101,8 +2090,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       nil,
-			max:       nil,
+			keys:      keys.All(),
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2129,8 +2117,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       nil,
-			max:       nil,
+			keys:      keys.All(),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2157,8 +2144,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       nil,
-			max:       []byte("g"),
+			keys:      keys.All().Lt([]byte("g")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2182,8 +2168,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       nil,
-			max:       []byte("g"),
+			keys:      keys.All().Lt([]byte("g")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2207,8 +2192,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("g"),
-			max:       []byte("z"),
+			keys:      keys.All().Gte([]byte("g")).Lt([]byte("z")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2232,8 +2216,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("g"),
-			max:       []byte("z"),
+			keys:      keys.All().Gte([]byte("g")).Lt([]byte("z")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2257,8 +2240,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("c"),
-			max:       []byte("i"),
+			keys:      keys.All().Gte([]byte("c")).Lt([]byte("i")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2282,8 +2264,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("c"),
-			max:       []byte("i"),
+			keys:      keys.All().Gte([]byte("c")).Lt([]byte("i")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2307,8 +2288,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("b"),
-			max:       []byte("j"),
+			keys:      keys.All().Gte([]byte("b")).Lt([]byte("j")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2333,8 +2313,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("b"),
-			max:       []byte("j"),
+			keys:      keys.All().Gte([]byte("b")).Lt([]byte("j")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs: [][2][]byte{
@@ -2359,8 +2338,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("e"),
-			max:       []byte("e"),
+			keys:      keys.All().Gte([]byte("e")).Lt([]byte("e")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs:       [][2][]byte{},
@@ -2380,8 +2358,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("g"),
-			max:       []byte("c"),
+			keys:      keys.All().Gte([]byte("g")).Lt([]byte("c")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs:       [][2][]byte{},
@@ -2401,8 +2378,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("e"),
-			max:       []byte("e"),
+			keys:      keys.All().Gte([]byte("e")).Lt([]byte("e")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs:       [][2][]byte{},
@@ -2422,8 +2398,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			},
 			store:     []byte("store1"),
 			partition: []byte("p1"),
-			min:       []byte("g"),
-			max:       []byte("c"),
+			keys:      keys.All().Gte([]byte("g")).Lt([]byte("c")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
 			kvs:       [][2][]byte{},
@@ -2443,7 +2418,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 
 			defer transaction.Rollback()
 
-			iter, err := transaction.Keys(testCase.min, testCase.max, testCase.order)
+			iter, err := transaction.Keys(testCase.keys, testCase.order)
 
 			if err != testCase.err {
 				t.Fatalf("expected error to be #%v, got %#v", testCase.err, err)
@@ -2525,19 +2500,19 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf("expected #%v, got %#v", []byte("7"), ccc123)
 	}
 
-	aaaIter, err := aaaTxn.Keys(nil, nil, kv.SortOrderAsc)
+	aaaIter, err := aaaTxn.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got %#v", err)
 	}
 
-	bbbIter, err := bbbTxn.Keys(nil, nil, kv.SortOrderAsc)
+	bbbIter, err := bbbTxn.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got %#v", err)
 	}
 
-	cccIter, err := cccTxn.Keys(nil, nil, kv.SortOrderAsc)
+	cccIter, err := cccTxn.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got %#v", err)
@@ -2577,7 +2552,7 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 	aaaTxn.Put([]byte("new"), []byte("stuff"))
 	bbbTxn.Delete([]byte("456"))
 
-	iter, err := transaction.Keys(nil, nil, kv.SortOrderAsc)
+	iter, err := transaction.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got %#v", err)

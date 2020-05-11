@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
-	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/mvcc"
 	"github.com/jrife/ptarmigan/utils/stream"
 )
@@ -18,8 +18,8 @@ const (
 
 // Query implements View.Query
 func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, error) {
-	min, max := keyRange(query)
-	iter, err := view.view.KeysIterator(kvsKey(min), kvsKey(max), sortOrder(query.SortOrder))
+	keys := keyRange(query)
+	iter, err := view.view.KeysIterator(kvsKey(keys.Min), kvsKey(keys.Max), sortOrder(query.SortOrder))
 
 	if err != nil {
 		return flockpb.KVQueryResponse{}, fmt.Errorf("could not create keys iterator: %s", err)
@@ -93,97 +93,71 @@ func sortOrder(order flockpb.KVQueryRequest_SortOrder) mvcc.SortOrder {
 	return mvcc.SortOrderAsc
 }
 
-func keyRange(query flockpb.KVQueryRequest) ([]byte, []byte) {
-	min, max := selectionRange(query.Selection)
-	min, max = refineRange(min, max, query)
-
-	return min, max
+func keyRange(query flockpb.KVQueryRequest) keys.Range {
+	return refineRange(selectionRange(query.Selection), query)
 }
 
 // return the minimum required key range required to retrieve all keys matching the selection
 // excluding any considerations for paging options such as "after" or "limit" in the query.
-func selectionRange(selection *flockpb.KVSelection) ([]byte, []byte) {
+func selectionRange(selection *flockpb.KVSelection) keys.Range {
+	keyRange := keys.All()
+
 	if selection == nil {
-		return nil, nil
+		return keyRange
 	}
 
 	// short circuits any range specifier
 	if len(selection.GetKey()) != 0 {
-		return kv.Gte(selection.GetKey()), kv.Lte(selection.GetKey())
+		return keyRange.Eq(selection.GetKey())
 	}
-
-	var min []byte
-	var max []byte
 
 	switch selection.KeyRangeMin.(type) {
 	case *flockpb.KVSelection_KeyGte:
-		min = kv.Gte(selection.GetKeyGte())
+		keyRange = keyRange.Gte(selection.GetKeyGte())
 	case *flockpb.KVSelection_KeyGt:
-		min = kv.Gt(selection.GetKeyGt())
+		keyRange = keyRange.Gt(selection.GetKeyGt())
 	}
 
 	switch selection.KeyRangeMax.(type) {
 	case *flockpb.KVSelection_KeyLte:
-		max = kv.Lte(selection.GetKeyLte())
+		keyRange = keyRange.Lte(selection.GetKeyLte())
 	case *flockpb.KVSelection_KeyLt:
-		max = kv.Lt(selection.GetKeyLt())
+		keyRange = keyRange.Lt(selection.GetKeyLt())
 	}
 
 	if len(selection.GetKeyStartsWith()) != 0 {
-		start := kv.PrefixRangeStart(selection.GetKeyStartsWith())
-		end := kv.PrefixRangeEnd(selection.GetKeyStartsWith())
-
-		// final min must satisfy both key range restrictions
-		// and prefix restriction. If the prefix range start
-		// key comes after the minimum range key then the minimum
-		// range key should be the prefix range start
-		if min == nil || bytes.Compare(start, min) > 0 {
-			min = start
-		}
-
-		// final max must satisfy both key range restrictions
-		// and prefix restriction. If the prefix range end
-		// key comes before the maximum range key then the maximum
-		// range key should be the prefix range end
-		if max == nil || bytes.Compare(end, max) < 0 {
-			max = end
-		}
+		keyRange = keyRange.Prefix(selection.GetKeyStartsWith())
 	}
 
-	return min, max
+	return keyRange
 }
 
 // refineRange shrinks the search space if possible by making min or max more restrictive if
 // the query allows.
-func refineRange(min, max []byte, query flockpb.KVQueryRequest) ([]byte, []byte) {
+func refineRange(keyRange keys.Range, query flockpb.KVQueryRequest) keys.Range {
 	if query.IncludeCount {
 		// Must count all keys matching the selection every time. Cannot refine range
-		return min, max
+		return keyRange
 	}
 
 	if query.SortTarget != flockpb.KVQueryRequest_KEY {
 		// Key order is not correlated with sort order for query. Must search entire
 		// range and filter.
-		return min, max
+		return keyRange
 	}
 
 	if query.After != "" {
 		switch query.SortOrder {
 		case flockpb.KVQueryRequest_DESC:
-			if max == nil || bytes.Compare([]byte(query.After), max) < 0 {
-				max = []byte(query.After)
-			}
+			keyRange = keyRange.Lt([]byte(query.After))
 		case flockpb.KVQueryRequest_ASC:
 			fallthrough
 		default:
-			after := kv.Gt([]byte(query.After))
-			if min == nil || bytes.Compare([]byte(after), min) > 0 {
-				min = after
-			}
+			keyRange = keyRange.Gt([]byte(query.After))
 		}
 	}
 
-	return min, max
+	return keyRange
 }
 
 func count(c *int64) stream.Processor {

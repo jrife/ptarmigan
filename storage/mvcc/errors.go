@@ -1,0 +1,36 @@
+package mvcc
+
+import (
+	"errors"
+
+	"github.com/jrife/ptarmigan/storage/kv"
+)
+
+var (
+	// ErrClosed indicates that the store was closed
+	ErrClosed = errors.New("store was closed")
+	// ErrCompacted is returned when an operation cannot be completed
+	// because it needs to read data that was compacted away.
+	ErrCompacted = errors.New("store was compacted")
+	// ErrRevisionTooHigh is returned when an operation tries to access
+	// a revision number that is higher than the newest committed revision.
+	ErrRevisionTooHigh = errors.New("revision number is higher than the newest committed revision")
+	// ErrNoSuchPartition is returned when a function tries to access a partition
+	// that does not exist.
+	ErrNoSuchPartition = errors.New("partition does not exist")
+	// ErrNoRevisions is returned when a consumer requests a view of either the oldest
+	// or newest revision, but the partition is empty having had no revisions
+	// written to it yet.
+	ErrNoRevisions = errors.New("partition has no revision")
+)
+
+func fromKVError(err error) error {
+	switch err {
+	case kv.ErrClosed:
+		return ErrClosed
+	case kv.ErrNoSuchPartition:
+		return ErrNoSuchPartition
+	}
+
+	return err
+}

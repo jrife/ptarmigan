@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/kv/plugins"
 	"github.com/jrife/ptarmigan/storage/mvcc"
 )
@@ -123,13 +124,13 @@ func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
 	rootStore, err := kvPlugin.NewTempRootStore()
 
 	if err != nil {
-		t.Fatalf("could not initialize kv root store: %s", err.Error())
+		t.Fatalf("could not initialize kv root store: %s", err)
 	}
 
 	store := rootStore.Store([]byte("temp"))
 
 	if err := store.Create(); err != nil {
-		t.Fatalf("could not initialize kv store: %s", err.Error())
+		t.Fatalf("could not initialize kv store: %s", err)
 	}
 
 	mvccStore, err := mvcc.New(store)
@@ -137,7 +138,7 @@ func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
 	if err != nil {
 		rootStore.Delete()
 
-		t.Fatalf("could not create store: %s", err.Error())
+		t.Fatalf("could not create store: %s", err)
 	}
 
 	mvccStore = &mvccStoreWithCloser{Store: mvccStore, close: func() { rootStore.Delete() }}
@@ -171,7 +172,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 		if err := mvccPartition.Create(partitionChangeset.metadata); err != nil {
 			mvccStore.Close()
 
-			t.Fatalf("failed to create partition %s: %s", partitionName, err.Error())
+			t.Fatalf("failed to create partition %s: %s", partitionName, err)
 		}
 
 		for i, transaction := range partitionChangeset.transactions {
@@ -180,7 +181,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			if err != nil {
 				mvccStore.Close()
 
-				t.Fatalf("failed to create revision %d: %s", i, err.Error())
+				t.Fatalf("failed to create revision %d: %s", i, err)
 			}
 
 			if transaction.compact > 0 {
@@ -193,7 +194,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 				}
 
 				if err := txn.Compact(transaction.compact); err != nil {
-					t.Fatalf("failed to compact partition %s to revision %d: %s", partitionName, transaction.compact, err.Error())
+					t.Fatalf("failed to compact partition %s to revision %d: %s", partitionName, transaction.compact, err)
 				}
 			}
 
@@ -202,7 +203,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			if err != nil {
 				mvccStore.Close()
 
-				t.Fatalf("failed to create revision %d: %s", i, err.Error())
+				t.Fatalf("failed to create revision %d: %s", i, err)
 			}
 
 			for key, value := range transaction.revision.changes {
@@ -217,7 +218,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 				if err != nil {
 					mvccStore.Close()
 
-					t.Fatalf("failed to create revision %d: %s", i, err.Error())
+					t.Fatalf("failed to create revision %d: %s", i, err)
 				}
 			}
 
@@ -248,7 +249,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			if err != nil {
 				mvccStore.Close()
 
-				t.Fatalf("failed to create revision %d: %s", i, err.Error())
+				t.Fatalf("failed to create revision %d: %s", i, err)
 			}
 		}
 	}
@@ -259,17 +260,17 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 func getStore(t *testing.T, mvccStore mvcc.Store) store {
 	result := store{}
 
-	partitions, err := mvccStore.Partitions(nil, nil, -1)
+	partitions, err := mvccStore.Partitions(keys.All(), -1)
 
 	if err != nil {
-		t.Fatalf("could not retrieve partitions: %s", err.Error())
+		t.Fatalf("could not retrieve partitions: %s", err)
 	}
 
 	for _, partitionName := range partitions {
 		metadata, err := mvccStore.Partition(partitionName).Metadata()
 
 		if err != nil {
-			t.Fatalf("error while getting metadata from partition %s: %s", partitionName, err.Error())
+			t.Fatalf("error while getting metadata from partition %s: %s", partitionName, err)
 		}
 
 		result[string(partitionName)] = partition{Metadata: metadata, Revisions: getAllRevisions(t, mvccStore.Partition(partitionName))}
@@ -285,7 +286,7 @@ func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 	if err == mvcc.ErrNoRevisions {
 		return result
 	} else if err != nil {
-		t.Fatalf("error while trying to read oldest revision: %s", err.Error())
+		t.Fatalf("error while trying to read oldest revision: %s", err)
 	}
 
 	for {
@@ -304,14 +305,18 @@ func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 func getAllKVs(t *testing.T, revision mvcc.View) map[string][]byte {
 	result := map[string][]byte{}
 
-	kvs, err := revision.Keys(nil, nil, -1, mvcc.SortOrderAsc)
+	kvs, err := revision.Keys(keys.All(), kv.SortOrderAsc)
 
 	if err != nil {
-		t.Fatalf("error while trying to read keys from revision %d: %s", revision.Revision(), err.Error())
+		t.Fatalf("error while trying to read keys from revision %d: %s", revision.Revision(), err)
 	}
 
-	for _, kv := range kvs {
-		result[string(kv[0])] = kv[1]
+	for kvs.Next() {
+		result[string(kvs.Key())] = kvs.Value()
+	}
+
+	if kvs.Error() != nil {
+		t.Fatalf("error while iterating over keys: %s", err)
 	}
 
 	return result
@@ -320,14 +325,18 @@ func getAllKVs(t *testing.T, revision mvcc.View) map[string][]byte {
 func getAllChanges(t *testing.T, revision mvcc.View) map[string][]byte {
 	result := map[string][]byte{}
 
-	diffs, err := revision.Changes(nil, nil, -1, false)
+	diffs, err := revision.Changes(keys.All(), false)
 
 	if err != nil {
-		t.Fatalf("error while trying to read changes from revision %d: %s", revision.Revision(), err.Error())
+		t.Fatalf("error while trying to read changes from revision %d: %s", revision.Revision(), err)
 	}
 
-	for _, diff := range diffs {
-		result[string(diff[0])] = diff[1]
+	for diffs.Next() {
+		result[string(diffs.Key())] = diffs.Value()
+	}
+
+	if diffs.Error() != nil {
+		t.Fatalf("error while iterating over diffs: %s", err)
 	}
 
 	return result
@@ -432,8 +441,8 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 	}{
 		"list-all-1": {
 			initialState: initialState,
-			min:          nil,
-			max:          nil,
+			min:          keys.All().Min,
+			max:          keys.All().Max,
 			limit:        -1,
 			result: [][]byte{
 				[]byte("a"),
@@ -447,8 +456,8 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 		},
 		"list-all-2": {
 			initialState: initialState,
-			min:          nil,
-			max:          nil,
+			min:          keys.All().Min,
+			max:          keys.All().Max,
 			limit:        7,
 			result: [][]byte{
 				[]byte("a"),
@@ -462,8 +471,8 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 		},
 		"list-all-3": {
 			initialState: initialState,
-			min:          []byte("a"),
-			max:          []byte("h"),
+			min:          keys.All().Gte([]byte("a")).Min,
+			max:          keys.All().Lt([]byte("h")).Max,
 			limit:        7,
 			result: [][]byte{
 				[]byte("a"),
@@ -552,7 +561,7 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 
 			defer store.Close()
 
-			partitions, err := store.Partitions(testCase.min, testCase.max, testCase.limit)
+			partitions, err := store.Partitions(keys.Range{Min: testCase.min, Max: testCase.max}, testCase.limit)
 
 			if err != nil {
 				t.Fatalf("expected err to be nil, got %#v", err)
@@ -562,6 +571,14 @@ func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
 
 			if diff != "" {
 				t.Fatalf(diff)
+			}
+
+			store.Close()
+
+			_, err = store.Partitions(keys.Range{Min: testCase.min, Max: testCase.max}, testCase.limit)
+
+			if err != mvcc.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
 			}
 		})
 	}
@@ -606,6 +623,9 @@ func testPartitionName(builder tempStoreBuilder, t *testing.T) {
 			}
 		})
 	}
+}
+
+func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {

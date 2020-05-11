@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/utils/uuid"
 	bolt "go.etcd.io/bbolt"
 )
@@ -91,7 +92,7 @@ func NewRootStore(config RootStoreConfig) (*RootStore, error) {
 	db, err := bolt.Open(config.Path, 0666, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not open bbolt store at %s: %s", config.Path, err.Error())
+		return nil, fmt.Errorf("could not open bbolt store at %s: %s", config.Path, err)
 	}
 
 	if err := db.Update(func(txn *bolt.Tx) error {
@@ -101,7 +102,7 @@ func NewRootStore(config RootStoreConfig) (*RootStore, error) {
 	}); err != nil {
 		db.Close()
 
-		return nil, fmt.Errorf("could not ensure stores bucket exists: %s", err.Error())
+		return nil, fmt.Errorf("could not ensure stores bucket exists: %s", err)
 	}
 
 	return &RootStore{
@@ -123,11 +124,11 @@ func (rootStore *RootStore) storesBucket(txn *bolt.Tx) (*bolt.Bucket, error) {
 // Delete implements RootStore.Delete
 func (rootStore *RootStore) Delete() error {
 	if err := rootStore.Close(); err != nil {
-		return fmt.Errorf("could not close root store: %s", err.Error())
+		return fmt.Errorf("could not close root store: %s", err)
 	}
 
 	if err := os.Remove(rootStore.path); err != nil {
-		return fmt.Errorf("could not remove directory: %s", err.Error())
+		return fmt.Errorf("could not remove directory: %s", err)
 	}
 
 	return nil
@@ -230,9 +231,9 @@ func (store *Store) Create() error {
 		}
 
 		if bucket, err := stores.CreateBucketIfNotExists(store.name); err != nil {
-			return fmt.Errorf("could not create bucket %s: %s", store.name, err.Error())
+			return fmt.Errorf("could not create bucket %s: %s", store.name, err)
 		} else if _, err := bucket.CreateBucketIfNotExists(partitionsBucket); err != nil {
-			return fmt.Errorf("could not create kv bucket inside store bucket %s: %s", store.name, err.Error())
+			return fmt.Errorf("could not create kv bucket inside store bucket %s: %s", store.name, err)
 		}
 
 		return nil
@@ -263,7 +264,7 @@ func (store *Store) Delete() error {
 				return nil
 			}
 
-			return fmt.Errorf("could not delete bucket %s: %s", store.name, err.Error())
+			return fmt.Errorf("could not delete bucket %s: %s", store.name, err)
 		}
 
 		return nil
@@ -277,7 +278,7 @@ func (store *Store) Delete() error {
 }
 
 // Partitions implements Store.Partitions
-func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
+func (store *Store) Partitions(names keys.Range, limit int) ([][]byte, error) {
 	partitions := [][]byte{}
 
 	err := store.rootStore.db.View(func(txn *bolt.Tx) error {
@@ -295,13 +296,13 @@ func (store *Store) Partitions(min, max []byte, limit int) ([][]byte, error) {
 
 		var nextPartition []byte
 
-		if min == nil {
+		if names.Min == nil {
 			nextPartition, _ = cursor.First()
 		} else {
-			nextPartition, _ = cursor.Seek(min)
+			nextPartition, _ = cursor.Seek(names.Min)
 		}
 
-		for nextPartition != nil && (limit < 0 || len(partitions) < limit) && (max == nil || bytes.Compare(nextPartition, max) < 0) {
+		for nextPartition != nil && (limit < 0 || len(partitions) < limit) && (names.Max == nil || bytes.Compare(nextPartition, names.Max) < 0) {
 			partitions = append(partitions, nextPartition)
 			nextPartition, _ = cursor.Next()
 		}
@@ -372,13 +373,13 @@ func (partition *Partition) purge(transaction kv.Transaction) error {
 	}
 
 	if err := partBucket.DeleteBucket(partition.name); err != nil && err != bolt.ErrBucketNotFound {
-		return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err.Error())
+		return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err)
 	}
 
 	bucket, _, err := partition.ensureBuckets(txn.txn)
 
 	if err != nil {
-		return fmt.Errorf("could not create partition bucket %s: %s", partition.name, err.Error())
+		return fmt.Errorf("could not create partition bucket %s: %s", partition.name, err)
 	}
 
 	txn.bucket = bucket
@@ -392,7 +393,7 @@ func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv
 	if err == bolt.ErrDatabaseNotOpen {
 		return nil, kv.ErrClosed
 	} else if err != nil {
-		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
+		return nil, fmt.Errorf("could not begin bolt transaction: %s", err)
 	}
 
 	if len(partition.store.name) == 0 || len(partition.name) == 0 {
@@ -418,7 +419,7 @@ func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv
 			if err != nil {
 				txn.Rollback()
 
-				return nil, fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err.Error())
+				return nil, fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err)
 			}
 		} else {
 			txn.Rollback()
@@ -444,19 +445,19 @@ func (partition *Partition) ensureBuckets(txn *bolt.Tx) (*bolt.Bucket, bool, err
 		exists = true
 		myBucket = partBucket.Bucket(partition.name)
 	} else if err != nil {
-		return nil, false, fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err.Error())
+		return nil, false, fmt.Errorf("could not create partition %s inside store %s: %s", partition.name, partition.store.name, err)
 	}
 
 	_, err = myBucket.CreateBucketIfNotExists(metaBucket)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("could not create metadata bucket for partition %s: %s", partition.name, err.Error())
+		return nil, false, fmt.Errorf("could not create metadata bucket for partition %s: %s", partition.name, err)
 	}
 
 	_, err = myBucket.CreateBucketIfNotExists(kvBucket)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("could not create kv bucket for partition %s: %s", partition.name, err.Error())
+		return nil, false, fmt.Errorf("could not create kv bucket for partition %s: %s", partition.name, err)
 	}
 
 	return myBucket, exists, nil
@@ -486,7 +487,7 @@ func (partition *Partition) Create(metadata []byte) error {
 			transaction := &Transaction{txn: txn, bucket: partitionBucket}
 
 			if err := transaction.SetMetadata(metadata); err != nil {
-				return fmt.Errorf("could not set metadata: %s", err.Error())
+				return fmt.Errorf("could not set metadata: %s", err)
 			}
 		}
 
@@ -520,7 +521,7 @@ func (partition *Partition) Delete() error {
 		}
 
 		if err := partBucket.DeleteBucket(partition.name); err != nil {
-			return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err.Error())
+			return fmt.Errorf("could not delete partition bucket %s: %s", partition.name, err)
 		}
 
 		return nil
@@ -540,7 +541,7 @@ func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
 	if err == bolt.ErrDatabaseNotOpen {
 		return nil, kv.ErrClosed
 	} else if err != nil {
-		return nil, fmt.Errorf("could not begin bolt transaction: %s", err.Error())
+		return nil, fmt.Errorf("could not begin bolt transaction: %s", err)
 	}
 
 	if len(partition.store.name) == 0 || len(partition.name) == 0 {
@@ -667,7 +668,7 @@ func (transaction *Transaction) SetMetadata(metadata []byte) error {
 }
 
 // Keys implements Transaction.Keys
-func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.Iterator, error) {
+func (transaction *Transaction) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error) {
 	bucket, err := transaction.kvBucket()
 
 	if err != nil {
@@ -685,10 +686,10 @@ func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.It
 	}
 	end := func(key []byte) bool {
 		if order == kv.SortOrderDesc {
-			return min != nil && bytes.Compare(key, min) < 0
+			return keys.Min != nil && bytes.Compare(key, keys.Min) < 0
 		}
 
-		return max != nil && bytes.Compare(key, max) >= 0
+		return keys.Max != nil && bytes.Compare(key, keys.Max) >= 0
 	}
 
 	iter.next = func() ([]byte, []byte) {
@@ -706,17 +707,17 @@ func (transaction *Transaction) Keys(min, max []byte, order kv.SortOrder) (kv.It
 		var v []byte
 
 		if order == kv.SortOrderDesc {
-			if max == nil {
+			if keys.Max == nil {
 				k, v = cursor.Last()
 			} else {
-				cursor.Seek(max)
+				cursor.Seek(keys.Max)
 				k, v = cursor.Prev()
 			}
 		} else {
-			if min == nil {
+			if keys.Min == nil {
 				k, v = cursor.First()
 			} else {
-				k, v = cursor.Seek(min)
+				k, v = cursor.Seek(keys.Min)
 			}
 		}
 

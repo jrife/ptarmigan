@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
-	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/mvcc"
 	"go.uber.org/zap"
 )
@@ -54,7 +54,7 @@ func (replicaStore *replicaStore) RaftStatus() (flockpb.RaftStatus, error) {
 }
 
 func (replicaStore *replicaStore) raftStatus(view mvcc.View) (flockpb.RaftStatus, error) {
-	raftStatusKv, err := view.Keys(kv.Gte(raftStatusKey), kv.Lte(raftStatusKey), 1, mvcc.SortOrderAsc)
+	raftStatusKv, err := view.Keys(keys.All().Eq(raftStatusKey), 1, mvcc.SortOrderAsc)
 
 	if err != nil {
 		return flockpb.RaftStatus{}, fmt.Errorf("could not retrieve raft status key from view: %s")
@@ -136,7 +136,7 @@ func (replicaStore *replicaStore) view(revision int64, ns []byte, fn func(view m
 }
 
 func (replicaStore *replicaStore) update(fn func(transaction mvcc.Transaction) error) error {
-	transaction, err := replicaStore.partition.Transaction()
+	transaction, err := replicaStore.partition.Begin()
 
 	if err != nil {
 		return fmt.Errorf("could not begin mvcc transaction: %s", err)
@@ -257,7 +257,7 @@ func (replicaStore *replicaStore) View(revision int64) (View, error) {
 
 // NewRevision implements ReplicaStore.NewRevision
 func (replicaStore *replicaStore) NewRevision(raftStatus flockpb.RaftStatus) (Revision, error) {
-	mvccTxn, err := replicaStore.partition.Transaction()
+	mvccTxn, err := replicaStore.partition.Begin()
 
 	if err != nil {
 		return nil, fmt.Errorf("could not start mvcc transaction: %s", err.Error())
