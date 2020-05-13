@@ -202,6 +202,12 @@ type MapReader interface {
 	Keys(keys keys.Range, order SortOrder) (Iterator, error)
 }
 
+// Map combines MapReader and MapUpdater
+type Map interface {
+	MapUpdater
+	MapReader
+}
+
 // Transaction is a transaction for a partition. It must only be
 // used by one goroutine at a time.
 type Transaction interface {

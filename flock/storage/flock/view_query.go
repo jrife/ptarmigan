@@ -6,8 +6,10 @@ import (
 	"fmt"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
+	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/storage/mvcc"
+	kv_marshaled "github.com/jrife/ptarmigan/storage/kv/marshaled"
+
 	"github.com/jrife/ptarmigan/utils/stream"
 )
 
@@ -18,15 +20,14 @@ const (
 
 // Query implements View.Query
 func (view *view) Query(query flockpb.KVQueryRequest) (flockpb.KVQueryResponse, error) {
-	keys := keyRange(query)
-	iter, err := view.view.KeysIterator(kvsKey(keys.Min), kvsKey(keys.Max), sortOrder(query.SortOrder))
+	iter, err := kvMapReader(view.view).Keys(keyRange(query), sortOrder(query.SortOrder))
 
 	if err != nil {
 		return flockpb.KVQueryResponse{}, fmt.Errorf("could not create keys iterator: %s", err)
 	}
 
 	var response flockpb.KVQueryResponse = flockpb.KVQueryResponse{Kvs: makeKvs(query.Limit)}
-	var results stream.Stream = stream.Pipeline(mvcc.StreamMarshaled(iter), selection(query.Selection))
+	var results stream.Stream = stream.Pipeline(kv_marshaled.Stream(iter), selection(query.Selection))
 	var counted stream.Stream
 	var limit int64
 
@@ -85,12 +86,12 @@ func makeKvs(limit int64) []*flockpb.KeyValue {
 	return make([]*flockpb.KeyValue, 0, capacity)
 }
 
-func sortOrder(order flockpb.KVQueryRequest_SortOrder) mvcc.SortOrder {
+func sortOrder(order flockpb.KVQueryRequest_SortOrder) kv.SortOrder {
 	if order == flockpb.KVQueryRequest_DESC {
-		return mvcc.SortOrderDesc
+		return kv.SortOrderDesc
 	}
 
-	return mvcc.SortOrderAsc
+	return kv.SortOrderAsc
 }
 
 func keyRange(query flockpb.KVQueryRequest) keys.Range {
@@ -191,7 +192,7 @@ func after(query flockpb.KVQueryRequest) stream.Processor {
 
 			v := int64(binary.BigEndian.Uint64(a.([]byte)[:]))
 
-			return a.(mvcc.UnmarshaledKV)[1].(flockpb.KeyValue).Version > v
+			return a.(kv_marshaled.KV).Value().(flockpb.KeyValue).Version > v
 		})
 	case flockpb.KVQueryRequest_CREATE:
 		return stream.Filter(func(a interface{}) bool {
@@ -201,7 +202,7 @@ func after(query flockpb.KVQueryRequest) stream.Processor {
 
 			v := int64(binary.BigEndian.Uint64(a.([]byte)[:]))
 
-			return a.(mvcc.UnmarshaledKV)[1].(flockpb.KeyValue).CreateRevision > v
+			return a.(kv_marshaled.KV).Value().(flockpb.KeyValue).CreateRevision > v
 		})
 	case flockpb.KVQueryRequest_MOD:
 		return stream.Filter(func(a interface{}) bool {
@@ -211,11 +212,11 @@ func after(query flockpb.KVQueryRequest) stream.Processor {
 
 			v := int64(binary.BigEndian.Uint64(a.([]byte)[:]))
 
-			return a.(mvcc.UnmarshaledKV)[1].(flockpb.KeyValue).ModRevision > v
+			return a.(kv_marshaled.KV).Value().(flockpb.KeyValue).ModRevision > v
 		})
 	case flockpb.KVQueryRequest_VALUE:
 		return stream.Filter(func(a interface{}) bool {
-			return bytes.Compare(a.(mvcc.UnmarshaledKV)[1].(flockpb.KeyValue).Value, []byte(query.After)) > 0
+			return bytes.Compare(a.(kv_marshaled.KV).Value().(flockpb.KeyValue).Value, []byte(query.After)) > 0
 		})
 	default:
 		return nil

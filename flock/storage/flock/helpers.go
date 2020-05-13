@@ -1,58 +1,30 @@
 package flock
 
 import (
-	"fmt"
-
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
 	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/mvcc"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
+	kv_marshaled "github.com/jrife/ptarmigan/storage/kv/marshaled"
 )
 
-type cursor struct {
-	mvcc.Marshalable
-	compare func(k []byte) []byte
+func leasesKey(id int64) []byte {
+	k := keys.Int64ToKey(id)
+
+	return k[:]
 }
 
-func (c cursor) Marshal() ([]byte, error) {
-	key, err := c.Marshalable.Marshal()
-
-	if err != nil {
-		return nil, err
+func leasesMapReader(m kv.MapReader) *kv_marshaled.MapReader {
+	return &kv_marshaled.MapReader{
+		MapReader: m,
+		Unmarshal: unmarshalLease,
 	}
-
-	return c.compare(key[:]), nil
 }
 
-func gt(marshalable mvcc.Marshalable) mvcc.Marshalable {
-	return &cursor{marshalable, kv.Gt}
-}
-
-func gte(marshalable mvcc.Marshalable) mvcc.Marshalable {
-	return &cursor{marshalable, kv.Gte}
-}
-
-func lt(marshalable mvcc.Marshalable) mvcc.Marshalable {
-	return &cursor{marshalable, kv.Lt}
-}
-
-func lte(marshalable mvcc.Marshalable) mvcc.Marshalable {
-	return &cursor{marshalable, kv.Lte}
-}
-
-func prefixRangeStart(marshalable mvcc.Marshalable) mvcc.Marshalable {
-	return nil
-}
-
-func prefixRangeEnd(marshalable mvcc.Marshalable) mvcc.Marshalable {
-	return nil
-}
-
-type leasesKey int64
-
-func (k leasesKey) Marshal() ([]byte, error) {
-	b := kv.Int64ToKey(int64(k))
-
-	return b[:], nil
+func leasesMap(m kv.Map) *kv_marshaled.Map {
+	return &kv_marshaled.Map{
+		MapUpdater: kv_marshaled.MapUpdater{MapUpdater: m},
+		MapReader:  *leasesMapReader(m),
+	}
 }
 
 func unmarshalLease(b []byte) (interface{}, error) {
@@ -65,39 +37,18 @@ func unmarshalLease(b []byte) (interface{}, error) {
 	return lease, nil
 }
 
-func unmarshalLeaseKey(b []byte) (interface{}, error) {
-	if len(b) != 8 {
-		return nil, fmt.Errorf("key is not 8 bytes")
+func kvMapReader(m kv.MapReader) *kv_marshaled.MapReader {
+	return &kv_marshaled.MapReader{
+		MapReader: m,
+		Unmarshal: unmarshalKV,
 	}
-
-	var arr [8]byte
-	copy(arr[:], b[:8])
-
-	return kv.KeyToInt64(arr), nil
 }
 
-func leasesView(view mvcc.View) *mvcc.MarshalingView {
-	return mvcc.NewMarshalingView(view, unmarshalLeaseKey, unmarshalLease)
-}
-
-func leasesRevision(revision mvcc.Revision) *mvcc.MarshalingRevision {
-	return mvcc.NewMarshalingRevision(revision, unmarshalLeaseKey, unmarshalLease)
-}
-
-func leases(kvs []mvcc.UnmarshaledKV) []flockpb.Lease {
-	leases := make([]flockpb.Lease, len(kvs))
-
-	for i, kv := range kvs {
-		leases[i] = kv[i].(flockpb.Lease)
+func kvMap(m kv.Map) *kv_marshaled.Map {
+	return &kv_marshaled.Map{
+		MapUpdater: kv_marshaled.MapUpdater{MapUpdater: m},
+		MapReader:  *kvMapReader(m),
 	}
-
-	return leases
-}
-
-type kvsKey []byte
-
-func (k kvsKey) Marshal() ([]byte, error) {
-	return k, nil
 }
 
 func unmarshalKV(b []byte) (interface{}, error) {
@@ -108,26 +59,4 @@ func unmarshalKV(b []byte) (interface{}, error) {
 	}
 
 	return kv, nil
-}
-
-func unmarshalKVKey(b []byte) (interface{}, error) {
-	return b, nil
-}
-
-func kvsView(view mvcc.View) *mvcc.MarshalingView {
-	return nil
-}
-
-func kvsRevision(revision mvcc.Revision) *mvcc.MarshalingRevision {
-	return nil
-}
-
-func keyValues(kvs []mvcc.UnmarshaledKV) []flockpb.KeyValue {
-	keyValues := make([]flockpb.KeyValue, len(kvs))
-
-	for i, kv := range kvs {
-		keyValues[i] = kv[i].(flockpb.KeyValue)
-	}
-
-	return keyValues
 }

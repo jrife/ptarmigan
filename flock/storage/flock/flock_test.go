@@ -9,7 +9,6 @@ import (
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jrife/ptarmigan/flock/storage/mvcc"
 )
 
 var errAnyError = errors.New("Any error")

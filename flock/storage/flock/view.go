@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
+	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/mvcc"
 )
 
@@ -11,22 +12,22 @@ var _ View = (*view)(nil)
 
 // view implements View
 type view struct {
-	view *mvcc.MarshalingView
+	view mvcc.View
 }
 
 // Get implements View.Get
 func (view *view) Get(key []byte) (flockpb.KeyValue, error) {
-	kvs, err := view.view.Keys(gte(kvsKey(key)), lte(kvsKey(key)), -1, mvcc.SortOrderAsc)
+	kv, err := kvMapReader(view.view).Get(key)
 
 	if err != nil {
 		return flockpb.KeyValue{}, fmt.Errorf("could not get key %#v: %s", key, err)
 	}
 
-	if len(kvs) == 0 {
-		return flockpb.KeyValue{}, ErrKeyNotFound
+	if kv == nil {
+		return flockpb.KeyValue{}, ErrNotFound
 	}
 
-	return keyValues(kvs)[0], nil
+	return kv.(flockpb.KeyValue), nil
 }
 
 // Revision implements View.Revision
@@ -36,7 +37,13 @@ func (view *view) Revision() int64 {
 
 // Changes implements View.Changes
 func (view *view) Changes(start []byte, limit int, includePrev bool) ([]flockpb.Event, error) {
-	diffs, err := view.view.Changes(gt(kvsKey(start)), nil, limit, includePrev)
+	diffsIter, err := view.view.Changes(keys.All().Gt(start), includePrev)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not list changes: %s", err)
+	}
+
+	diffs, err := mvcc.Diffs(diffsIter, limit)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not list changes: %s", err)
@@ -52,13 +59,25 @@ func (view *view) Changes(start []byte, limit int, includePrev bool) ([]flockpb.
 		}
 
 		if diff[1] != nil {
-			kv := diff[1].(flockpb.KeyValue)
-			event.Kv = &kv
+			kv, err := unmarshalKV(diff[1])
+
+			if err != nil {
+				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diff[1], err)
+			}
+
+			k := kv.(flockpb.KeyValue)
+			event.Kv = &k
 		}
 
 		if includePrev && diff[2] != nil {
-			kv := diff[2].(flockpb.KeyValue)
-			event.PrevKv = &kv
+			kv, err := unmarshalKV(diff[2])
+
+			if err != nil {
+				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diff[1], err)
+			}
+
+			k := kv.(flockpb.KeyValue)
+			event.PrevKv = &k
 		}
 
 		events[i] = event

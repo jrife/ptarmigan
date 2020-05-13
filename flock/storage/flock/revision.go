@@ -11,7 +11,7 @@ var _ Revision = (*revision)(nil)
 // revision implements Revision
 type revision struct {
 	view
-	revision    *mvcc.MarshalingRevision
+	revision    mvcc.Revision
 	transaction mvcc.Transaction
 }
 

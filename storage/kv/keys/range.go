@@ -29,7 +29,7 @@ func (r Range) Eq(k []byte) Range {
 
 // Gt confines the range to keys that are
 // greater than k
-func (r *Range) Gt(k []byte) Range {
+func (r Range) Gt(k []byte) Range {
 	return r.refineMin(after(k))
 }
 

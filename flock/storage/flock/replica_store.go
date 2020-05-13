@@ -5,8 +5,10 @@ import (
 	"io"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
+	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
 	"github.com/jrife/ptarmigan/storage/mvcc"
+
 	"go.uber.org/zap"
 )
 
@@ -54,10 +56,16 @@ func (replicaStore *replicaStore) RaftStatus() (flockpb.RaftStatus, error) {
 }
 
 func (replicaStore *replicaStore) raftStatus(view mvcc.View) (flockpb.RaftStatus, error) {
-	raftStatusKv, err := view.Keys(keys.All().Eq(raftStatusKey), 1, mvcc.SortOrderAsc)
+	raftStatusKvIter, err := view.Keys(keys.All().Eq(raftStatusKey), kv.SortOrderAsc)
 
 	if err != nil {
-		return flockpb.RaftStatus{}, fmt.Errorf("could not retrieve raft status key from view: %s")
+		return flockpb.RaftStatus{}, fmt.Errorf("could not retrieve raft status key from view: %s", err)
+	}
+
+	raftStatusKv, err := kv.Keys(raftStatusKvIter, 1)
+
+	if err != nil {
+		return flockpb.RaftStatus{}, fmt.Errorf("could not retrieve raft status key from view: %s", err)
 	}
 
 	if len(raftStatusKv) == 0 {
@@ -160,7 +168,7 @@ func (replicaStore *replicaStore) CreateLease(raftStatus flockpb.RaftStatus, ttl
 	var lease flockpb.Lease = flockpb.Lease{ID: int64(raftStatus.RaftIndex), GrantedTTL: ttl}
 
 	err := replicaStore.applyRaftCommand(raftStatus, leasesNs, func(revision mvcc.Revision) error {
-		if err := leasesRevision(revision).Put(leasesKey(lease.ID), &lease); err != nil {
+		if err := leasesMap(revision).Put(leasesKey(lease.ID), &lease); err != nil {
 			return fmt.Errorf("could not put lease %d: %s", lease.ID, err)
 		}
 
@@ -179,13 +187,19 @@ func (replicaStore *replicaStore) Leases() ([]flockpb.Lease, error) {
 	var result []flockpb.Lease
 
 	err := replicaStore.view(mvcc.RevisionNewest, leasesNs, func(view mvcc.View) error {
-		kvs, err := leasesView(view).Keys(nil, nil, -1, mvcc.SortOrderAsc)
+		kvs, err := leasesMapReader(view).Keys(keys.All(), kv.SortOrderAsc)
 
 		if err != nil {
 			return fmt.Errorf("could not list leases: %s", err)
 		}
 
-		result = leases(kvs)
+		for kvs.Next() {
+			result = append(result, kvs.Value().(flockpb.Lease))
+		}
+
+		if kvs.Error() != nil {
+			return fmt.Errorf("iteration error: %s", err)
+		}
 
 		return nil
 	})
@@ -202,17 +216,17 @@ func (replicaStore *replicaStore) GetLease(id int64) (flockpb.Lease, error) {
 	var lease flockpb.Lease
 
 	err := replicaStore.view(mvcc.RevisionNewest, leasesNs, func(view mvcc.View) error {
-		kvs, err := leasesView(view).Keys(gte(leasesKey(id)), lte(leasesKey(id)), -1, mvcc.SortOrderAsc)
+		l, err := leasesMapReader(view).Get(leasesKey(id))
 
 		if err != nil {
 			return fmt.Errorf("could not list leases: %s", err)
 		}
 
-		if len(kvs) == 0 {
-			return fmt.Errorf("lease %d not found", id)
+		if l == nil {
+			return ErrNotFound
 		}
 
-		lease = leases(kvs)[0]
+		lease = l.(flockpb.Lease)
 
 		return nil
 	})
@@ -227,7 +241,7 @@ func (replicaStore *replicaStore) GetLease(id int64) (flockpb.Lease, error) {
 // RevokeLease implements ReplicaStore.RevokeLease
 func (replicaStore *replicaStore) RevokeLease(raftStatus flockpb.RaftStatus, id int64) error {
 	return replicaStore.applyRaftCommand(raftStatus, leasesNs, func(revision mvcc.Revision) error {
-		if err := leasesRevision(revision).Delete(leasesKey(id)); err != nil {
+		if err := leasesMap(revision).Delete(leasesKey(id)); err != nil {
 			return fmt.Errorf("could not delete lease %d: %s", id, err)
 		}
 
@@ -250,8 +264,10 @@ func (replicaStore *replicaStore) View(revision int64) (View, error) {
 		return nil, fmt.Errorf("could not get view at revision %d: %s", revision, err)
 	}
 
+	v := mvcc.NamespaceView(mvccView, kvsNs)
+
 	return &view{
-		view: kvsView(mvcc.NamespaceView(mvccView, kvsNs)),
+		view: v,
 	}, nil
 }
 
@@ -273,10 +289,10 @@ func (replicaStore *replicaStore) NewRevision(raftStatus flockpb.RaftStatus) (Re
 
 	return &revision{
 		view: view{
-			view: kvsView(mvcc.NamespaceView(mvccRevision, kvsNs)),
+			view: mvcc.NamespaceView(mvccRevision, kvsNs),
 		},
 		transaction: mvccTxn,
-		revision:    kvsRevision(mvcc.NamespaceRevision(mvccRevision, kvsNs)),
+		revision:    mvcc.NamespaceRevision(mvccRevision, kvsNs),
 	}, nil
 }
 
