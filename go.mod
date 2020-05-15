@@ -1,6 +1,6 @@
 module github.com/jrife/ptarmigan
 
-go 1.13
+go 1.14
 
 require (
 	github.com/coreos/etcd v3.3.18+incompatible
@@ -10,8 +10,6 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
-	github.com/opentracing-contrib/go-zap v0.0.0-20190214083200-641545003d88
-	github.com/opentracing/opentracing-go v1.1.0
 	go.etcd.io/bbolt v1.3.3
 	go.etcd.io/etcd v3.3.18+incompatible
 	go.uber.org/zap v1.14.1

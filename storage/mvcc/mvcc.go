@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
@@ -164,7 +165,7 @@ func New(kvStore kv.Store) (Store, error) {
 
 	// Always ensure that the store exists
 	if err := kvStore.Create(); err != nil {
-		return nil, fmt.Errorf("could not ensure store exists: %s", err)
+		return nil, wrapError("could not ensure store exists", err)
 	}
 
 	return store, nil
@@ -174,23 +175,44 @@ var _ Store = (*store)(nil)
 
 type store struct {
 	kvStore kv.Store
+	close   sync.Once
+	closed  struct {
+		sync.RWMutex
+		closed bool
+	}
 }
 
 // Close implements Store.Close
 func (store *store) Close() error {
+	store.close.Do(func() {
+		store.closed.Lock()
+		defer store.closed.Unlock()
+
+		store.closed.closed = true
+	})
+
 	return nil
 }
 
 // Close implements Store.Delete
 func (store *store) Delete() error {
-	return nil
+	store.Close()
+
+	return wrapError("could not delete store", store.kvStore.Delete())
 }
 
 // Partitions implements Store.Partitions
 func (store *store) Partitions(nameRange keys.Range, limit int) ([][]byte, error) {
+	store.closed.RLock()
+	defer store.closed.RUnlock()
+
+	if store.closed.closed {
+		return nil, ErrClosed
+	}
+
 	names, err := store.kvStore.Partitions(nameRange, limit)
 
-	return names, fromKVError(err)
+	return names, wrapError("could not list partitions", err)
 }
 
 // Partition implements Store.Partition
@@ -211,12 +233,12 @@ func (partition *partition) newestRevision(transaction kv.Transaction) (int64, e
 	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, kv.SortOrderDesc)
 
 	if err != nil {
-		return 0, fmt.Errorf("could not create iterator: %s", err)
+		return 0, wrapError("could not create iterator", err)
 	}
 
 	if !iter.next() {
 		if iter.error() != nil {
-			return 0, fmt.Errorf("iteration error: %s", iter.error().Error())
+			return 0, wrapError("iteration error", iter.error())
 		}
 
 		return 0, nil
@@ -229,12 +251,12 @@ func (partition *partition) oldestRevision(transaction kv.Transaction) (int64, e
 	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, kv.SortOrderAsc)
 
 	if err != nil {
-		return 0, fmt.Errorf("could not create iterator: %s", err)
+		return 0, wrapError("could not create iterator", err)
 	}
 
 	if !iter.next() {
 		if iter.error() != nil {
-			return 0, fmt.Errorf("iteration error: %s", iter.error().Error())
+			return 0, wrapError("iteration error", iter.error())
 		}
 
 		return 0, nil
@@ -274,8 +296,15 @@ func (partition *partition) Name() []byte {
 
 // Create implements Partition.Create
 func (partition *partition) Create(metadata []byte) error {
+	partition.store.closed.RLock()
+	defer partition.store.closed.RUnlock()
+
+	if partition.store.closed.closed {
+		return ErrClosed
+	}
+
 	if err := partition.store.kvStore.Partition(partition.name).Create(metadata); err != nil {
-		return fmt.Errorf("could not create partition: %s", err)
+		return wrapError("could not create partition", err)
 	}
 
 	return nil
@@ -283,8 +312,15 @@ func (partition *partition) Create(metadata []byte) error {
 
 // Delete implements Partition.Delete
 func (partition *partition) Delete() error {
+	partition.store.closed.RLock()
+	defer partition.store.closed.RUnlock()
+
+	if partition.store.closed.closed {
+		return ErrClosed
+	}
+
 	if err := partition.store.kvStore.Partition(partition.name).Delete(); err != nil {
-		return fmt.Errorf("could not delete partition: %s", err)
+		return wrapError("could not delete partition", err)
 	}
 
 	return nil
@@ -292,50 +328,81 @@ func (partition *partition) Delete() error {
 
 // Metadata implements Partition.Metadata
 func (partition *partition) Metadata() ([]byte, error) {
+	partition.store.closed.RLock()
+	defer partition.store.closed.RUnlock()
+
+	if partition.store.closed.closed {
+		return nil, ErrClosed
+	}
+
 	transaction, err := partition.beginTxn(false)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err)
+		return nil, wrapError("could not begin transaction", err)
 	}
 
 	defer transaction.Rollback()
 
-	return transaction.Metadata()
+	metadata, err := transaction.Metadata()
+
+	return metadata, wrapError("could not retrieve metadata from transaction", err)
 }
 
 // Transaction implements Partition.Transaction
 func (partition *partition) Begin() (Transaction, error) {
+	partition.store.closed.RLock()
+
+	if partition.store.closed.closed {
+		partition.store.closed.RUnlock()
+
+		return nil, ErrClosed
+	}
+
 	txn, err := partition.beginTxn(true)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err)
+		partition.store.closed.RUnlock()
+
+		return nil, wrapError("could not begin transaction", err)
 	}
 
 	return &transaction{partition: partition, txn: txn}, nil
 }
 
 // View implements Partition.View
-func (partition *partition) View(revision int64) (View, error) {
+func (partition *partition) View(revision int64) (ViewCloser, error) {
+	partition.store.closed.RLock()
+
+	if partition.store.closed.closed {
+		partition.store.closed.RUnlock()
+
+		return nil, ErrClosed
+	}
+
 	txn, err := partition.beginTxn(false)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not begin transaction: %s", err)
+		partition.store.closed.RUnlock()
+
+		return nil, wrapError("could not begin transaction", err)
 	}
 
 	newestRevision, err := partition.newestRevision(txn)
 
 	if err != nil {
 		txn.Rollback()
+		partition.store.closed.RUnlock()
 
-		return nil, fmt.Errorf("unable to retrieve current revision: %s", err)
+		return nil, wrapError("unable to retrieve current revision", err)
 	}
 
 	oldestRevision, err := partition.oldestRevision(txn)
 
 	if err != nil {
 		txn.Rollback()
+		partition.store.closed.RUnlock()
 
-		return nil, fmt.Errorf("unable to retrieve oldest revision: %s", err)
+		return nil, wrapError("unable to retrieve oldest revision", err)
 	}
 
 	if revision == RevisionNewest {
@@ -351,36 +418,54 @@ func (partition *partition) View(revision int64) (View, error) {
 	// it yet.
 	if revision == 0 {
 		txn.Rollback()
+		partition.store.closed.RUnlock()
 
 		return nil, ErrNoRevisions
 	}
 
 	if revision > newestRevision {
 		txn.Rollback()
+		partition.store.closed.RUnlock()
 
 		return nil, ErrRevisionTooHigh
 	} else if revision < oldestRevision {
 		txn.Rollback()
+		partition.store.closed.RUnlock()
 
 		return nil, ErrCompacted
 	}
 
-	return &view{partition: partition, revision: revision, txn: txn}, nil
+	return &viewCloser{view: view{partition: partition, revision: revision, txn: txn}}, nil
 }
 
 // ApplySnapshot implements Partition.ApplySnapshot
 func (partition *partition) ApplySnapshot(snap io.Reader) error {
+	partition.store.closed.RLock()
+	defer partition.store.closed.RUnlock()
+
+	if partition.store.closed.closed {
+		return ErrClosed
+	}
+
 	return partition.store.kvStore.Partition(partition.name).ApplySnapshot(snap)
 }
 
 // Snapshot implements Partition.Snapshot
-func (partition *partition) Snapshot() (io.Reader, error) {
+func (partition *partition) Snapshot() (io.ReadCloser, error) {
+	partition.store.closed.RLock()
+	defer partition.store.closed.RUnlock()
+
+	if partition.store.closed.closed {
+		return nil, ErrClosed
+	}
+
 	return partition.store.kvStore.Partition(partition.name).Snapshot()
 }
 
 type transaction struct {
 	partition *partition
 	txn       kv.Transaction
+	close     sync.Once
 }
 
 // NewRevision implements Transaction.NewRevision
@@ -388,13 +473,13 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 	nextRevision, err := transaction.partition.nextRevision(transaction.txn)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not calculate next revision number: %s", err)
+		return nil, wrapError("could not calculate next revision number", err)
 	}
 
 	revisionsTxn := transaction.partition.revisionsNamespace(transaction.txn)
 
 	if err := revisionsTxn.Put(newRevisionsKey(nextRevision, nil), []byte{}); err != nil {
-		return nil, fmt.Errorf("could not insert revision start market: %s", err)
+		return nil, wrapError("could not insert revision start market", err)
 	}
 
 	return &revision{
@@ -415,13 +500,13 @@ func (transaction *transaction) Compact(revision int64) error {
 	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
 
 	if err != nil {
-		return fmt.Errorf("unable to retrieve current revision: %s", err)
+		return wrapError("unable to retrieve current revision", err)
 	}
 
 	oldestRevision, err := transaction.partition.oldestRevision(transaction.txn)
 
 	if err != nil {
-		return fmt.Errorf("unable to retrieve oldest revision: %s", err)
+		return wrapError("unable to retrieve oldest revision", err)
 	}
 
 	if revision == RevisionNewest {
@@ -470,7 +555,7 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 		txn, err := transaction.partition.beginTxn(false)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not begin transaction: %s", err)
+			errors <- wrapError("could not begin transaction", err)
 
 			return
 		}
@@ -480,7 +565,7 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision - 1}, kv.SortOrderAsc)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not create revisions iterator: %s", err)
+			errors <- wrapError("could not create revisions iterator", err)
 
 			return
 		}
@@ -488,7 +573,7 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 		keysIter, err := newKeysIterator(transaction.partition.keysNamespace(txn), nil, nil, kv.SortOrderDesc)
 
 		if err != nil {
-			errors <- fmt.Errorf("could not create keys iterator: %s", err)
+			errors <- wrapError("could not create keys iterator", err)
 
 			return
 		}
@@ -497,13 +582,28 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 			revsNs <- newRevisionsKey(revsIter.revision(), revsIter.key())
 		}
 
-		for prevKey := []byte(nil); keysIter.next(); prevKey = keysIter.key() {
-			// Delete any key whose revision is < revision
-			// as long as it's not the newest revision for
-			// that key and not a tombstone.
-			if bytes.Compare(prevKey, keysIter.key()) == 0 || keysIter.value() == nil {
+		if revsIter.error() != nil {
+			errors <- revsIter.error()
+
+			return
+		}
+
+		for prevKey, prevRev := []byte(nil), int64(0); keysIter.next(); prevKey, prevRev = keysIter.key(), keysIter.revision() {
+			if keysIter.revision() >= revision {
+				continue
+			}
+
+			// Keep only the newest version of each key as of the compact revision.
+			// Always compact tombstones
+			if keysIter.value() == nil || bytes.Compare(prevKey, keysIter.key()) == 0 && prevRev <= revision {
 				keysNs <- newKeysKey(keysIter.key(), keysIter.revision())
 			}
+		}
+
+		if keysIter.error() != nil {
+			errors <- keysIter.error()
+
+			return
 		}
 
 		errors <- nil
@@ -514,11 +614,15 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 
 // Commit implements Transaction.Commit
 func (transaction *transaction) Commit() error {
+	defer transaction.close.Do(transaction.partition.store.closed.RUnlock)
+
 	return transaction.txn.Commit()
 }
 
 // Rollback implements Transaction.Rollback
 func (transaction *transaction) Rollback() error {
+	defer transaction.close.Do(transaction.partition.store.closed.RUnlock)
+
 	return transaction.txn.Rollback()
 }
 
@@ -548,6 +652,7 @@ type view struct {
 	revision  int64
 	partition *partition
 	txn       kv.Transaction
+	close     sync.Once
 }
 
 // Get implements View.Get
@@ -560,7 +665,7 @@ func (view *view) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error)
 	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), keys.Min, keys.Max, view.revision, order)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not create iterator: %s", err)
+		return nil, wrapError("could not create iterator", err)
 	}
 
 	return iter, nil
@@ -571,7 +676,7 @@ func (view *view) Changes(keys keys.Range, includePrev bool) (DiffIterator, erro
 	iter, err := newViewRevisionDiffsIterator(view.partition.revisionsNamespace(view.txn), keys.Min, keys.Max, view.revision)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not create diff iterator: %s", err)
+		return nil, wrapError("could not create diff iterator", err)
 	}
 
 	return iter, nil
@@ -582,7 +687,13 @@ func (view *view) Revision() int64 {
 	return view.revision
 }
 
-// Close implements View.Close
-func (view *view) Close() error {
+type viewCloser struct {
+	view
+}
+
+// Close implements ViewCloser.Close
+func (view *viewCloser) Close() error {
+	defer view.close.Do(view.partition.store.closed.RUnlock)
+
 	return view.txn.Rollback()
 }

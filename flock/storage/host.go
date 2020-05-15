@@ -3,12 +3,12 @@ package storage
 import (
 	"io"
 
-	"github.com/jrife/ptarmigan/flock/storage/mvcc"
+	"github.com/jrife/ptarmigan/storage/mvcc"
 	"github.com/jrife/ptarmigan/transport/ptarmiganpb"
 )
 
 type FlockHost struct {
-	store mvcc.IStore
+	store mvcc.Store
 }
 
 func (host *FlockHost) Replicas() ([]ptarmiganpb.Replica, error) {

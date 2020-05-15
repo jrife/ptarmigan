@@ -2,9 +2,9 @@ package flock
 
 import (
 	"errors"
-	"io"
 
 	"github.com/jrife/ptarmigan/flock/server/flockpb"
+	"github.com/jrife/ptarmigan/storage/snapshot"
 )
 
 const (
@@ -130,12 +130,12 @@ type ReplicaStore interface {
 	View(revision int64) (View, error)
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot.
-	ApplySnapshot(snap io.Reader) error
+	snapshot.Acceptor
 	// Snapshot takes a snapshot of this replica store's current state
 	// and encode it as a byte stream. It must be compatible with
 	// ApplySnapshot() such that its return value could be applied
 	// to ApplySnapshot() in order to replicate its state elsewhere.
-	Snapshot() (io.Reader, error)
+	snapshot.Source
 }
 
 // View describes a view of a replica store

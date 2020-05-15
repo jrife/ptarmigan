@@ -1,8 +1,11 @@
 package mvcc_test
 
 import (
+	crand "crypto/rand"
 	"errors"
 	"fmt"
+	"math/rand"
+
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +16,26 @@ import (
 )
 
 var errAnyError = errors.New("Any error")
+
+func TestMVCC(t *testing.T) {
+	for _, plugin := range plugins.Plugins() {
+		t.Run(fmt.Sprintf("MVCC(%s)", plugin.Name()), testMVCC(builder(plugin)))
+	}
+}
+
+func testMVCC(builder tempStoreBuilder) func(t *testing.T) {
+	return func(t *testing.T) {
+		testDriver(builder, t)
+	}
+}
+
+func testDriver(builder tempStoreBuilder, t *testing.T) {
+	t.Run("Store", func(t *testing.T) { testStore(builder, t) })
+	t.Run("Partition", func(t *testing.T) { testPartition(builder, t) })
+	t.Run("Transaction", func(t *testing.T) { testTransaction(builder, t) })
+	t.Run("Revision", func(t *testing.T) { testRevision(builder, t) })
+	t.Run("View", func(t *testing.T) { testView(builder, t) })
+}
 
 type storeChangeset map[string]partitionChangeset
 
@@ -107,19 +130,6 @@ type revision struct {
 	Kvs      map[string][]byte
 }
 
-var _ mvcc.Store = (*mvccStoreWithCloser)(nil)
-
-type mvccStoreWithCloser struct {
-	mvcc.Store
-	close func()
-}
-
-func (store *mvccStoreWithCloser) Close() error {
-	store.close()
-
-	return store.Store.Close()
-}
-
 func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
 	rootStore, err := kvPlugin.NewTempRootStore()
 
@@ -141,7 +151,10 @@ func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
 		t.Fatalf("could not create store: %s", err)
 	}
 
-	mvccStore = &mvccStoreWithCloser{Store: mvccStore, close: func() { rootStore.Delete() }}
+	t.Cleanup(func() {
+		mvccStore.Close()
+		rootStore.Delete()
+	})
 
 	return mvccStore
 }
@@ -170,8 +183,6 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 		}
 
 		if err := mvccPartition.Create(partitionChangeset.metadata); err != nil {
-			mvccStore.Close()
-
 			t.Fatalf("failed to create partition %s: %s", partitionName, err)
 		}
 
@@ -179,8 +190,6 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			txn, err := mvccPartition.Begin()
 
 			if err != nil {
-				mvccStore.Close()
-
 				t.Fatalf("failed to create revision %d: %s", i, err)
 			}
 
@@ -201,7 +210,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			rev, err := txn.NewRevision()
 
 			if err != nil {
-				mvccStore.Close()
+				txn.Rollback()
 
 				t.Fatalf("failed to create revision %d: %s", i, err)
 			}
@@ -216,7 +225,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 				}
 
 				if err != nil {
-					mvccStore.Close()
+					txn.Rollback()
 
 					t.Fatalf("failed to create revision %d: %s", i, err)
 				}
@@ -229,12 +238,16 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			diff := cmp.Diff(expectedChanges, transaction.revision.changes)
 
 			if diff != "" {
+				txn.Rollback()
+
 				t.Fatalf(diff)
 			}
 
 			diff = cmp.Diff(expectedKVs, currentRevision.Kvs)
 
 			if diff != "" {
+				txn.Rollback()
+
 				t.Fatalf(diff)
 			}
 
@@ -247,8 +260,6 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			}
 
 			if err != nil {
-				mvccStore.Close()
-
 				t.Fatalf("failed to create revision %d: %s", i, err)
 			}
 		}
@@ -360,455 +371,62 @@ func builder(plugin kv.Plugin) tempStoreBuilder {
 	}
 }
 
-func TestMVCC(t *testing.T) {
-	for _, plugin := range plugins.Plugins() {
-		t.Run(fmt.Sprintf("MVCC(%s)", plugin.Name()), testMVCC(builder(plugin)))
-	}
-}
+func largeStoreChangeset() storeChangeset {
+	result := storeChangeset{}
 
-func testMVCC(builder tempStoreBuilder) func(t *testing.T) {
-	return func(t *testing.T) {
-		testDriver(builder, t)
-	}
-}
-
-func testDriver(builder tempStoreBuilder, t *testing.T) {
-	t.Run("Store", func(t *testing.T) { testStore(builder, t) })
-	t.Run("Partition", func(t *testing.T) { testPartition(builder, t) })
-}
-
-func testStore(builder tempStoreBuilder, t *testing.T) {
-	t.Run("Partitions", func(t *testing.T) { testStorePartitions(builder, t) })
-}
-
-func testPartition(builder tempStoreBuilder, t *testing.T) {
-	t.Run("Name", func(t *testing.T) { testPartitionName(builder, t) })
-	t.Run("Delete", func(t *testing.T) { testPartitionDelete(builder, t) })
-	t.Run("Transaction", func(t *testing.T) { testPartitionTransaction(builder, t) })
-	t.Run("View", func(t *testing.T) { testPartitionView(builder, t) })
-	t.Run("ApplySnapshot", func(t *testing.T) { testPartitionApplySnapshot(builder, t) })
-	t.Run("Snapshot", func(t *testing.T) { testPartitionSnapshot(builder, t) })
-}
-
-func testPartitionTransaction(builder tempStoreBuilder, t *testing.T) {
-	t.Run("NewRevision", func(t *testing.T) { testTransactionNewRevision(builder, t) })
-	t.Run("Compact", func(t *testing.T) { testTransactionCompact(builder, t) })
-}
-
-func testPartitionView(builder tempStoreBuilder, t *testing.T) {
-	t.Run("Keys", func(t *testing.T) { testViewKeys(builder, t) })
-	t.Run("Changes", func(t *testing.T) { testViewChanges(builder, t) })
-	t.Run("Revision", func(t *testing.T) { testViewRevision(builder, t) })
-}
-
-func testStorePartitions(builder tempStoreBuilder, t *testing.T) {
-	initialState := storeChangeset{
-		"a": {
-			transactions: []transaction{},
-			metadata:     []byte{4, 5, 6},
-		},
-		"b": {
-			transactions: []transaction{},
-			metadata:     []byte{4, 5, 6},
-		},
-		"c": {
-			transactions: []transaction{},
-			metadata:     []byte{7, 8, 9},
-		},
-		"d": {
-			transactions: []transaction{},
-			metadata:     []byte{7, 8, 9},
-		},
-		"e": {
-			transactions: []transaction{},
-			metadata:     []byte{7, 8, 9},
-		},
-		"f": {
-			transactions: []transaction{},
-			metadata:     []byte{7, 8, 9},
-		},
-		"g": {
-			transactions: []transaction{},
-			metadata:     []byte{7, 8, 9},
-		},
-	}
-	testCases := map[string]struct {
-		initialState storeChangeset
-		min          []byte
-		max          []byte
-		limit        int
-		result       [][]byte
-	}{
-		"list-all-1": {
-			initialState: initialState,
-			min:          keys.All().Min,
-			max:          keys.All().Max,
-			limit:        -1,
-			result: [][]byte{
-				[]byte("a"),
-				[]byte("b"),
-				[]byte("c"),
-				[]byte("d"),
-				[]byte("e"),
-				[]byte("f"),
-				[]byte("g"),
-			},
-		},
-		"list-all-2": {
-			initialState: initialState,
-			min:          keys.All().Min,
-			max:          keys.All().Max,
-			limit:        7,
-			result: [][]byte{
-				[]byte("a"),
-				[]byte("b"),
-				[]byte("c"),
-				[]byte("d"),
-				[]byte("e"),
-				[]byte("f"),
-				[]byte("g"),
-			},
-		},
-		"list-all-3": {
-			initialState: initialState,
-			min:          keys.All().Gte([]byte("a")).Min,
-			max:          keys.All().Lt([]byte("h")).Max,
-			limit:        7,
-			result: [][]byte{
-				[]byte("a"),
-				[]byte("b"),
-				[]byte("c"),
-				[]byte("d"),
-				[]byte("e"),
-				[]byte("f"),
-				[]byte("g"),
-			},
-		},
-		"list-first-half-1": {
-			initialState: initialState,
-			min:          nil,
-			max:          nil,
-			limit:        3,
-			result: [][]byte{
-				[]byte("a"),
-				[]byte("b"),
-				[]byte("c"),
-			},
-		},
-		"list-first-half-2": {
-			initialState: initialState,
-			min:          nil,
-			max:          []byte("d"),
-			limit:        -1,
-			result: [][]byte{
-				[]byte("a"),
-				[]byte("b"),
-				[]byte("c"),
-			},
-		},
-		"list-first-half-3": {
-			initialState: initialState,
-			min:          []byte("a"),
-			max:          []byte("d"),
-			limit:        -1,
-			result: [][]byte{
-				[]byte("a"),
-				[]byte("b"),
-				[]byte("c"),
-			},
-		},
-		"list-last-half-1": {
-			initialState: initialState,
-			min:          []byte("d"),
-			max:          nil,
-			limit:        -1,
-			result: [][]byte{
-				[]byte("d"),
-				[]byte("e"),
-				[]byte("f"),
-				[]byte("g"),
-			},
-		},
-		"list-last-half-2": {
-			initialState: initialState,
-			min:          []byte("d"),
-			max:          nil,
-			limit:        4,
-			result: [][]byte{
-				[]byte("d"),
-				[]byte("e"),
-				[]byte("f"),
-				[]byte("g"),
-			},
-		},
-		"list-last-half-3": {
-			initialState: initialState,
-			min:          []byte("d"),
-			max:          []byte("h"),
-			limit:        -1,
-			result: [][]byte{
-				[]byte("d"),
-				[]byte("e"),
-				[]byte("f"),
-				[]byte("g"),
-			},
-		},
+	for p := 0; p < 10; p++ {
+		result[fmt.Sprintf("partition-%d", p)] = largePartitionChangeset()
 	}
 
-	for name, testCase := range testCases {
-		t.Run(name, func(t *testing.T) {
-			store := builder(t, testCase.initialState)
-
-			defer store.Close()
-
-			partitions, err := store.Partitions(keys.Range{Min: testCase.min, Max: testCase.max}, testCase.limit)
-
-			if err != nil {
-				t.Fatalf("expected err to be nil, got %#v", err)
-			}
-
-			diff := cmp.Diff(testCase.result, partitions)
-
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-
-			store.Close()
-
-			_, err = store.Partitions(keys.Range{Min: testCase.min, Max: testCase.max}, testCase.limit)
-
-			if err != mvcc.ErrClosed {
-				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
-			}
-		})
-	}
+	return result
 }
 
-func testPartitionName(builder tempStoreBuilder, t *testing.T) {
-	testCases := map[string]struct {
-		initialState storeChangeset
-		name         []byte
-	}{
-		"partition-that-exists": {
-			initialState: storeChangeset{
-				"a": {
-					transactions: []transaction{},
-					metadata:     []byte{4, 5, 6},
-				},
-			},
-			name: []byte("a"),
-		},
-		"partition-that-does-not-exist": {
-			initialState: storeChangeset{
-				"a": {
-					transactions: []transaction{},
-					metadata:     []byte{4, 5, 6},
-				},
-			},
-			name: []byte("b"),
-		},
+func largePartitionChangeset() partitionChangeset {
+	result := partitionChangeset{
+		metadata:     []byte("metadata"),
+		transactions: []transaction{},
 	}
 
-	for name, testCase := range testCases {
-		t.Run(name, func(t *testing.T) {
-			store := builder(t, testCase.initialState)
+	rev := 0
+	for i := 0; i < 100; i++ {
+		txn := transaction{revision: revisionChangeset{changes: map[string][]byte{}}, commit: true}
 
-			defer store.Close()
+		switch n := rand.Intn(100); {
+		case rev > 0 && n < 5:
+			txn.compact = int64(rev)
+		default:
+			rev++
+			txn.revision = largeRevisionChangeset()
+		}
 
-			name := store.Partition(testCase.name).Name()
-			diff := cmp.Diff(testCase.name, name)
-
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-		})
-	}
-}
-
-func testPartitionCreate(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testPartitionDelete(builder tempStoreBuilder, t *testing.T) {
-	initialState := storeChangeset{
-		"a": {
-			transactions: []transaction{},
-			metadata:     []byte{4, 5, 6},
-		},
-		"b": {
-			transactions: []transaction{},
-			metadata:     []byte{7, 8, 9},
-		},
-	}
-	testCases := map[string]struct {
-		initialState storeChangeset
-		finalState   store
-		name         []byte
-	}{
-		"partition-that-exists": {
-			initialState: initialState,
-			finalState: store{
-				"b": {
-					Metadata:  []byte{7, 8, 9},
-					Revisions: []revision{},
-				},
-			},
-			name: []byte("a"),
-		},
-		"partition-that-doesn't-exist": {
-			initialState: initialState,
-			finalState: store{
-				"a": {
-					Metadata:  []byte{4, 5, 6},
-					Revisions: []revision{},
-				},
-				"b": {
-					Metadata:  []byte{7, 8, 9},
-					Revisions: []revision{},
-				},
-			},
-			name: []byte("c"),
-		},
+		result.transactions = append(result.transactions, txn)
 	}
 
-	for name, testCase := range testCases {
-		t.Run(name, func(t *testing.T) {
-			store := builder(t, testCase.initialState)
-
-			defer store.Close()
-
-			doMutateTest(t, store, func() {
-				if err := store.Partition(testCase.name).Delete(); err != nil {
-					t.Fatalf("expected error to be nil, got %#v", err)
-				}
-			}, testCase.finalState)
-		})
-	}
+	return result
 }
 
-func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testTransactionNewRevision(builder tempStoreBuilder, t *testing.T) {
-	testCases := map[string]struct {
-		revisions storeChangeset
-		revision  revisionChangeset
-		err       error
-	}{
-		"no-compactions": {
-			revisions: storeChangeset{
-				"a": {
-					transactions: []transaction{
-						{
-							revision: revisionChangeset{
-								changes: map[string][]byte{
-									"key1": []byte("aaa"),
-									"key2": []byte("bbb"),
-									"key3": []byte("ccc"),
-								},
-							},
-							commit: true,
-						},
-						{
-							revision: revisionChangeset{
-								changes: map[string][]byte{
-									"key3": []byte("ddd"),
-									"key4": []byte("eee"),
-									"key5": []byte("fff"),
-								},
-							},
-							commit: true,
-						},
-						{
-							revision: revisionChangeset{
-								changes: map[string][]byte{
-									"key2": nil,
-									"key4": nil,
-								},
-							},
-							commit: true,
-						},
-					},
-					metadata: []byte{4, 5, 6},
-				},
-				"b": {
-					transactions: []transaction{},
-					metadata:     []byte{7, 8, 9},
-				},
-			},
-		},
-		"after-compaction": {
-			revisions: storeChangeset{
-				"a": {
-					transactions: []transaction{
-						{
-							revision: revisionChangeset{
-								changes: map[string][]byte{
-									"key1": []byte("aaa"),
-									"key2": []byte("bbb"),
-									"key3": []byte("ccc"),
-								},
-							},
-							commit: true,
-						},
-						{
-							revision: revisionChangeset{
-								changes: map[string][]byte{
-									"key3": []byte("ddd"),
-									"key4": []byte("eee"),
-									"key5": []byte("fff"),
-								},
-							},
-							commit: true,
-						},
-						{
-							revision: revisionChangeset{
-								changes: map[string][]byte{
-									"key2": nil,
-									"key4": nil,
-								},
-							},
-							compact: 2,
-							commit:  true,
-						},
-					},
-					metadata: []byte{4, 5, 6},
-				},
-				"b": {
-					transactions: []transaction{},
-					metadata:     []byte{7, 8, 9},
-				},
-			},
-		},
+func largeRevisionChangeset() revisionChangeset {
+	result := revisionChangeset{
+		changes: map[string][]byte{},
 	}
 
-	for name, testCase := range testCases {
-		t.Run(name, func(t *testing.T) {
-			mvccStore := builder(t, testCase.revisions)
+	for i := 0; i < 20; i++ {
+		key := fmt.Sprintf("key-%d", rand.Intn(20))
 
-			defer mvccStore.Close()
-
-			expectedFinalState := testCase.revisions.apply(store{})
-
-			diff := cmp.Diff(expectedFinalState, getStore(t, mvccStore))
-
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-		})
+		switch n := rand.Intn(100); {
+		case n < 50:
+			result.changes[key] = nil
+		default:
+			result.changes[key] = randomBytes()
+		}
 	}
+
+	return result
 }
 
-func testTransactionCompact(builder tempStoreBuilder, t *testing.T) {
-}
+func randomBytes() []byte {
+	result := make([]byte, 20)
+	crand.Read(result)
 
-func testViewKeys(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testViewChanges(builder tempStoreBuilder, t *testing.T) {
-}
-
-func testViewRevision(builder tempStoreBuilder, t *testing.T) {
+	return result
 }

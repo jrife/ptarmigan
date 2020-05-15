@@ -156,11 +156,11 @@ func (iter *revisionsIterator) next() bool {
 	if oldRev != 0 && oldRev != iter.rev {
 		if iter.order == kv.SortOrderDesc && oldRev != iter.rev+1 {
 			iter.err = fmt.Errorf("consistency violation: each revision must be exactly one less than the last: revision %d follows revision %d", iter.rev, oldRev)
+			return false
 		} else if oldRev != iter.rev-1 {
 			iter.err = fmt.Errorf("consistency violation: each revision must be exactly one more than the last: revision %d follows revision %d", iter.rev, oldRev)
+			return false
 		}
-
-		return false
 	}
 
 	return true

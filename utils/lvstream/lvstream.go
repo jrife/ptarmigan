@@ -126,7 +126,7 @@ func (decoder *LVStreamDecoder) Write(p []byte) (int, error) {
 	for len(p) > 0 {
 		// cap(chunk) >= chunkSize
 		// copy p to chunk up to min(len(p), chunkSize)
-		copyAmount := min(decoder.chunkSize, len(p))
+		copyAmount := min(decoder.chunkSize-len(decoder.chunk), len(p))
 		decoder.chunk = append(decoder.chunk, p[:copyAmount]...)
 		p = p[copyAmount:]
 

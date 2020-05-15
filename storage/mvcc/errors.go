@@ -2,6 +2,7 @@ package mvcc
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jrife/ptarmigan/storage/kv"
 )
@@ -24,13 +25,17 @@ var (
 	ErrNoRevisions = errors.New("partition has no revision")
 )
 
-func fromKVError(err error) error {
+func wrapError(wrap string, err error) error {
 	switch err {
 	case kv.ErrClosed:
 		return ErrClosed
 	case kv.ErrNoSuchPartition:
 		return ErrNoSuchPartition
+	case ErrClosed:
+		fallthrough
+	case nil:
+		return err
 	}
 
-	return err
+	return fmt.Errorf("%s: %s", wrap, err)
 }

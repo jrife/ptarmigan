@@ -7,8 +7,12 @@ import (
 
 	"github.com/jrife/ptarmigan/storage/kv/keys"
 	kvpb "github.com/jrife/ptarmigan/storage/kv/pb"
+	"github.com/jrife/ptarmigan/storage/snapshot"
 	"github.com/jrife/ptarmigan/utils/lvstream"
 )
+
+var _ snapshot.Source = (*Snapshotter)(nil)
+var _ snapshot.Acceptor = (*Snapshotter)(nil)
 
 // Snapshotter contains a generic implementation
 // for Snapshot() and ApplySnapshot() that should

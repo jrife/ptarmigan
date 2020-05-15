@@ -2,9 +2,9 @@ package kv
 
 import (
 	"errors"
-	"io"
 
 	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/ptarmigan/storage/snapshot"
 )
 
 var (
@@ -164,7 +164,7 @@ type Partition interface {
 	// serializability must be maintained and its view must be consistent with the
 	// most recently commited read-write transaction. Strict-serializability must
 	// be enforced.
-	Snapshot() (io.ReadCloser, error)
+	snapshot.Source
 	// ApplySnapshot applies a snapshot to this partition. If ApplySnapshot() is called
 	// after Close() on the root store returns it must return ErrClosed. Otherwise if
 	// the parent store does not exist it must return ErrNoSuchStore. If this partition
@@ -174,7 +174,7 @@ type Partition interface {
 	// return Close() on the root store must not return. Calls to ApplySnapshot() started
 	// after Close() is called may return ErrClosed right away. Strict-serializability must
 	// be enforced.
-	ApplySnapshot(io.Reader) error
+	snapshot.Acceptor
 }
 
 // MapUpdater is an interface for updating a sorted

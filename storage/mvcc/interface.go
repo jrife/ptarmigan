@@ -1,10 +1,9 @@
 package mvcc
 
 import (
-	"io"
-
 	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/ptarmigan/storage/snapshot"
 )
 
 // Store is the interface for a partitioned MVCC
@@ -69,16 +68,16 @@ type Partition interface {
 	// must return ErrClosed if its invocation starts after
 	// Close() on the store returns. Otherwise if this partition
 	// does not exist it must return ErrNoSuchPartition.
-	View(revision int64) (View, error)
+	View(revision int64) (ViewCloser, error)
 	// Snapshot takes a consistent snapshot of this partition. If Snapshot() is called
 	// after Close() on the store returns it must return ErrClosed. Otherwise if this
 	// partition does not exist it must return ErrNoSuchPartition.
-	Snapshot() (io.Reader, error)
+	snapshot.Source
 	// ApplySnapshot applies a snapshot to this partition. If ApplySnapshot() is called
 	// after Close() on the root store returns it must return ErrClosed. If this partition
 	// doesn't exist ApplySnapshot will create it. If the partition does exist ApplySnapshot
 	// overwrites the state currently stored in the partition.
-	ApplySnapshot(snap io.Reader) error
+	snapshot.Acceptor
 }
 
 // Transaction lets a user manipulate the state of the partition.
@@ -124,7 +123,11 @@ type View interface {
 	Changes(keys keys.Range, includePrev bool) (DiffIterator, error)
 	// Return the revision for this view.
 	Revision() int64
-	// Close must be called when a user is done with a view.
+}
+
+// ViewCloser is a view with a close function
+type ViewCloser interface {
+	View
 	Close() error
 }
 
