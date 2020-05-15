@@ -207,48 +207,50 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 				}
 			}
 
-			rev, err := txn.NewRevision()
-
-			if err != nil {
-				txn.Rollback()
-
-				t.Fatalf("failed to create revision %d: %s", i, err)
-			}
-
-			for key, value := range transaction.revision.changes {
-				var err error
-
-				if value == nil {
-					err = rev.Delete([]byte(key))
-				} else {
-					err = rev.Put([]byte(key), value)
-				}
+			if transaction.revision.changes != nil {
+				rev, err := txn.NewRevision()
 
 				if err != nil {
 					txn.Rollback()
 
 					t.Fatalf("failed to create revision %d: %s", i, err)
 				}
-			}
 
-			currentRevision = transaction.revision.apply(currentRevision)
-			expectedChanges := getAllChanges(t, rev)
-			expectedKVs := getAllKVs(t, rev)
+				for key, value := range transaction.revision.changes {
+					var err error
 
-			diff := cmp.Diff(expectedChanges, transaction.revision.changes)
+					if value == nil {
+						err = rev.Delete([]byte(key))
+					} else {
+						err = rev.Put([]byte(key), value)
+					}
 
-			if diff != "" {
-				txn.Rollback()
+					if err != nil {
+						txn.Rollback()
 
-				t.Fatalf(diff)
-			}
+						t.Fatalf("failed to create revision %d: %s", i, err)
+					}
+				}
 
-			diff = cmp.Diff(expectedKVs, currentRevision.Kvs)
+				currentRevision = transaction.revision.apply(currentRevision)
+				expectedChanges := getAllChanges(t, rev)
+				expectedKVs := getAllKVs(t, rev)
 
-			if diff != "" {
-				txn.Rollback()
+				diff := cmp.Diff(expectedChanges, transaction.revision.changes)
 
-				t.Fatalf(diff)
+				if diff != "" {
+					txn.Rollback()
+
+					t.Fatalf(diff)
+				}
+
+				diff = cmp.Diff(expectedKVs, currentRevision.Kvs)
+
+				if diff != "" {
+					txn.Rollback()
+
+					t.Fatalf(diff)
+				}
 			}
 
 			if transaction.commit {

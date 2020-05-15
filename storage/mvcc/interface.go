@@ -74,7 +74,7 @@ type Partition interface {
 	// partition does not exist it must return ErrNoSuchPartition.
 	snapshot.Source
 	// ApplySnapshot applies a snapshot to this partition. If ApplySnapshot() is called
-	// after Close() on the root store returns it must return ErrClosed. If this partition
+	// after Close() on the store returns it must return ErrClosed. If this partition
 	// doesn't exist ApplySnapshot will create it. If the partition does exist ApplySnapshot
 	// overwrites the state currently stored in the partition.
 	snapshot.Acceptor

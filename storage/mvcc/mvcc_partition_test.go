@@ -2,6 +2,7 @@ package mvcc_test
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -20,9 +21,6 @@ func testPartition(builder tempStoreBuilder, t *testing.T) {
 	t.Run("View", func(t *testing.T) { testPartitionView(builder, t) })
 	t.Run("ApplySnapshot", func(t *testing.T) { testPartitionApplySnapshot(builder, t) })
 	t.Run("Snapshot", func(t *testing.T) { testPartitionSnapshot(builder, t) })
-}
-
-func testPartitionView(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testPartitionName(builder tempStoreBuilder, t *testing.T) {
@@ -377,7 +375,216 @@ func testPartitionBeginMutualExclusion(builder tempStoreBuilder, t *testing.T) {
 	}
 }
 
+func testPartitionView(builder tempStoreBuilder, t *testing.T) {
+	initialState := storeChangeset{
+		"a": {
+			transactions: []transaction{},
+			metadata:     []byte{4, 5, 6},
+		},
+		"b": {
+			transactions: []transaction{},
+			metadata:     []byte{7, 8, 9},
+		},
+	}
+
+	// Revisions 1-5
+	for i := 0; i < 5; i++ {
+		for partitionName, partition := range initialState {
+			partition.transactions = append(partition.transactions, transaction{revision: largeRevisionChangeset(), commit: true})
+			initialState[partitionName] = partition
+		}
+	}
+
+	// Compact up to 3 for partition a
+	partitionA := initialState["a"]
+	partitionA.transactions = append(partitionA.transactions, transaction{compact: 3, revision: revisionChangeset{}, commit: true})
+	initialState["a"] = partitionA
+
+	// Revisions 6-10
+	for i := 0; i < 5; i++ {
+		for partitionName, partition := range initialState {
+			partition.transactions = append(partition.transactions, transaction{revision: largeRevisionChangeset(), commit: true})
+			initialState[partitionName] = partition
+		}
+	}
+
+	initialState["c"] = partitionChangeset{
+		transactions: []transaction{},
+		metadata:     []byte{1, 2, 3},
+	}
+
+	testCases := map[string]struct {
+		initialState storeChangeset
+		name         []byte
+		revision     int64
+		expected     int64
+		err          error
+	}{
+		"partition-that-doesn't-exist": {
+			initialState: initialState,
+			name:         []byte("d"),
+			revision:     mvcc.RevisionNewest,
+			err:          mvcc.ErrNoSuchPartition,
+		},
+		"newest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     mvcc.RevisionNewest,
+			expected:     10,
+		},
+		"newest-revision-after-compaction": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     mvcc.RevisionNewest,
+			expected:     10,
+		},
+		"newest-revision-empty-partition": {
+			initialState: initialState,
+			name:         []byte("c"),
+			revision:     mvcc.RevisionNewest,
+			err:          mvcc.ErrNoRevisions,
+		},
+		"oldest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     mvcc.RevisionOldest,
+			expected:     1,
+		},
+		"oldest-revision-after-compaction": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     mvcc.RevisionOldest,
+			expected:     3,
+		},
+		"oldest-revision-empty-partition": {
+			initialState: initialState,
+			name:         []byte("c"),
+			revision:     mvcc.RevisionOldest,
+			err:          mvcc.ErrNoRevisions,
+		},
+		"highest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     10,
+			expected:     10,
+		},
+		"lowest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     1,
+			expected:     1,
+		},
+		"middle-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     5,
+			expected:     5,
+		},
+		"specific-revision-empty-partition": {
+			initialState: initialState,
+			name:         []byte("c"),
+			revision:     5,
+			err:          mvcc.ErrNoRevisions,
+		},
+		"compacted-revision": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     1,
+			err:          mvcc.ErrCompacted,
+		},
+		"future-revision": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     11,
+			err:          mvcc.ErrRevisionTooHigh,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("recovered %#v\n", r)
+				}
+			}()
+
+			store := builder(t, testCase.initialState)
+
+			view, err := store.Partition(testCase.name).View(testCase.revision)
+
+			if view != nil {
+				rev := view.Revision()
+				view.Close()
+
+				if rev != testCase.expected {
+					t.Fatalf("expected revision of view to be %d, got %d", testCase.expected, rev)
+				}
+			}
+
+			if testCase.err == errAnyError {
+				if err == nil {
+					t.Fatalf("expected any error, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected error to be %#v, got #%v", testCase.err, err)
+			}
+
+			store.Close()
+
+			if _, err := store.Partition(testCase.name).View(testCase.revision); err != mvcc.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
+			}
+		})
+	}
+}
+
 func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
+	initialState := storeChangeset{
+		"a": {
+			transactions: []transaction{},
+			metadata:     []byte{4, 5, 6},
+		},
+		"b": {
+			transactions: []transaction{},
+			metadata:     []byte{7, 8, 9},
+		},
+	}
+	testCases := map[string]struct {
+		initialState storeChangeset
+		name         []byte
+	}{
+		"partition-that-exists": {
+			initialState: initialState,
+			name:         []byte("b"),
+		},
+		"partition-that-doesn't-exist": {
+			initialState: initialState,
+			name:         []byte("c"),
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			store := builder(t, testCase.initialState)
+
+			err := store.Partition(testCase.name).ApplySnapshot(bytes.NewReader([]byte{}))
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got #%v", err)
+			}
+
+			store.Close()
+
+			if err := store.Partition(testCase.name).ApplySnapshot(bytes.NewReader([]byte{})); err != mvcc.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
+			}
+		})
+	}
+
+	t.Run("e2e", func(t *testing.T) { testPartitionApplySnapshotE2E(builder, t) })
+}
+
+func testPartitionApplySnapshotE2E(builder tempStoreBuilder, t *testing.T) {
 	changes := largeStoreChangeset()
 	sourceStore := builder(t, changes)
 	destStore := builder(t, storeChangeset{})
@@ -420,4 +627,55 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
+	initialState := storeChangeset{
+		"a": {
+			transactions: []transaction{},
+			metadata:     []byte{4, 5, 6},
+		},
+		"b": {
+			transactions: []transaction{},
+			metadata:     []byte{7, 8, 9},
+		},
+	}
+	testCases := map[string]struct {
+		initialState storeChangeset
+		name         []byte
+		err          error
+	}{
+		"partition-that-exists": {
+			initialState: initialState,
+			name:         []byte("b"),
+		},
+		"partition-that-doesn't-exist": {
+			initialState: initialState,
+			name:         []byte("c"),
+			err:          mvcc.ErrNoSuchPartition,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			store := builder(t, testCase.initialState)
+
+			snap, err := store.Partition(testCase.name).Snapshot()
+
+			if testCase.err == errAnyError {
+				if err == nil {
+					t.Fatalf("expected any error, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected error to be %#v, got #%v", testCase.err, err)
+			}
+
+			if snap != nil {
+				snap.Close()
+			}
+
+			store.Close()
+
+			if _, err := store.Partition(testCase.name).Snapshot(); err != mvcc.ErrClosed {
+				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
+			}
+		})
+	}
 }

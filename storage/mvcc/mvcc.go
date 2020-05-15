@@ -405,22 +405,22 @@ func (partition *partition) View(revision int64) (ViewCloser, error) {
 		return nil, wrapError("unable to retrieve oldest revision", err)
 	}
 
-	if revision == RevisionNewest {
-		revision = newestRevision
-	} else if revision <= RevisionOldest {
-		revision = oldestRevision
-	}
-
 	// it's possible that both newestRevision
 	// and oldestRevision are 0. In such cases
 	// this indicates that this partition is new
 	// and has not had any revisions written to
 	// it yet.
-	if revision == 0 {
+	if newestRevision == 0 && oldestRevision == 0 {
 		txn.Rollback()
 		partition.store.closed.RUnlock()
 
 		return nil, ErrNoRevisions
+	}
+
+	if revision == RevisionNewest {
+		revision = newestRevision
+	} else if revision <= RevisionOldest {
+		revision = oldestRevision
 	}
 
 	if revision > newestRevision {
@@ -447,7 +447,7 @@ func (partition *partition) ApplySnapshot(snap io.Reader) error {
 		return ErrClosed
 	}
 
-	return partition.store.kvStore.Partition(partition.name).ApplySnapshot(snap)
+	return wrapError("could not apply kv store snapshot", partition.store.kvStore.Partition(partition.name).ApplySnapshot(snap))
 }
 
 // Snapshot implements Partition.Snapshot
@@ -459,7 +459,9 @@ func (partition *partition) Snapshot() (io.ReadCloser, error) {
 		return nil, ErrClosed
 	}
 
-	return partition.store.kvStore.Partition(partition.name).Snapshot()
+	snap, err := partition.store.kvStore.Partition(partition.name).Snapshot()
+
+	return snap, wrapError("could not take kv store snapshot", err)
 }
 
 type transaction struct {
