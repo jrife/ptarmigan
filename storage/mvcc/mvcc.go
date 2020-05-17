@@ -467,11 +467,16 @@ func (partition *partition) Snapshot() (io.ReadCloser, error) {
 type transaction struct {
 	partition *partition
 	txn       kv.Transaction
+	revision  Revision
 	close     sync.Once
 }
 
 // NewRevision implements Transaction.NewRevision
 func (transaction *transaction) NewRevision() (Revision, error) {
+	if transaction.revision != nil {
+		return nil, ErrTooManyRevisions
+	}
+
 	nextRevision, err := transaction.partition.nextRevision(transaction.txn)
 
 	if err != nil {
@@ -484,21 +489,21 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 		return nil, wrapError("could not insert revision start market", err)
 	}
 
-	return &revision{
+	r := &revision{
 		view: view{
 			partition: transaction.partition,
 			txn:       transaction.txn,
 			revision:  nextRevision,
 		},
-	}, nil
+	}
+
+	transaction.revision = r
+
+	return r, nil
 }
 
 // Compact implements Transaction.Compact
 func (transaction *transaction) Compact(revision int64) error {
-	if revision <= 1 {
-		return nil
-	}
-
 	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
 
 	if err != nil {
@@ -511,19 +516,19 @@ func (transaction *transaction) Compact(revision int64) error {
 		return wrapError("unable to retrieve oldest revision", err)
 	}
 
-	if revision == RevisionNewest {
-		revision = newestRevision
-	} else if revision <= RevisionOldest {
-		revision = oldestRevision
-	}
-
 	// it's possible that both newestRevision
 	// and oldestRevision are 0. In such cases
 	// this indicates that this partition is new
 	// and has not had any revisions written to
 	// it yet.
-	if revision == 0 {
+	if newestRevision == 0 && oldestRevision == 0 {
 		return ErrNoRevisions
+	}
+
+	if revision == RevisionNewest {
+		revision = newestRevision
+	} else if revision <= RevisionOldest {
+		revision = oldestRevision
 	}
 
 	if revision > newestRevision {
@@ -564,7 +569,7 @@ func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-ch
 
 		defer txn.Rollback()
 
-		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision - 1}, kv.SortOrderAsc)
+		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision}, kv.SortOrderAsc)
 
 		if err != nil {
 			errors <- wrapError("could not create revisions iterator", err)

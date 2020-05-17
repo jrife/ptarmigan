@@ -84,7 +84,7 @@ type Partition interface {
 type Transaction interface {
 	// NewRevision creates a new revision. Each transaction
 	// can create at most one new revision. Calling this
-	// more than once on a transaction must return an error.
+	// more than once on a transaction must return ErrTooManyRevisions.
 	// The revision number for the returned revision must
 	// be exactly one more than the newest revision, or if this
 	// store is brand new the first revision applied to it
@@ -92,7 +92,10 @@ type Transaction interface {
 	// be contiguous.
 	NewRevision() (Revision, error)
 	// Compact deletes all revision history up to the
-	// specified revision (exclusive). If revision is
+	// specified revision (exclusive).
+	// If revision == 0 it selects the newest revision.
+	// If revision < 0 it selects the oldest revision.
+	// If revision is
 	// higher than the newest committed revision this
 	// must return ErrRevisionTooHigh. If revision is
 	// lower than the oldest revision it must return

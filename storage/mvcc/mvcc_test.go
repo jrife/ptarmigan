@@ -59,46 +59,113 @@ type partitionChangeset struct {
 }
 
 func (changeset partitionChangeset) apply(p partition) partition {
-	lastRevision := revision{Revision: 0, Kvs: map[string][]byte{}}
-
-	if len(p.Revisions) > 0 {
-		lastRevision = p.Revisions[len(p.Revisions)-1]
-	}
-
 	for _, transaction := range changeset.transactions {
-		if !transaction.commit {
+		if !transaction.shouldCommit {
 			continue
 		}
 
-		if transaction.compact > 0 {
-			for i, rev := range p.Revisions {
-				if rev.Revision == transaction.compact {
-					p.Revisions = p.Revisions[i:]
-
-					break
-				}
-			}
-		}
-
-		lastRevision = transaction.revision.apply(lastRevision)
-		p.Revisions = append(p.Revisions, lastRevision)
+		p = transaction.apply(p)
 	}
 
 	return p
 }
 
 type transaction struct {
-	compact  int64
-	revision revisionChangeset
-	commit   bool
+	ops          []op
+	shouldCommit bool
 }
 
-type revisionChangeset struct {
-	changes map[string][]byte
+func (txn transaction) apply(p partition) partition {
+	if !txn.shouldCommit {
+		return p
+	}
+
+	for _, op := range txn.ops {
+		p = op.apply(p)
+	}
+
+	return p
 }
 
-func (changeset revisionChangeset) apply(rev revision) revision {
-	newRevision := revision{Revision: rev.Revision + 1, Kvs: map[string][]byte{}}
+func (txn transaction) compact(r int64) transaction {
+	txn.ops = append(txn.ops, compactOp(r))
+
+	return txn
+}
+
+func (txn transaction) newRevision(revision revisionOp) transaction {
+	txn.ops = append(txn.ops, revision)
+
+	return txn
+}
+
+func (txn transaction) commit() transaction {
+	txn.shouldCommit = true
+
+	return txn
+}
+
+func (txn transaction) rollback() transaction {
+	txn.shouldCommit = false
+
+	return txn
+}
+
+type op interface {
+	apply(partition) partition
+	applyToTransaction(mvcc.Transaction) error
+}
+
+type compactOp int64
+
+func (revision compactOp) apply(p partition) partition {
+	if revision == compactOp(mvcc.RevisionNewest) && len(p.Revisions) != 0 {
+		revision = compactOp(p.Revisions[len(p.Revisions)-1].Revision)
+	} else if revision == compactOp(mvcc.RevisionOldest) && len(p.Revisions) != 0 {
+		revision = compactOp(p.Revisions[0].Revision)
+	}
+
+	if revision <= 0 {
+		return p
+	}
+
+	for i, rev := range p.Revisions {
+		if rev.Revision == int64(revision) {
+			p.Revisions = p.Revisions[i:]
+
+			break
+		}
+	}
+
+	return p
+}
+
+func (revision compactOp) applyToTransaction(t mvcc.Transaction) error {
+	return t.Compact(int64(revision))
+}
+
+type revisionOp map[string][]byte
+
+func (r revisionOp) put(k, v []byte) revisionOp {
+	r[string(k)] = v
+
+	return r
+}
+
+func (r revisionOp) delete(k []byte) revisionOp {
+	delete(r, string(k))
+
+	return r
+}
+
+func (r revisionOp) apply(p partition) partition {
+	rev := revision{}
+
+	if len(p.Revisions) > 0 {
+		rev = p.Revisions[len(p.Revisions)-1]
+	}
+
+	newRevision := revision{Revision: rev.Revision + 1, Kvs: map[string][]byte{}, Changes: map[string][]byte{}}
 
 	// Make a copy
 	for key, value := range rev.Kvs {
@@ -106,17 +173,49 @@ func (changeset revisionChangeset) apply(rev revision) revision {
 	}
 
 	// Modify the copy
-	for key, value := range changeset.changes {
+	for key, value := range r {
 		if value == nil {
 			delete(newRevision.Kvs, key)
+			newRevision.Changes[key] = nil
 
 			continue
 		}
 
 		newRevision.Kvs[key] = value
+		newRevision.Changes[key] = value
 	}
 
-	return newRevision
+	p.Revisions = append(p.Revisions, newRevision)
+
+	return p
+}
+
+func (r revisionOp) applyToTransaction(t mvcc.Transaction) error {
+	rev, err := t.NewRevision()
+
+	if err != nil {
+		return err
+	}
+
+	return r.applyToRevision(rev)
+}
+
+func (r revisionOp) applyToRevision(rev mvcc.Revision) error {
+	for key, value := range r {
+		var err error
+
+		if value == nil {
+			err = rev.Delete([]byte(key))
+		} else {
+			err = rev.Put([]byte(key), value)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type store map[string]partition
@@ -128,6 +227,7 @@ type partition struct {
 type revision struct {
 	Revision int64
 	Kvs      map[string][]byte
+	Changes  map[string][]byte
 }
 
 func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
@@ -176,85 +276,27 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 		}
 
 		currentPartition := currentState[partitionName]
-		currentRevision := revision{Revision: 0, Kvs: map[string][]byte{}}
-
-		if len(currentPartition.Revisions) > 0 {
-			currentRevision = currentPartition.Revisions[len(currentPartition.Revisions)-1]
-		}
 
 		if err := mvccPartition.Create(partitionChangeset.metadata); err != nil {
 			t.Fatalf("failed to create partition %s: %s", partitionName, err)
 		}
 
-		for i, transaction := range partitionChangeset.transactions {
+		for _, transaction := range partitionChangeset.transactions {
 			txn, err := mvccPartition.Begin()
 
 			if err != nil {
-				t.Fatalf("failed to create revision %d: %s", i, err)
+				t.Fatalf("failed to apply transaction %#v: %s", transaction, err)
 			}
 
-			if transaction.compact > 0 {
-				for i, rev := range currentPartition.Revisions {
-					if rev.Revision == transaction.compact {
-						currentPartition.Revisions = currentPartition.Revisions[i:]
+			for _, op := range transaction.ops {
+				currentPartition = op.apply(currentPartition)
 
-						break
-					}
-				}
-
-				if err := txn.Compact(transaction.compact); err != nil {
-					t.Fatalf("failed to compact partition %s to revision %d: %s", partitionName, transaction.compact, err)
+				if err := op.applyToTransaction(txn); err != nil {
+					t.Fatalf("failed to apply op %#v to partition %s: %s", op, partitionName, err)
 				}
 			}
 
-			if transaction.revision.changes != nil {
-				rev, err := txn.NewRevision()
-
-				if err != nil {
-					txn.Rollback()
-
-					t.Fatalf("failed to create revision %d: %s", i, err)
-				}
-
-				for key, value := range transaction.revision.changes {
-					var err error
-
-					if value == nil {
-						err = rev.Delete([]byte(key))
-					} else {
-						err = rev.Put([]byte(key), value)
-					}
-
-					if err != nil {
-						txn.Rollback()
-
-						t.Fatalf("failed to create revision %d: %s", i, err)
-					}
-				}
-
-				currentRevision = transaction.revision.apply(currentRevision)
-				expectedChanges := getAllChanges(t, rev)
-				expectedKVs := getAllKVs(t, rev)
-
-				diff := cmp.Diff(expectedChanges, transaction.revision.changes)
-
-				if diff != "" {
-					txn.Rollback()
-
-					t.Fatalf(diff)
-				}
-
-				diff = cmp.Diff(expectedKVs, currentRevision.Kvs)
-
-				if diff != "" {
-					txn.Rollback()
-
-					t.Fatalf(diff)
-				}
-			}
-
-			if transaction.commit {
-				currentPartition.Revisions = append(currentPartition.Revisions, currentRevision)
+			if transaction.shouldCommit {
 				currentState[partitionName] = currentPartition
 				err = txn.Commit()
 			} else {
@@ -262,7 +304,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 			}
 
 			if err != nil {
-				t.Fatalf("failed to create revision %d: %s", i, err)
+				t.Fatalf("failed to apply transaction %#v: %s", transaction, err)
 			}
 		}
 	}
@@ -303,7 +345,7 @@ func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 	}
 
 	for {
-		result = append(result, revision{Kvs: getAllKVs(t, view), Revision: view.Revision()})
+		result = append(result, revision{Kvs: getAllKVs(t, view), Changes: getAllChanges(t, view), Revision: view.Revision()})
 		view.Close()
 		view, err = partition.View(view.Revision() + 1)
 
@@ -391,14 +433,14 @@ func largePartitionChangeset() partitionChangeset {
 
 	rev := 0
 	for i := 0; i < 100; i++ {
-		txn := transaction{revision: revisionChangeset{changes: map[string][]byte{}}, commit: true}
+		txn := transaction{ops: []op{}, shouldCommit: true}
 
 		switch n := rand.Intn(100); {
 		case rev > 0 && n < 5:
-			txn.compact = int64(rev)
+			txn = txn.compact(int64(rev))
 		default:
 			rev++
-			txn.revision = largeRevisionChangeset()
+			txn = txn.newRevision(largeRevisionOp())
 		}
 
 		result.transactions = append(result.transactions, txn)
@@ -407,19 +449,17 @@ func largePartitionChangeset() partitionChangeset {
 	return result
 }
 
-func largeRevisionChangeset() revisionChangeset {
-	result := revisionChangeset{
-		changes: map[string][]byte{},
-	}
+func largeRevisionOp() revisionOp {
+	result := revisionOp{}
 
 	for i := 0; i < 20; i++ {
 		key := fmt.Sprintf("key-%d", rand.Intn(20))
 
 		switch n := rand.Intn(100); {
 		case n < 50:
-			result.changes[key] = nil
+			result = result.delete([]byte(key))
 		default:
-			result.changes[key] = randomBytes()
+			result = result.put([]byte(key), randomBytes())
 		}
 	}
 

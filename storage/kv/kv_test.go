@@ -1949,8 +1949,8 @@ func getKeys(txn kv.Transaction, keys [][]byte) [][]byte {
 	return values
 }
 
-func getSequence(iter kv.Iterator) [][2][]byte {
-	kvs := [][2][]byte{}
+func getSequence(iter kv.Iterator) []kv.KV {
+	kvs := []kv.KV{}
 
 	for iter.Next() {
 		kvs = append(kvs, [2][]byte{
@@ -2045,7 +2045,7 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf("expected err to be nil, got #%v", err)
 	}
 
-	diff = cmp.Diff([][2][]byte{
+	diff = cmp.Diff([]kv.KV{
 		{[]byte("a"), []byte("z")},
 		{[]byte("c"), []byte("d")},
 		{[]byte("e"), []byte("f")},
@@ -2055,7 +2055,7 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf(diff)
 	}
 
-	diff = cmp.Diff([][2][]byte{
+	diff = cmp.Diff([]kv.KV{
 		{[]byte("a"), []byte("b")},
 		{[]byte("c"), []byte("d")},
 	}, getSequence(roIter))
@@ -2072,7 +2072,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 		partition    []byte
 		keys         keys.Range
 		order        kv.SortOrder
-		kvs          [][2][]byte
+		kvs          []kv.KV
 		err          error
 	}{
 		"all-keys-asc": {
@@ -2093,7 +2093,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All(),
 			order:     kv.SortOrderAsc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("a"), []byte("b")},
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
@@ -2120,7 +2120,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All(),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("k"), []byte("l")},
 				{[]byte("i"), []byte("j")},
 				{[]byte("g"), []byte("h")},
@@ -2147,7 +2147,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Lt([]byte("g")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("a"), []byte("b")},
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
@@ -2171,7 +2171,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Lt([]byte("g")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("e"), []byte("f")},
 				{[]byte("c"), []byte("d")},
 				{[]byte("a"), []byte("b")},
@@ -2195,7 +2195,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("g")).Lt([]byte("z")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("g"), []byte("h")},
 				{[]byte("i"), []byte("j")},
 				{[]byte("k"), []byte("l")},
@@ -2219,7 +2219,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("g")).Lt([]byte("z")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("k"), []byte("l")},
 				{[]byte("i"), []byte("j")},
 				{[]byte("g"), []byte("h")},
@@ -2243,7 +2243,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("c")).Lt([]byte("i")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
 				{[]byte("g"), []byte("h")},
@@ -2267,7 +2267,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("c")).Lt([]byte("i")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("g"), []byte("h")},
 				{[]byte("e"), []byte("f")},
 				{[]byte("c"), []byte("d")},
@@ -2291,7 +2291,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("b")).Lt([]byte("j")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
 				{[]byte("g"), []byte("h")},
@@ -2316,7 +2316,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("b")).Lt([]byte("j")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs: [][2][]byte{
+			kvs: []kv.KV{
 				{[]byte("i"), []byte("j")},
 				{[]byte("g"), []byte("h")},
 				{[]byte("e"), []byte("f")},
@@ -2341,7 +2341,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("e")).Lt([]byte("e")),
 			order:     kv.SortOrderAsc,
 			err:       nil,
-			kvs:       [][2][]byte{},
+			kvs:       []kv.KV{},
 		},
 		"min>max asc": {
 			initialState: rootStoreModel{
@@ -2361,7 +2361,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("g")).Lt([]byte("c")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs:       [][2][]byte{},
+			kvs:       []kv.KV{},
 		},
 		"min=max desc": {
 			initialState: rootStoreModel{
@@ -2381,7 +2381,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("e")).Lt([]byte("e")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs:       [][2][]byte{},
+			kvs:       []kv.KV{},
 		},
 		"min>max desc": {
 			initialState: rootStoreModel{
@@ -2401,7 +2401,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			keys:      keys.All().Gte([]byte("g")).Lt([]byte("c")),
 			order:     kv.SortOrderDesc,
 			err:       nil,
-			kvs:       [][2][]byte{},
+			kvs:       []kv.KV{},
 		},
 	}
 
@@ -2477,7 +2477,7 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	if bytes.Compare(aaa123, []byte("1")) != 0 {
-		t.Fatalf("expected #%v, got %#v", []byte("1"), aaa123)
+		t.Fatalf("expected %#v, got %#v", []byte("1"), aaa123)
 	}
 
 	bbb123, err := bbbTxn.Get([]byte("123"))
@@ -2518,7 +2518,7 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf("expected err to be nil, got %#v", err)
 	}
 
-	diff := cmp.Diff([][2][]byte{
+	diff := cmp.Diff([]kv.KV{
 		{[]byte("123"), []byte("1")},
 		{[]byte("456"), []byte("2")},
 		{[]byte("789"), []byte("3")},
@@ -2528,7 +2528,7 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf(diff)
 	}
 
-	diff = cmp.Diff([][2][]byte{
+	diff = cmp.Diff([]kv.KV{
 		{[]byte("123"), []byte("4")},
 		{[]byte("456"), []byte("5")},
 		{[]byte("789"), []byte("6")},
@@ -2538,7 +2538,7 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf(diff)
 	}
 
-	diff = cmp.Diff([][2][]byte{
+	diff = cmp.Diff([]kv.KV{
 		{[]byte("123"), []byte("7")},
 		{[]byte("456"), []byte("8")},
 		{[]byte("789"), []byte("9")},
@@ -2558,7 +2558,7 @@ func testTransactionNamespace(builder tempStoreBuilder, t *testing.T) {
 		t.Fatalf("expected err to be nil, got %#v", err)
 	}
 
-	diff = cmp.Diff([][2][]byte{
+	diff = cmp.Diff([]kv.KV{
 		{[]byte("aaa123"), []byte{}},
 		{[]byte("aaa456"), []byte("2")},
 		{[]byte("aaa789"), []byte("3")},

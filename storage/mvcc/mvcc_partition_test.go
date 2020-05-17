@@ -390,20 +390,20 @@ func testPartitionView(builder tempStoreBuilder, t *testing.T) {
 	// Revisions 1-5
 	for i := 0; i < 5; i++ {
 		for partitionName, partition := range initialState {
-			partition.transactions = append(partition.transactions, transaction{revision: largeRevisionChangeset(), commit: true})
+			partition.transactions = append(partition.transactions, transaction{}.newRevision(largeRevisionOp()).commit())
 			initialState[partitionName] = partition
 		}
 	}
 
 	// Compact up to 3 for partition a
 	partitionA := initialState["a"]
-	partitionA.transactions = append(partitionA.transactions, transaction{compact: 3, revision: revisionChangeset{}, commit: true})
+	partitionA.transactions = append(partitionA.transactions, transaction{}.compact(3).commit())
 	initialState["a"] = partitionA
 
 	// Revisions 6-10
 	for i := 0; i < 5; i++ {
 		for partitionName, partition := range initialState {
-			partition.transactions = append(partition.transactions, transaction{revision: largeRevisionChangeset(), commit: true})
+			partition.transactions = append(partition.transactions, transaction{}.newRevision(largeRevisionOp()).commit())
 			initialState[partitionName] = partition
 		}
 	}

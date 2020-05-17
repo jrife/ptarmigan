@@ -23,6 +23,9 @@ var (
 	// or newest revision, but the partition is empty having had no revisions
 	// written to it yet.
 	ErrNoRevisions = errors.New("partition has no revision")
+	// ErrTooManyRevisions is returned when a transaction tries to create more than
+	// one revision
+	ErrTooManyRevisions = errors.New("transaction already created a new revision")
 )
 
 func wrapError(wrap string, err error) error {

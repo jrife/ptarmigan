@@ -62,7 +62,13 @@ func (r Range) Prefix(k []byte) Range {
 // methods will keep keys within this namespace.
 func (r Range) Namespace(ns []byte) Range {
 	r.Min = prefix(r.Min, ns)
-	r.Max = inc(prefix(r.Max, ns))
+
+	if r.Max == nil {
+		r.Max = inc(ns)
+	} else {
+		r.Max = prefix(r.Max, ns)
+	}
+
 	r.ns = append(r.ns, ns...)
 
 	return r
@@ -84,7 +90,11 @@ func (r Range) refineMin(min []byte) Range {
 
 func (r Range) refineMax(max []byte) Range {
 	if len(r.ns) > 0 {
-		max = inc(prefix(max, r.ns))
+		if max == nil {
+			max = inc(r.ns)
+		} else {
+			max = prefix(max, r.ns)
+		}
 	}
 
 	if r.Max != nil && compare(max, r.Max) >= 0 {
@@ -129,12 +139,15 @@ func after(k []byte) []byte {
 func inc(k []byte) []byte {
 	carry := true
 
-	for i := len(k) - 1; i >= 0 && carry; i-- {
-		if k[i] < 0xff {
+	incrementedK := make([]byte, len(k))
+	copy(incrementedK, k)
+
+	for i := len(incrementedK) - 1; i >= 0 && carry; i-- {
+		if incrementedK[i] < 0xff {
 			carry = false
 		}
 
-		k[i]++
+		incrementedK[i]++
 	}
 
 	// carry will only be true if all elements of k
@@ -144,7 +157,7 @@ func inc(k []byte) []byte {
 		return nil
 	}
 
-	return k
+	return incrementedK
 }
 
 // prefix appends k to p

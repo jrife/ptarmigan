@@ -184,7 +184,7 @@ type keysIterator struct {
 }
 
 func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order kv.SortOrder) (*keysIterator, error) {
-	iter, err := txn.Keys(keys.Range{Min: min.bytes(), Max: max.bytes()}, kv.SortOrder(order))
+	iter, err := txn.Keys(keys.Range{Min: min.bytes(), Max: max.bytes()}, order)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create iterator: %s", err)
@@ -217,7 +217,8 @@ func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order
 
 var _ kv.Iterator = (*viewRevisionKeysIterator)(nil)
 
-// Like keysIterator but it skips anything
+// Like keysIterator but it only returns the key versions for
+// a single revision
 type viewRevisionKeysIterator struct {
 	keysIterator
 	viewRevision int64
@@ -250,10 +251,16 @@ func (iter *viewRevisionKeysIterator) highestRevision() bool {
 	iter.currentValue = iter.v
 
 	for hasMore := true; hasMore && bytes.Compare(iter.currentKey, iter.k) == 0; hasMore = iter.keysIterator.next() {
-		if iter.rev > iter.currentRev && iter.rev <= iter.viewRevision {
+		if iter.currentRev > iter.viewRevision || (iter.rev > iter.currentRev && iter.rev <= iter.viewRevision) {
 			iter.currentRev = iter.rev
 			iter.currentValue = iter.v
 		}
+	}
+
+	if iter.currentRev > iter.viewRevision {
+		iter.currentKey = nil
+		iter.currentValue = nil
+		iter.currentRev = 0
 	}
 
 	return true
@@ -269,7 +276,7 @@ func (iter *viewRevisionKeysIterator) next() bool {
 
 	// skips keys that don't have a revision <= iter.viewRevision
 	// and keys whose most recent revision is "key deleted"
-	for hasMore = iter.highestRevision(); hasMore && (iter.currentRev > iter.viewRevision || iter.currentValue == nil); hasMore = iter.highestRevision() {
+	for hasMore = iter.highestRevision(); hasMore && iter.currentValue == nil; hasMore = iter.highestRevision() {
 	}
 
 	return hasMore
@@ -315,7 +322,14 @@ type viewRevisionDiffsIterator struct {
 }
 
 func newViewRevisionDiffsIterator(txn kv.Transaction, min []byte, max []byte, revision int64) (*viewRevisionDiffsIterator, error) {
-	iter, err := newRevisionsIterator(txn, &revisionsCursor{revision: revision}, &revisionsCursor{revision: revision, key: max}, kv.SortOrderAsc)
+	minRevCursor := &revisionsCursor{revision: revision}
+	maxRevCursor := &revisionsCursor{revision: revision, key: max}
+
+	if maxRevCursor.key == nil {
+		maxRevCursor.revision++
+	}
+
+	iter, err := newRevisionsIterator(txn, minRevCursor, maxRevCursor, kv.SortOrderAsc)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create revisions iterator: %s", err)
