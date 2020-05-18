@@ -153,7 +153,7 @@ func (r revisionOp) put(k, v []byte) revisionOp {
 }
 
 func (r revisionOp) delete(k []byte) revisionOp {
-	delete(r, string(k))
+	r[string(k)] = nil
 
 	return r
 }
@@ -175,8 +175,10 @@ func (r revisionOp) apply(p partition) partition {
 	// Modify the copy
 	for key, value := range r {
 		if value == nil {
-			delete(newRevision.Kvs, key)
-			newRevision.Changes[key] = nil
+			if _, ok := newRevision.Kvs[key]; ok {
+				delete(newRevision.Kvs, key)
+				newRevision.Changes[key] = nil
+			}
 
 			continue
 		}
@@ -453,7 +455,7 @@ func largeRevisionOp() revisionOp {
 	result := revisionOp{}
 
 	for i := 0; i < 20; i++ {
-		key := fmt.Sprintf("key-%d", rand.Intn(20))
+		key := fmt.Sprintf("key-%d", rand.Intn(1))
 
 		switch n := rand.Intn(100); {
 		case n < 50:

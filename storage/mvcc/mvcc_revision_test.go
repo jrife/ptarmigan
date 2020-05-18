@@ -109,18 +109,16 @@ func testRevision(builder tempStoreBuilder, t *testing.T) {
 			}
 
 			currentRevision := partitionState.Revisions[len(partitionState.Revisions)-1]
-			expectedChanges := getAllChanges(t, rev)
-			expectedKVs := getAllKVs(t, rev)
 
 			// Changes should reflect the changes made within this revision
-			diff := cmp.Diff(expectedChanges, map[string][]byte(testCase.op))
+			diff := cmp.Diff(currentRevision.Changes, getAllChanges(t, rev))
 
 			if diff != "" {
 				t.Fatalf(diff)
 			}
 
 			// The new state of the kv store should be visible to this revision
-			diff = cmp.Diff(expectedKVs, currentRevision.Kvs)
+			diff = cmp.Diff(currentRevision.Kvs, getAllKVs(t, rev))
 
 			if diff != "" {
 				t.Fatalf(diff)

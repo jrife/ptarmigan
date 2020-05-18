@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/ptarmigan/storage/mvcc"
 )
 
 func testView(builder tempStoreBuilder, t *testing.T) {
@@ -94,7 +95,8 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 						put([]byte("e"), []byte("3")).
 						put([]byte("g"), []byte("4")).
 						put([]byte("i"), []byte("5")).
-						put([]byte("k"), []byte("6")),
+						put([]byte("k"), []byte("6")).
+						put([]byte("l"), []byte("7")),
 				).commit(),
 				transaction{}.newRevision(
 					revisionOp{}.
@@ -103,7 +105,8 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 						put([]byte("e"), []byte("f")).
 						put([]byte("g"), []byte("h")).
 						put([]byte("i"), []byte("j")).
-						put([]byte("k"), []byte("l")),
+						put([]byte("k"), []byte("l")).
+						delete([]byte("l")),
 				).commit(),
 				transaction{}.newRevision(
 					revisionOp{}.
@@ -323,4 +326,96 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testViewChanges(builder tempStoreBuilder, t *testing.T) {
+	initialState := storeChangeset{
+		"a": partitionChangeset{
+			metadata: []byte{},
+			transactions: []transaction{
+				transaction{}.newRevision(
+					revisionOp{}.
+						put([]byte("a"), []byte("1")).
+						put([]byte("c"), []byte("2")).
+						put([]byte("e"), []byte("3")).
+						put([]byte("g"), []byte("4")).
+						put([]byte("k"), []byte("6")),
+				).commit(),
+				transaction{}.newRevision(
+					revisionOp{}.
+						put([]byte("a"), []byte("b")).
+						put([]byte("c"), []byte("d")).
+						put([]byte("e"), []byte("f")).
+						put([]byte("g"), []byte("h")).
+						put([]byte("i"), []byte("j")).
+						delete([]byte("k")).
+						delete([]byte("z")),
+				).commit(),
+				transaction{}.newRevision(
+					revisionOp{}.
+						put([]byte("a"), []byte("7")).
+						put([]byte("c"), []byte("8")).
+						put([]byte("d"), []byte("asdf")).
+						put([]byte("e"), []byte("9")).
+						put([]byte("g"), []byte("10")).
+						put([]byte("i"), []byte("11")).
+						put([]byte("k"), []byte("12")),
+				).commit(),
+			},
+		},
+	}
+
+	testCases := map[string]struct {
+		initialState storeChangeset
+		partition    []byte
+		revision     int64
+		keys         keys.Range
+		includePrev  bool
+		diffs        []mvcc.Diff
+	}{
+		"all-keys-asc-no-prev": {
+			initialState: initialState,
+			partition:    []byte("a"),
+			revision:     2,
+			keys:         keys.All(),
+			includePrev:  false,
+			diffs: []mvcc.Diff{
+				{[]byte("a"), []byte("b"), nil},
+				{[]byte("c"), []byte("d"), nil},
+				{[]byte("e"), []byte("f"), nil},
+				{[]byte("g"), []byte("h"), nil},
+				{[]byte("i"), []byte("j"), nil},
+				{[]byte("k"), nil, nil},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			store := builder(t, testCase.initialState)
+
+			view, err := store.Partition(testCase.partition).View(testCase.revision)
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got #%v", err)
+			}
+
+			defer view.Close()
+
+			diffsIter, err := view.Changes(testCase.keys, testCase.includePrev)
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got #%v", err)
+			}
+
+			diffs, err := mvcc.Diffs(diffsIter, -1)
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got #%v", err)
+			}
+
+			diff := cmp.Diff(testCase.diffs, diffs)
+
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
 }

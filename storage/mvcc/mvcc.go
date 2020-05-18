@@ -648,6 +648,16 @@ func (revision *revision) Put(key []byte, value []byte) error {
 
 // Delete implements Revision.Delete
 func (revision *revision) Delete(key []byte) error {
+	v, err := revision.Get(key)
+
+	if err != nil {
+		return wrapError("could not get key", err)
+	}
+
+	if v == nil {
+		return nil
+	}
+
 	if err := revision.partition.revisionsNamespace(revision.txn).Put(newRevisionsKey(revision.revision, key), newRevisionsValue(nil)); err != nil {
 		return err
 	}
@@ -664,7 +674,17 @@ type view struct {
 
 // Get implements View.Get
 func (view *view) Get(key []byte) ([]byte, error) {
-	return view.partition.keysNamespace(view.txn).Get(key)
+	iter, err := view.Keys(keys.All().Eq(key), kv.SortOrderAsc)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !iter.Next() {
+		return nil, iter.Error()
+	}
+
+	return iter.Value(), nil
 }
 
 // Keys implements View.Keys

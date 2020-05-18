@@ -3,6 +3,7 @@ package mvcc
 import (
 	"bytes"
 	"fmt"
+	"math"
 
 	"github.com/jrife/ptarmigan/storage/kv"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
@@ -222,13 +223,21 @@ var _ kv.Iterator = (*viewRevisionKeysIterator)(nil)
 type viewRevisionKeysIterator struct {
 	keysIterator
 	viewRevision int64
+	max          []byte
 	currentKey   []byte
 	currentValue []byte
 	currentRev   int64
 }
 
 func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revision int64, order kv.SortOrder) (*viewRevisionKeysIterator, error) {
-	keysIterator, err := newKeysIterator(txn, &keysCursor{key: min}, &keysCursor{key: max}, order)
+	// Using MathInt64 as the revision for max e
+	keyRangeMax := &keysCursor{key: max}
+
+	if max != nil {
+		keyRangeMax.revision = math.MaxInt64
+	}
+
+	keysIterator, err := newKeysIterator(txn, &keysCursor{key: min}, keyRangeMax, order)
 
 	if err != nil {
 		return nil, err
@@ -237,11 +246,21 @@ func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revisi
 	// advance to the first position (if any)
 	keysIterator.next()
 
-	return &viewRevisionKeysIterator{keysIterator: *keysIterator, viewRevision: revision}, nil
+	return &viewRevisionKeysIterator{keysIterator: *keysIterator, viewRevision: revision, max: max}, nil
 }
 
 // return the highest revision of the current key whose revision <= iter.viewRevision
 func (iter *viewRevisionKeysIterator) highestRevision() bool {
+	if iter.k == nil {
+		return false
+	}
+
+	// Skip out of range keys
+	if iter.max != nil {
+		for bytes.Compare(iter.k, iter.max) >= 0 && iter.keysIterator.next() {
+		}
+	}
+
 	if iter.k == nil {
 		return false
 	}
