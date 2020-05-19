@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/ptarmigan/storage/kv/keys/composite"
 	"github.com/jrife/ptarmigan/storage/snapshot"
 )
 
@@ -206,6 +207,23 @@ type MapReader interface {
 type Map interface {
 	MapUpdater
 	MapReader
+}
+
+type CompositeKeyMapUpdater interface {
+	Put(key composite.Key, value []byte) error
+	Delete(key composite.Key, value []byte) error
+}
+
+type CompositeKeyMapReader interface {
+	Get(key composite.Key) ([]byte, error)
+	Keys(keys keys.Range, order SortOrder) (CompositeKeyMapIterator, error)
+}
+
+type CompositeKeyMapIterator interface {
+	Next() bool
+	Key() composite.Key
+	Value() []byte
+	Error() error
 }
 
 // Transaction is a transaction for a partition. It must only be

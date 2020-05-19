@@ -1,4 +1,8 @@
-package keys
+package composite
+
+import (
+	"github.com/jrife/ptarmigan/utils/sequence"
+)
 
 // All returns a new key range matching all keys
 func All() Range {
@@ -13,54 +17,54 @@ func All() Range {
 // result is effectively the same as ANDing all the
 // restrictions.
 type Range struct {
-	Min []byte
-	Max []byte
-	ns  []byte
+	Min Key
+	Max Key
+	ns  Key
 }
 
 // Eq confines the range to just key k
-func (r Range) Eq(k []byte) Range {
+func (r Range) Eq(k Key) Range {
 	return r.Gte(k).Lte(k)
 }
 
 // Gt confines the range to keys that are
 // greater than k
-func (r Range) Gt(k []byte) Range {
-	return r.refineMin(Key(k).Next().(Key))
+func (r Range) Gt(k Key) Range {
+	return r.refineMin(sequence.Next(k).(Key))
 }
 
 // Gte confines the range to keys that are
 // greater than or equal to k
-func (r Range) Gte(k []byte) Range {
+func (r Range) Gte(k Key) Range {
 	return r.refineMin(k)
 }
 
 // Lt confines the range to keys that are
 // less than k
-func (r Range) Lt(k []byte) Range {
+func (r Range) Lt(k Key) Range {
 	return r.refineMax(k)
 }
 
 // Lte confines the range to keys that are
 // less than or equal to k
-func (r Range) Lte(k []byte) Range {
-	return r.refineMax(Key(k).Next().(Key))
+func (r Range) Lte(k Key) Range {
+	return r.refineMax(sequence.Next(k).(Key))
 }
 
 // Prefix confines the range to keys that
 // have the prefix k, excluding k itself
-func (r Range) Prefix(k []byte) Range {
-	return r.Gt(k).Lt(Key(k).Inc().(Key))
+func (r Range) Prefix(k Key) Range {
+	return r.Gt(k).Lt(sequence.Inc(k).(Key))
 }
 
 // Namespace namespaces keys in the range with
 // to keys with the prefix ns. Subsequent modifier
 // methods will keep keys within this namespace.
-func (r Range) Namespace(ns []byte) Range {
+func (r Range) Namespace(ns Key) Range {
 	r.Min = prefix(r.Min, ns)
 
 	if r.Max == nil {
-		r.Max = Key(ns).Inc().(Key)
+		r.Max = sequence.Inc(ns).(Key)
 	} else {
 		r.Max = prefix(r.Max, ns)
 	}
@@ -70,12 +74,12 @@ func (r Range) Namespace(ns []byte) Range {
 	return r
 }
 
-func (r Range) refineMin(min []byte) Range {
+func (r Range) refineMin(min Key) Range {
 	if len(r.ns) > 0 {
 		min = prefix(min, r.ns)
 	}
 
-	if Key(min).Compare(Key(r.Min)) <= 0 {
+	if sequence.Compare(min, r.Min) <= 0 {
 		return r
 	}
 
@@ -84,16 +88,16 @@ func (r Range) refineMin(min []byte) Range {
 	return r
 }
 
-func (r Range) refineMax(max []byte) Range {
+func (r Range) refineMax(max Key) Range {
 	if len(r.ns) > 0 {
 		if max == nil {
-			max = Key(r.ns).Inc().(Key)
+			max = sequence.Inc(r.ns).(Key)
 		} else {
 			max = prefix(max, r.ns)
 		}
 	}
 
-	if r.Max != nil && Key(max).Compare(Key(r.Max)) >= 0 {
+	if r.Max != nil && sequence.Compare(max, r.Max) >= 0 {
 		return r
 	}
 
@@ -103,12 +107,12 @@ func (r Range) refineMax(max []byte) Range {
 }
 
 // prefix appends k to p
-func prefix(k []byte, p []byte) []byte {
+func prefix(k Key, p Key) Key {
 	if len(k) == 0 && len(p) == 0 {
 		return k
 	}
 
-	prefixedK := make([]byte, 0, len(p)+len(k))
+	prefixedK := make(Key, 0, len(p)+len(k))
 	prefixedK = append(prefixedK, p...)
 	prefixedK = append(prefixedK, k...)
 

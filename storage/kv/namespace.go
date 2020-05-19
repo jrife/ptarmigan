@@ -4,6 +4,18 @@ import (
 	"github.com/jrife/ptarmigan/storage/kv/keys"
 )
 
+func NamespaceMapReader(mr MapReader, ns []byte) MapReader {
+	return nil
+}
+
+func NamespaceMapUpdater(mu MapUpdater, ns []byte) MapUpdater {
+	return nil
+}
+
+func NamespaceMap(m Map, ns []byte) Map {
+	return nil
+}
+
 // Namespace ensures that all keys referenced within a transaction
 // are prefixed with ns.
 func Namespace(txn Transaction, ns []byte) Transaction {
