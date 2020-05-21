@@ -1,6 +1,7 @@
 package mvcc_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -170,7 +171,7 @@ func testTransaction(builder tempStoreBuilder, t *testing.T) {
 			initialStoreState := testCase.initialState.apply(store{})
 			initialPartitionState := initialStoreState[testCase.partition]
 			partitionState := initialPartitionState
-			txn, err := mvccStore.Partition([]byte(testCase.partition)).Begin()
+			txn, err := mvccStore.Partition([]byte(testCase.partition)).Begin(true)
 
 			if err != nil {
 				t.Fatalf("expected err to be nil, got %#v", err)
@@ -216,6 +217,166 @@ func testTransaction(builder tempStoreBuilder, t *testing.T) {
 
 			if diff != "" {
 				t.Fatalf(diff)
+			}
+		})
+	}
+
+	t.Run("View", func(t *testing.T) { testTransactionView(builder, t) })
+}
+
+func testTransactionView(builder tempStoreBuilder, t *testing.T) {
+	initialState := storeChangeset{
+		"a": {
+			transactions: []transaction{},
+			metadata:     []byte{4, 5, 6},
+		},
+		"b": {
+			transactions: []transaction{},
+			metadata:     []byte{7, 8, 9},
+		},
+	}
+
+	// Revisions 1-5
+	for i := 0; i < 5; i++ {
+		for partitionName, partition := range initialState {
+			partition.transactions = append(partition.transactions, transaction{}.newRevision(largeRevisionOp()).commit())
+			initialState[partitionName] = partition
+		}
+	}
+
+	// Compact up to 3 for partition a
+	partitionA := initialState["a"]
+	partitionA.transactions = append(partitionA.transactions, transaction{}.compact(3).commit())
+	initialState["a"] = partitionA
+
+	// Revisions 6-10
+	for i := 0; i < 5; i++ {
+		for partitionName, partition := range initialState {
+			partition.transactions = append(partition.transactions, transaction{}.newRevision(largeRevisionOp()).commit())
+			initialState[partitionName] = partition
+		}
+	}
+
+	initialState["c"] = partitionChangeset{
+		transactions: []transaction{},
+		metadata:     []byte{1, 2, 3},
+	}
+
+	testCases := map[string]struct {
+		initialState storeChangeset
+		name         []byte
+		revision     int64
+		expected     int64
+		err          error
+	}{
+		"newest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     mvcc.RevisionNewest,
+			expected:     10,
+		},
+		"newest-revision-after-compaction": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     mvcc.RevisionNewest,
+			expected:     10,
+		},
+		"newest-revision-empty-partition": {
+			initialState: initialState,
+			name:         []byte("c"),
+			revision:     mvcc.RevisionNewest,
+			err:          mvcc.ErrNoRevisions,
+		},
+		"oldest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     mvcc.RevisionOldest,
+			expected:     1,
+		},
+		"oldest-revision-after-compaction": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     mvcc.RevisionOldest,
+			expected:     3,
+		},
+		"oldest-revision-empty-partition": {
+			initialState: initialState,
+			name:         []byte("c"),
+			revision:     mvcc.RevisionOldest,
+			err:          mvcc.ErrNoRevisions,
+		},
+		"highest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     10,
+			expected:     10,
+		},
+		"lowest-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     1,
+			expected:     1,
+		},
+		"middle-revision": {
+			initialState: initialState,
+			name:         []byte("b"),
+			revision:     5,
+			expected:     5,
+		},
+		"specific-revision-empty-partition": {
+			initialState: initialState,
+			name:         []byte("c"),
+			revision:     5,
+			err:          mvcc.ErrNoRevisions,
+		},
+		"compacted-revision": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     1,
+			err:          mvcc.ErrCompacted,
+		},
+		"future-revision": {
+			initialState: initialState,
+			name:         []byte("a"),
+			revision:     11,
+			err:          mvcc.ErrRevisionTooHigh,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("recovered %#v\n", r)
+				}
+			}()
+
+			store := builder(t, testCase.initialState)
+
+			txn, err := store.Partition(testCase.name).Begin(false)
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got %#v", err)
+			}
+
+			defer txn.Rollback()
+
+			view, err := txn.View(testCase.revision)
+
+			if view != nil {
+				rev := view.Revision()
+
+				if rev != testCase.expected {
+					t.Fatalf("expected revision of view to be %d, got %d", testCase.expected, rev)
+				}
+			}
+
+			if testCase.err == errAnyError {
+				if err == nil {
+					t.Fatalf("expected any error, got nil")
+				}
+			} else if err != testCase.err {
+				t.Fatalf("expected error to be %#v, got #%v", testCase.err, err)
 			}
 		})
 	}

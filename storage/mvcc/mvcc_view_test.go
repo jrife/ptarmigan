@@ -54,13 +54,19 @@ func testView(builder tempStoreBuilder, t *testing.T) {
 	for partitionName, partition := range storeState {
 		for _, revision := range partition.Revisions {
 			func() {
-				view, err := mvccStore.Partition([]byte(partitionName)).View(revision.Revision)
+				txn, err := mvccStore.Partition([]byte(partitionName)).Begin(false)
 
 				if err != nil {
 					t.Fatalf("expected err to be nil, got %#v", err)
 				}
 
-				defer view.Close()
+				defer txn.Rollback()
+
+				view, err := txn.View(revision.Revision)
+
+				if err != nil {
+					t.Fatalf("expected err to be nil, got %#v", err)
+				}
 
 				diff := cmp.Diff(revision.Changes, getAllChanges(t, view))
 
@@ -296,13 +302,19 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			store := builder(t, testCase.initialState)
 
-			view, err := store.Partition(testCase.partition).View(testCase.revision)
+			txn, err := store.Partition(testCase.partition).Begin(false)
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got %#v", err)
+			}
+
+			defer txn.Rollback()
+
+			view, err := txn.View(testCase.revision)
 
 			if err != nil {
 				t.Fatalf("expected error to be nil, got #%v", err)
 			}
-
-			defer view.Close()
 
 			kvIter, err := view.Keys(testCase.keys, testCase.order)
 
@@ -391,13 +403,19 @@ func testViewChanges(builder tempStoreBuilder, t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			store := builder(t, testCase.initialState)
 
-			view, err := store.Partition(testCase.partition).View(testCase.revision)
+			txn, err := store.Partition(testCase.partition).Begin(false)
 
 			if err != nil {
 				t.Fatalf("expected error to be nil, got #%v", err)
 			}
 
-			defer view.Close()
+			defer txn.Rollback()
+
+			view, err := txn.View(testCase.revision)
+
+			if err != nil {
+				t.Fatalf("expected error to be nil, got #%v", err)
+			}
 
 			diffsIter, err := view.Changes(testCase.keys, testCase.includePrev)
 

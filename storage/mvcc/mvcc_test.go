@@ -284,7 +284,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 		}
 
 		for _, transaction := range partitionChangeset.transactions {
-			txn, err := mvccPartition.Begin()
+			txn, err := mvccPartition.Begin(true)
 
 			if err != nil {
 				t.Fatalf("failed to apply transaction %#v: %s", transaction, err)
@@ -338,7 +338,15 @@ func getStore(t *testing.T, mvccStore mvcc.Store) store {
 
 func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 	result := []revision{}
-	view, err := partition.View(mvcc.RevisionOldest)
+	txn, err := partition.Begin(false)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	defer txn.Rollback()
+
+	view, err := txn.View(mvcc.RevisionOldest)
 
 	if err == mvcc.ErrNoRevisions {
 		return result
@@ -348,8 +356,7 @@ func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 
 	for {
 		result = append(result, revision{Kvs: getAllKVs(t, view), Changes: getAllChanges(t, view), Revision: view.Revision()})
-		view.Close()
-		view, err = partition.View(view.Revision() + 1)
+		view, err = txn.View(view.Revision() + 1)
 
 		if err == mvcc.ErrRevisionTooHigh {
 			break

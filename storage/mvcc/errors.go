@@ -26,6 +26,8 @@ var (
 	// ErrTooManyRevisions is returned when a transaction tries to create more than
 	// one revision
 	ErrTooManyRevisions = errors.New("transaction already created a new revision")
+	// ErrReadOnly is returned when a read-only transaction attempts an update operation
+	ErrReadOnly = errors.New("transaction is read-only")
 )
 
 func wrapError(wrap string, err error) error {

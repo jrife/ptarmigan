@@ -76,7 +76,7 @@ func testRevision(builder tempStoreBuilder, t *testing.T) {
 			initialStoreState := testCase.initialState.apply(store{})
 			initialPartitionState := initialStoreState[testCase.partition]
 			partitionState := initialPartitionState
-			txn, err := mvccStore.Partition([]byte(testCase.partition)).Begin()
+			txn, err := mvccStore.Partition([]byte(testCase.partition)).Begin(true)
 
 			if err != nil {
 				t.Fatalf("expected err to be nil, got %#v", err)

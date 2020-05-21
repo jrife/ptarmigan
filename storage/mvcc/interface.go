@@ -60,15 +60,7 @@ type Partition interface {
 	// It must return ErrClosed if its invocation starts after
 	// Close() on the store returns. Otherwise if this partition
 	// does not exist it must return ErrNoSuchPartition.
-	Begin() (Transaction, error)
-	// View starts a read-only transaction that lets a user
-	// inspect the state of the store at some revision.
-	// If revision == 0 it selects the newest revision.
-	// If revision < 0 it selects the oldest revision. It
-	// must return ErrClosed if its invocation starts after
-	// Close() on the store returns. Otherwise if this partition
-	// does not exist it must return ErrNoSuchPartition.
-	View(revision int64) (ViewCloser, error)
+	Begin(writeable bool) (Transaction, error)
 	// Snapshot takes a consistent snapshot of this partition. If Snapshot() is called
 	// after Close() on the store returns it must return ErrClosed. Otherwise if this
 	// partition does not exist it must return ErrNoSuchPartition.
@@ -89,8 +81,19 @@ type Transaction interface {
 	// be exactly one more than the newest revision, or if this
 	// store is brand new the first revision applied to it
 	// must have a revision number of 1. Revision numbers must
-	// be contiguous.
+	// be contiguous. If this is a read-only transaction it must
+	// return ErrReadOnly
 	NewRevision() (Revision, error)
+	// View returns a view that lets a user
+	// inspect the state of the store at some revision.
+	// If revision == 0 it selects the newest revision.
+	// If revision < 0 it selects the oldest revision.
+	// If revision is
+	// higher than the newest committed revision this
+	// must return ErrRevisionTooHigh. If revision is
+	// lower than the oldest revision it must return
+	// ErrCompacted.
+	View(revision int64) (View, error)
 	// Compact deletes all revision history up to the
 	// specified revision (exclusive).
 	// If revision == 0 it selects the newest revision.
@@ -99,9 +102,12 @@ type Transaction interface {
 	// higher than the newest committed revision this
 	// must return ErrRevisionTooHigh. If revision is
 	// lower than the oldest revision it must return
-	// ErrCompacted.
+	// ErrCompacted.  If this is a read-only transaction it must
+	// return ErrReadOnly
 	Compact(revision int64) error
 	// Commit commits the changes made in this transaction.
+	// If this is a read-only transaction it must
+	// return ErrReadOnly
 	Commit() error
 	// Rolls back the transaction.
 	Rollback() error
@@ -126,12 +132,6 @@ type View interface {
 	Changes(keys keys.Range, includePrev bool) (DiffIterator, error)
 	// Return the revision for this view.
 	Revision() int64
-}
-
-// ViewCloser is a view with a close function
-type ViewCloser interface {
-	View
-	Close() error
 }
 
 // DiffIterator lets a consumer iterate through changes made

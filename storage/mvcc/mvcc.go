@@ -349,7 +349,7 @@ func (partition *partition) Metadata() ([]byte, error) {
 }
 
 // Transaction implements Partition.Transaction
-func (partition *partition) Begin() (Transaction, error) {
+func (partition *partition) Begin(writable bool) (Transaction, error) {
 	partition.store.closed.RLock()
 
 	if partition.store.closed.closed {
@@ -358,7 +358,7 @@ func (partition *partition) Begin() (Transaction, error) {
 		return nil, ErrClosed
 	}
 
-	txn, err := partition.beginTxn(true)
+	txn, err := partition.beginTxn(writable)
 
 	if err != nil {
 		partition.store.closed.RUnlock()
@@ -366,76 +366,7 @@ func (partition *partition) Begin() (Transaction, error) {
 		return nil, wrapError("could not begin transaction", err)
 	}
 
-	return &transaction{partition: partition, txn: txn}, nil
-}
-
-// View implements Partition.View
-func (partition *partition) View(revision int64) (ViewCloser, error) {
-	partition.store.closed.RLock()
-
-	if partition.store.closed.closed {
-		partition.store.closed.RUnlock()
-
-		return nil, ErrClosed
-	}
-
-	txn, err := partition.beginTxn(false)
-
-	if err != nil {
-		partition.store.closed.RUnlock()
-
-		return nil, wrapError("could not begin transaction", err)
-	}
-
-	newestRevision, err := partition.newestRevision(txn)
-
-	if err != nil {
-		txn.Rollback()
-		partition.store.closed.RUnlock()
-
-		return nil, wrapError("unable to retrieve current revision", err)
-	}
-
-	oldestRevision, err := partition.oldestRevision(txn)
-
-	if err != nil {
-		txn.Rollback()
-		partition.store.closed.RUnlock()
-
-		return nil, wrapError("unable to retrieve oldest revision", err)
-	}
-
-	// it's possible that both newestRevision
-	// and oldestRevision are 0. In such cases
-	// this indicates that this partition is new
-	// and has not had any revisions written to
-	// it yet.
-	if newestRevision == 0 && oldestRevision == 0 {
-		txn.Rollback()
-		partition.store.closed.RUnlock()
-
-		return nil, ErrNoRevisions
-	}
-
-	if revision == RevisionNewest {
-		revision = newestRevision
-	} else if revision <= RevisionOldest {
-		revision = oldestRevision
-	}
-
-	if revision > newestRevision {
-		txn.Rollback()
-		partition.store.closed.RUnlock()
-
-		return nil, ErrRevisionTooHigh
-	} else if revision < oldestRevision {
-		txn.Rollback()
-		partition.store.closed.RUnlock()
-
-		return nil, ErrCompacted
-	}
-
-	return &viewCloser{view: view{partition: partition, revision: revision, txn: txn}}, nil
+	return &transaction{partition: partition, txn: txn, writable: writable}, nil
 }
 
 // ApplySnapshot implements Partition.ApplySnapshot
@@ -468,6 +399,7 @@ type transaction struct {
 	partition *partition
 	txn       kv.Transaction
 	revision  Revision
+	writable  bool
 	close     sync.Once
 }
 
@@ -475,6 +407,10 @@ type transaction struct {
 func (transaction *transaction) NewRevision() (Revision, error) {
 	if transaction.revision != nil {
 		return nil, ErrTooManyRevisions
+	}
+
+	if !transaction.writable {
+		return nil, ErrReadOnly
 	}
 
 	nextRevision, err := transaction.partition.nextRevision(transaction.txn)
@@ -502,8 +438,54 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 	return r, nil
 }
 
+// View implements Transaction.View
+func (transaction *transaction) View(revision int64) (View, error) {
+	if transaction.partition.store.closed.closed {
+		return nil, ErrClosed
+	}
+
+	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
+
+	if err != nil {
+		return nil, wrapError("unable to retrieve current revision", err)
+	}
+
+	oldestRevision, err := transaction.partition.oldestRevision(transaction.txn)
+
+	if err != nil {
+		return nil, wrapError("unable to retrieve oldest revision", err)
+	}
+
+	// it's possible that both newestRevision
+	// and oldestRevision are 0. In such cases
+	// this indicates that this partition is new
+	// and has not had any revisions written to
+	// it yet.
+	if newestRevision == 0 && oldestRevision == 0 {
+		return nil, ErrNoRevisions
+	}
+
+	if revision == RevisionNewest {
+		revision = newestRevision
+	} else if revision <= RevisionOldest {
+		revision = oldestRevision
+	}
+
+	if revision > newestRevision {
+		return nil, ErrRevisionTooHigh
+	} else if revision < oldestRevision {
+		return nil, ErrCompacted
+	}
+
+	return &view{partition: transaction.partition, revision: revision, txn: transaction.txn}, nil
+}
+
 // Compact implements Transaction.Compact
 func (transaction *transaction) Compact(revision int64) error {
+	if !transaction.writable {
+		return ErrReadOnly
+	}
+
 	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
 
 	if err != nil {
@@ -712,15 +694,4 @@ func (view *view) Changes(keys keys.Range, includePrev bool) (DiffIterator, erro
 // Revision implements View.Revision
 func (view *view) Revision() int64 {
 	return view.revision
-}
-
-type viewCloser struct {
-	view
-}
-
-// Close implements ViewCloser.Close
-func (view *viewCloser) Close() error {
-	defer view.close.Do(view.partition.store.closed.RUnlock)
-
-	return view.txn.Rollback()
 }
