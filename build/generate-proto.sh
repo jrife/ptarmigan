@@ -10,6 +10,8 @@ cd $PTARMIGAN_ROOT/transport/frontends/grpc/pb
 protoc -I=$PTARMIGAN_ROOT/vendor/ -I $PTARMIGAN_ROOT -I=$GOGOPROTO_ROOT/protobuf/ -I=$GOGOPROTO_ROOT -I=. --gogofaster_out=plugins=grpc:. ptarmigan.proto
 cd $PTARMIGAN_ROOT/storage/kv/pb
 protoc -I=$PTARMIGAN_ROOT/vendor/ -I $PTARMIGAN_ROOT -I=$GOGOPROTO_ROOT/protobuf/ -I=$GOGOPROTO_ROOT -I=. --gogofaster_out=paths=source_relative:. kv.proto
+cd $PTARMIGAN_ROOT/storage/kv/composite/pb
+protoc -I=$PTARMIGAN_ROOT/vendor/ -I $PTARMIGAN_ROOT -I=$GOGOPROTO_ROOT/protobuf/ -I=$GOGOPROTO_ROOT -I=. --gogofaster_out=paths=source_relative:. node.proto
 cd $PTARMIGAN_ROOT/flock/server/flockpb
 protoc -I=$PTARMIGAN_ROOT/vendor/ -I $PTARMIGAN_ROOT -I=$GOGOPROTO_ROOT/protobuf/ -I=$GOGOPROTO_ROOT -I=$GRPC_GATEWAY_ROOT/third_party/googleapis -I=. --gogofaster_out=plugins=grpc:. flock.proto
 protoc -I=$PTARMIGAN_ROOT/vendor/ -I $PTARMIGAN_ROOT -I=$GOGOPROTO_ROOT/protobuf/ -I=$GOGOPROTO_ROOT -I=$GRPC_GATEWAY_ROOT/third_party/googleapis -I=. --gogofaster_out=plugins=grpc:. rpc.proto

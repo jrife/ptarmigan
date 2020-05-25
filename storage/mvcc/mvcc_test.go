@@ -427,7 +427,7 @@ func builder(plugin kv.Plugin) tempStoreBuilder {
 func largeStoreChangeset() storeChangeset {
 	result := storeChangeset{}
 
-	for p := 0; p < 10; p++ {
+	for p := 0; p < 1; p++ {
 		result[fmt.Sprintf("partition-%d", p)] = largePartitionChangeset()
 	}
 
@@ -445,7 +445,7 @@ func largePartitionChangeset() partitionChangeset {
 		txn := transaction{ops: []op{}, shouldCommit: true}
 
 		switch n := rand.Intn(100); {
-		case rev > 0 && n < 5:
+		case rev > 0 && n < 0:
 			txn = txn.compact(int64(rev))
 		default:
 			rev++
@@ -462,7 +462,7 @@ func largeRevisionOp() revisionOp {
 	result := revisionOp{}
 
 	for i := 0; i < 20; i++ {
-		key := fmt.Sprintf("key-%d", rand.Intn(1))
+		key := fmt.Sprintf("key-%d", rand.Intn(100))
 
 		switch n := rand.Intn(100); {
 		case n < 50:

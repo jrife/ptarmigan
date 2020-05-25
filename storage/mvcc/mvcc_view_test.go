@@ -97,6 +97,7 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 				transaction{}.newRevision(
 					revisionOp{}.
 						put([]byte("a"), []byte("1")).
+						put(append([]byte("a"), []byte{0}...), []byte("z")).
 						put([]byte("c"), []byte("2")).
 						put([]byte("e"), []byte("3")).
 						put([]byte("g"), []byte("4")).
@@ -144,6 +145,7 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 			order:        kv.SortOrderAsc,
 			kvs: []kv.KV{
 				{[]byte("a"), []byte("b")},
+				{append([]byte("a"), []byte{0}...), []byte("z")},
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
 				{[]byte("g"), []byte("h")},
@@ -163,6 +165,7 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 				{[]byte("g"), []byte("h")},
 				{[]byte("e"), []byte("f")},
 				{[]byte("c"), []byte("d")},
+				{append([]byte("a"), []byte{0}...), []byte("z")},
 				{[]byte("a"), []byte("b")},
 			},
 		},
@@ -174,6 +177,7 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 			order:        kv.SortOrderAsc,
 			kvs: []kv.KV{
 				{[]byte("a"), []byte("b")},
+				{append([]byte("a"), []byte{0}...), []byte("z")},
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
 			},
@@ -187,6 +191,7 @@ func testViewKeys(builder tempStoreBuilder, t *testing.T) {
 			kvs: []kv.KV{
 				{[]byte("e"), []byte("f")},
 				{[]byte("c"), []byte("d")},
+				{append([]byte("a"), []byte{0}...), []byte("z")},
 				{[]byte("a"), []byte("b")},
 			},
 		},

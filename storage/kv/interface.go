@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/storage/kv/keys/composite"
 	"github.com/jrife/ptarmigan/storage/snapshot"
 )
 
@@ -178,59 +177,10 @@ type Partition interface {
 	snapshot.Acceptor
 }
 
-// MapUpdater is an interface for updating a sorted
-// key-value map
-type MapUpdater interface {
-	// Put puts a key. Put must return an error
-	// if either key or value is nil or empty.
-	Put(key, value []byte) error
-	// Delete deletes a key. It must return an error if the key
-	// is nil or empty. If the key doesn't exist it has no effect
-	// and returns nil.
-	Delete(key []byte) error
-}
-
-// MapReader is an interface for reading a sorted
-// key-value map
-type MapReader interface {
-	// Get gets a key. It must observe updates to that key made
-	// previously by this transation. Get must return an error
-	// if the key is nil or empty. It must return nil if the
-	// requested key does not exist.
-	Get(key []byte) ([]byte, error)
-	// Keys creates an iterator that iterates over the range
-	// of keys
-	Keys(keys keys.Range, order SortOrder) (Iterator, error)
-}
-
-// Map combines MapReader and MapUpdater
-type Map interface {
-	MapUpdater
-	MapReader
-}
-
-type CompositeKeyMapUpdater interface {
-	Put(key composite.Key, value []byte) error
-	Delete(key composite.Key, value []byte) error
-}
-
-type CompositeKeyMapReader interface {
-	Get(key composite.Key) ([]byte, error)
-	Keys(keys keys.Range, order SortOrder) (CompositeKeyMapIterator, error)
-}
-
-type CompositeKeyMapIterator interface {
-	Next() bool
-	Key() composite.Key
-	Value() []byte
-	Error() error
-}
-
 // Transaction is a transaction for a partition. It must only be
 // used by one goroutine at a time.
 type Transaction interface {
-	MapUpdater
-	MapReader
+	Map
 	// Metadata returns the metadata for this partition
 	Metadata() ([]byte, error)
 	// SetMetadata sets the metadata for this partition
@@ -260,4 +210,35 @@ type Iterator interface {
 	Value() []byte
 	// Error returns the error, if any.
 	Error() error
+}
+
+// Map combines MapReader and MapUpdater
+type Map interface {
+	MapUpdater
+	MapReader
+}
+
+// MapUpdater is an interface for updating a sorted
+// key-value map
+type MapUpdater interface {
+	// Put puts a key. Put must return an error
+	// if either key is or empty or nil or if value is nil.
+	Put(key, value []byte) error
+	// Delete deletes a key. It must return an error if the key
+	// is nil or empty. If the key doesn't exist it has no effect
+	// and returns nil.
+	Delete(key []byte) error
+}
+
+// MapReader is an interface for reading a sorted
+// key-value map
+type MapReader interface {
+	// Get gets a key. It must observe updates to that key made
+	// previously by this transation. Get must return an error
+	// if the key is nil or empty. It must return nil if the
+	// requested key does not exist.
+	Get(key []byte) ([]byte, error)
+	// Keys creates an iterator that iterates over the range
+	// of keys
+	Keys(keys keys.Range, order SortOrder) (Iterator, error)
 }

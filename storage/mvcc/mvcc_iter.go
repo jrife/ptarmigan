@@ -3,15 +3,16 @@ package mvcc
 import (
 	"bytes"
 	"fmt"
-	"math"
 
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/composite"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
+	composite_keys "github.com/jrife/ptarmigan/storage/kv/keys/composite"
 )
 
 type mvccIterator struct {
-	iter       kv.Iterator
-	parseKey   func(k []byte) ([]byte, int64, error)
+	iter       composite.Iterator
+	parseKey   func(k [][]byte) ([]byte, int64, error)
 	parseValue func(v []byte) ([]byte, error)
 	k          []byte
 	rev        int64
@@ -90,12 +91,12 @@ type revisionsCursor struct {
 	key      []byte
 }
 
-func (c *revisionsCursor) bytes() revisionsKey {
+func (c *revisionsCursor) bytes() []byte {
 	if c == nil {
 		return nil
 	}
 
-	return newRevisionsKey(c.revision, c.key)
+	return newRevisionsKey(c.revision, c.key)[0]
 }
 
 type revisionsIterator struct {
@@ -103,8 +104,8 @@ type revisionsIterator struct {
 	order kv.SortOrder
 }
 
-func newRevisionsIterator(txn kv.Transaction, min *revisionsCursor, max *revisionsCursor, order kv.SortOrder) (*revisionsIterator, error) {
-	iter, err := txn.Keys(keys.Range{Min: min.bytes(), Max: max.bytes()}, order)
+func newRevisionsIterator(txn composite.Transaction, min *revisionsCursor, max *revisionsCursor, order kv.SortOrder) (*revisionsIterator, error) {
+	iter, err := txn.Keys(composite_keys.Range{keys.Range{Min: min.bytes(), Max: max.bytes()}}, order)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create iterator: %s", err)
@@ -113,7 +114,7 @@ func newRevisionsIterator(txn kv.Transaction, min *revisionsCursor, max *revisio
 	return &revisionsIterator{
 		mvccIterator: mvccIterator{
 			iter: iter,
-			parseKey: func(key []byte) ([]byte, int64, error) {
+			parseKey: func(key [][]byte) ([]byte, int64, error) {
 				k, err := revisionsKey(key).key()
 
 				if err != nil {
@@ -167,25 +168,57 @@ func (iter *revisionsIterator) next() bool {
 	return true
 }
 
+type keysRange struct {
+	min *keysCursor
+	max *keysCursor
+}
+
+func (r keysRange) toRange() composite_keys.Range {
+	cr := make(composite_keys.Range, 2)
+	keysLevel := keys.Range{}
+	revsLevel := keys.Range{}
+
+	if r.min != nil {
+		if r.min.key != nil {
+			keysLevel = keysLevel.Gte(r.min.key)
+		}
+
+		if r.min.revision > 0 {
+			revBytes := make([]byte, 8)
+			int64ToBytes(revBytes, r.max.revision)
+			revsLevel = revsLevel.Gte(revBytes)
+		}
+	}
+
+	if r.max != nil {
+		if r.max.key != nil {
+			keysLevel = keysLevel.Lt(r.max.key)
+		}
+
+		if r.max.revision > 0 {
+			revBytes := make([]byte, 8)
+			int64ToBytes(revBytes, r.max.revision)
+			revsLevel = revsLevel.Lt(revBytes)
+		}
+	}
+
+	cr[0] = keysLevel
+	cr[1] = revsLevel
+
+	return cr
+}
+
 type keysCursor struct {
 	revision int64
 	key      []byte
-}
-
-func (c *keysCursor) bytes() keysKey {
-	if c == nil {
-		return nil
-	}
-
-	return newKeysKey(c.key, c.revision)
 }
 
 type keysIterator struct {
 	mvccIterator
 }
 
-func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order kv.SortOrder) (*keysIterator, error) {
-	iter, err := txn.Keys(keys.Range{Min: min.bytes(), Max: max.bytes()}, order)
+func newKeysIterator(txn composite.Transaction, min *keysCursor, max *keysCursor, order kv.SortOrder) (*keysIterator, error) {
+	iter, err := txn.Keys(keysRange{min: min, max: max}.toRange(), order)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not create iterator: %s", err)
@@ -194,7 +227,7 @@ func newKeysIterator(txn kv.Transaction, min *keysCursor, max *keysCursor, order
 	return &keysIterator{
 		mvccIterator{
 			iter: iter,
-			parseKey: func(key []byte) ([]byte, int64, error) {
+			parseKey: func(key [][]byte) ([]byte, int64, error) {
 				k, err := keysKey(key).key()
 
 				if err != nil {
@@ -229,15 +262,8 @@ type viewRevisionKeysIterator struct {
 	currentRev   int64
 }
 
-func newViewRevisionsIterator(txn kv.Transaction, min []byte, max []byte, revision int64, order kv.SortOrder) (*viewRevisionKeysIterator, error) {
-	// Using MathInt64 as the revision for max e
-	keyRangeMax := &keysCursor{key: max}
-
-	if max != nil {
-		keyRangeMax.revision = math.MaxInt64
-	}
-
-	keysIterator, err := newKeysIterator(txn, &keysCursor{key: min}, keyRangeMax, order)
+func newViewRevisionsIterator(txn composite.Transaction, min []byte, max []byte, revision int64, order kv.SortOrder) (*viewRevisionKeysIterator, error) {
+	keysIterator, err := newKeysIterator(txn, &keysCursor{key: min}, &keysCursor{key: max, revision: revision + 1}, order)
 
 	if err != nil {
 		return nil, err
@@ -340,7 +366,7 @@ type viewRevisionDiffsIterator struct {
 	currentRev   int64
 }
 
-func newViewRevisionDiffsIterator(txn kv.Transaction, min []byte, max []byte, revision int64) (*viewRevisionDiffsIterator, error) {
+func newViewRevisionDiffsIterator(txn composite.Transaction, min []byte, max []byte, revision int64) (*viewRevisionDiffsIterator, error) {
 	minRevCursor := &revisionsCursor{revision: revision}
 	maxRevCursor := &revisionsCursor{revision: revision, key: max}
 

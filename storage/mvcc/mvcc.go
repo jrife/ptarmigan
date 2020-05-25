@@ -8,7 +8,9 @@ import (
 	"sync"
 
 	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/ptarmigan/storage/kv/composite"
 	"github.com/jrife/ptarmigan/storage/kv/keys"
+	composite_keys "github.com/jrife/ptarmigan/storage/kv/keys/composite"
 )
 
 const (
@@ -21,8 +23,8 @@ const (
 )
 
 var (
-	keysPrefix      = []byte{1}
-	revisionsPrefix = []byte{2}
+	keysPrefix      = [][]byte{[]byte{1}}
+	revisionsPrefix = [][]byte{[]byte{2}}
 )
 
 // b must be a byte slice of length 8
@@ -48,14 +50,14 @@ func int64ToBytes(b []byte, n int64) {
 	binary.BigEndian.PutUint64(b, uint64(n))
 }
 
-type revisionsKey []byte
+type revisionsKey [][]byte
 
 func newRevisionsKey(revision int64, key []byte) revisionsKey {
 	if key == nil {
 		b := make([]byte, 8)
 		int64ToBytes(b, revision)
 
-		return b
+		return [][]byte{b}
 	}
 
 	b := make([]byte, len(key)+9)
@@ -63,23 +65,23 @@ func newRevisionsKey(revision int64, key []byte) revisionsKey {
 	b[8] = 0
 	copy(b[9:], key)
 
-	return b
+	return [][]byte{b}
 }
 
 func (k revisionsKey) revision() (int64, error) {
-	if len(k) < 8 {
+	if len(k) < 1 || len(k[0]) < 8 {
 		return 0, fmt.Errorf("buffer is not long enough to contain a revision number")
 	}
 
-	return bytesToInt64(k[:8]), nil
+	return bytesToInt64(k[0][:8]), nil
 }
 
 func (k revisionsKey) key() ([]byte, error) {
-	if len(k) < 9 {
+	if len(k) < 1 || len(k[0]) < 9 {
 		return nil, nil
 	}
 
-	return k[9:], nil
+	return k[0][9:], nil
 }
 
 type revisionsValue []byte
@@ -104,35 +106,36 @@ func (v revisionsValue) value() []byte {
 	return v[1:]
 }
 
-type keysKey []byte
+type keysKey [][]byte
 
 func newKeysKey(key []byte, revision int64) keysKey {
 	if revision <= 0 {
-		return key
+		return [][]byte{key}
 	}
 
-	b := make([]byte, len(key)+9)
-	int64ToBytes(b[len(key)+1:], revision)
-	b[len(key)] = 0
-	copy(b[:len(key)], key)
+	b := make([][]byte, 2)
+	rev := make([]byte, 8)
+	int64ToBytes(rev, revision)
+	b[0] = key
+	b[1] = rev
 
 	return b
 }
 
 func (k keysKey) revision() (int64, error) {
-	if len(k) < 9 {
+	if len(k) < 2 {
 		return 0, fmt.Errorf("buffer is not long enough to contain a revision number")
 	}
 
-	return bytesToInt64(k[len(k)-8:]), nil
+	return bytesToInt64(k[1]), nil
 }
 
 func (k keysKey) key() ([]byte, error) {
-	if len(k) < 9 {
+	if len(k) < 1 {
 		return nil, fmt.Errorf("buffer is not long enough to contain a key")
 	}
 
-	return k[:len(k)-9], nil
+	return k[0], nil
 }
 
 type keysValue []byte
@@ -225,11 +228,11 @@ type partition struct {
 	name  []byte
 }
 
-func (partition *partition) beginTxn(writable bool) (kv.Transaction, error) {
-	return partition.store.kvStore.Partition(partition.name).Begin(writable)
+func (partition *partition) beginTxn(writable bool) (composite.Transaction, error) {
+	return composite.NewPartition(partition.store.kvStore.Partition(partition.name)).Begin(writable)
 }
 
-func (partition *partition) newestRevision(transaction kv.Transaction) (int64, error) {
+func (partition *partition) newestRevision(transaction composite.Transaction) (int64, error) {
 	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, kv.SortOrderDesc)
 
 	if err != nil {
@@ -247,7 +250,7 @@ func (partition *partition) newestRevision(transaction kv.Transaction) (int64, e
 	return iter.revision(), nil
 }
 
-func (partition *partition) oldestRevision(transaction kv.Transaction) (int64, error) {
+func (partition *partition) oldestRevision(transaction composite.Transaction) (int64, error) {
 	iter, err := newRevisionsIterator(partition.revisionsNamespace(transaction), nil, nil, kv.SortOrderAsc)
 
 	if err != nil {
@@ -265,7 +268,7 @@ func (partition *partition) oldestRevision(transaction kv.Transaction) (int64, e
 	return iter.revision(), nil
 }
 
-func (partition *partition) nextRevision(transaction kv.Transaction) (int64, error) {
+func (partition *partition) nextRevision(transaction composite.Transaction) (int64, error) {
 	lastRevision, err := partition.newestRevision(transaction)
 
 	if err != nil {
@@ -281,12 +284,12 @@ func (partition *partition) nextRevision(transaction kv.Transaction) (int64, err
 	return nextRevision, nil
 }
 
-func (partition *partition) revisionsNamespace(transaction kv.Transaction) kv.Transaction {
-	return kv.Namespace(transaction, revisionsPrefix)
+func (partition *partition) revisionsNamespace(transaction composite.Transaction) composite.Transaction {
+	return composite.Namespace(transaction, revisionsPrefix)
 }
 
-func (partition *partition) keysNamespace(transaction kv.Transaction) kv.Transaction {
-	return kv.Namespace(transaction, keysPrefix)
+func (partition *partition) keysNamespace(transaction composite.Transaction) composite.Transaction {
+	return composite.Namespace(transaction, keysPrefix)
 }
 
 // Name implements Partition.Name
@@ -397,7 +400,7 @@ func (partition *partition) Snapshot() (io.ReadCloser, error) {
 
 type transaction struct {
 	partition *partition
-	txn       kv.Transaction
+	txn       composite.Transaction
 	revision  Revision
 	writable  bool
 	close     sync.Once
@@ -421,9 +424,11 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 
 	revisionsTxn := transaction.partition.revisionsNamespace(transaction.txn)
 
-	if err := revisionsTxn.Put(newRevisionsKey(nextRevision, nil), []byte{}); err != nil {
+	if err := revisionsTxn.Put(composite_keys.Key(newRevisionsKey(nextRevision, nil)), []byte{}); err != nil {
 		return nil, wrapError("could not insert revision start market", err)
 	}
+
+	fmt.Printf("Transaction.NewRevision() -> %d\n", nextRevision)
 
 	r := &revision{
 		view: view{
@@ -482,6 +487,7 @@ func (transaction *transaction) View(revision int64) (View, error) {
 
 // Compact implements Transaction.Compact
 func (transaction *transaction) Compact(revision int64) error {
+	fmt.Printf("Compact(%d)\n", revision)
 	if !transaction.writable {
 		return ErrReadOnly
 	}
@@ -535,9 +541,9 @@ func (transaction *transaction) Compact(revision int64) error {
 	}
 }
 
-func (transaction *transaction) compactKeys(revision int64) (<-chan []byte, <-chan []byte, <-chan error) {
-	keysNs := make(chan []byte)
-	revsNs := make(chan []byte)
+func (transaction *transaction) compactKeys(revision int64) (<-chan [][]byte, <-chan [][]byte, <-chan error) {
+	keysNs := make(chan [][]byte)
+	revsNs := make(chan [][]byte)
 	errors := make(chan error, 1)
 
 	go func() {
@@ -621,11 +627,11 @@ type revision struct {
 
 // Put implements Revision.Put
 func (revision *revision) Put(key []byte, value []byte) error {
-	if err := revision.partition.revisionsNamespace(revision.txn).Put(newRevisionsKey(revision.revision, key), newRevisionsValue(value)); err != nil {
+	if err := revision.partition.revisionsNamespace(revision.txn).Put(composite_keys.Key(newRevisionsKey(revision.revision, key)), newRevisionsValue(value)); err != nil {
 		return err
 	}
 
-	return revision.partition.keysNamespace(revision.txn).Put(newKeysKey(key, revision.revision), newKeysValue(value))
+	return revision.partition.keysNamespace(revision.txn).Put(composite_keys.Key(newKeysKey(key, revision.revision)), newKeysValue(value))
 }
 
 // Delete implements Revision.Delete
@@ -640,17 +646,17 @@ func (revision *revision) Delete(key []byte) error {
 		return nil
 	}
 
-	if err := revision.partition.revisionsNamespace(revision.txn).Put(newRevisionsKey(revision.revision, key), newRevisionsValue(nil)); err != nil {
+	if err := revision.partition.revisionsNamespace(revision.txn).Put(composite_keys.Key(newRevisionsKey(revision.revision, key)), newRevisionsValue(nil)); err != nil {
 		return err
 	}
 
-	return revision.partition.keysNamespace(revision.txn).Put(newKeysKey(key, revision.revision), newKeysValue(nil))
+	return revision.partition.keysNamespace(revision.txn).Put(composite_keys.Key(newKeysKey(key, revision.revision)), newKeysValue(nil))
 }
 
 type view struct {
 	revision  int64
 	partition *partition
-	txn       kv.Transaction
+	txn       composite.Transaction
 	close     sync.Once
 }
 

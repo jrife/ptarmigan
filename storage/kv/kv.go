@@ -1,6 +1,8 @@
 package kv
 
-import "github.com/jrife/ptarmigan/utils/numbers"
+import (
+	"github.com/jrife/ptarmigan/utils/numbers"
+)
 
 const (
 	defaultKeysCap = 100

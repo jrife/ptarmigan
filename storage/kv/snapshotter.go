@@ -186,7 +186,7 @@ func readKVPairs(ctx context.Context, transaction Transaction) (<-chan kvpb.KVPa
 		}
 
 		select {
-		case kvPairs <- kvpb.KVPair{Key: []byte{}, Value: metadata}:
+		case kvPairs <- kvpb.KVPair{Key: nil, Value: metadata}:
 		case <-ctx.Done():
 			errors <- context.Canceled
 

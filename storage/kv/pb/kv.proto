@@ -27,7 +27,6 @@ message SnapshotChunk {
 }
 
 message KVPair {
-    repeated bytes bucket = 1;
-    optional bytes key = 2;
+    optional bytes key = 1;
     optional bytes value = 3;
 }

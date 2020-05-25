@@ -70,6 +70,20 @@ func (r Range) Namespace(ns []byte) Range {
 	return r
 }
 
+// Contains returns true if the range contains
+// key
+func (r Range) Contains(key Key) bool {
+	if r.Min != nil && Compare(key, r.Min) < 0 {
+		return false
+	}
+
+	if r.Max != nil && Compare(key, r.Max) >= 0 {
+		return false
+	}
+
+	return true
+}
+
 func (r Range) refineMin(min []byte) Range {
 	if len(r.ns) > 0 {
 		min = prefix(min, r.ns)
