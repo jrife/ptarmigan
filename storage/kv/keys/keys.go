@@ -65,7 +65,7 @@ func (key Key) Set(i int, e sequence.Element) {
 
 // Inc implements sequence.Interface.Inc
 func (key Key) Inc() sequence.Interface {
-	return sequence.Inc(key)
+	return Inc(key)
 }
 
 // Copy implements sequence.Interface.Copy
@@ -98,4 +98,27 @@ func (key Key) Compare(e sequence.Element) int {
 // 0 means a = b
 func Compare(a, b Key) int {
 	return a.Compare(b)
+}
+
+// Inc increments the key
+func Inc(key Key) Key {
+	carry := true
+	after := make(Key, len(key))
+
+	for i := after.Len() - 1; i >= 0 && carry; i-- {
+		if key[i] < 0xff {
+			carry = false
+		}
+
+		after[i] = key[i] + 1
+	}
+
+	// carry will only be true if all elements of k
+	// were equal to 0xff. The range should just go
+	// all the way to the end of the real key range.
+	if carry {
+		return nil
+	}
+
+	return after
 }

@@ -236,7 +236,7 @@ func (m *compositeMap) Delete(key composite.Key) error {
 		return fmt.Errorf("key cannot be empty or nil")
 	}
 
-	nodes, err := m.nodes(key, true, true)
+	nodes, err := m.nodes(key, false, true)
 
 	if err != nil {
 		return err
@@ -310,7 +310,7 @@ func (m *compositeMap) isNodeEmpty(ns kv.Map) (bool, error) {
 		return false, fmt.Errorf("could not read keys: %s", err)
 	}
 
-	return len(kvs) > 0, nil
+	return len(kvs) == 0, nil
 }
 
 // Get implements kv.CompositeMapReader.Get
@@ -319,7 +319,7 @@ func (m *compositeMap) Get(key composite.Key) ([]byte, error) {
 		return nil, fmt.Errorf("key cannot be empty or nil")
 	}
 
-	nodes, err := m.nodes(key, true, true)
+	nodes, err := m.nodes(key, false, true)
 
 	if err != nil {
 		return nil, err

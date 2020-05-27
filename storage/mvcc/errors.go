@@ -22,7 +22,7 @@ var (
 	// ErrNoRevisions is returned when a consumer requests a view of either the oldest
 	// or newest revision, but the partition is empty having had no revisions
 	// written to it yet.
-	ErrNoRevisions = errors.New("partition has no revision")
+	ErrNoRevisions = errors.New("partition has no revisions")
 	// ErrTooManyRevisions is returned when a transaction tries to create more than
 	// one revision
 	ErrTooManyRevisions = errors.New("transaction already created a new revision")

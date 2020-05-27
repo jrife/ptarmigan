@@ -428,8 +428,6 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 		return nil, wrapError("could not insert revision start market", err)
 	}
 
-	fmt.Printf("Transaction.NewRevision() -> %d\n", nextRevision)
-
 	r := &revision{
 		view: view{
 			partition: transaction.partition,
@@ -487,7 +485,6 @@ func (transaction *transaction) View(revision int64) (View, error) {
 
 // Compact implements Transaction.Compact
 func (transaction *transaction) Compact(revision int64) error {
-	fmt.Printf("Compact(%d)\n", revision)
 	if !transaction.writable {
 		return ErrReadOnly
 	}

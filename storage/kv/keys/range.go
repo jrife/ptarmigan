@@ -50,7 +50,7 @@ func (r Range) Lte(k []byte) Range {
 // Prefix confines the range to keys that
 // have the prefix k, excluding k itself
 func (r Range) Prefix(k []byte) Range {
-	return r.Gt(k).Lt(Key(k).Inc().(Key))
+	return r.Gt(k).Lt(Inc(k))
 }
 
 // Namespace namespaces keys in the range with
@@ -60,7 +60,7 @@ func (r Range) Namespace(ns []byte) Range {
 	r.Min = prefix(r.Min, ns)
 
 	if r.Max == nil {
-		r.Max = Key(ns).Inc().(Key)
+		r.Max = Inc(ns)
 	} else {
 		r.Max = prefix(r.Max, ns)
 	}
@@ -101,7 +101,7 @@ func (r Range) refineMin(min []byte) Range {
 func (r Range) refineMax(max []byte) Range {
 	if len(r.ns) > 0 {
 		if max == nil {
-			max = Key(r.ns).Inc().(Key)
+			max = Inc(r.ns)
 		} else {
 			max = prefix(max, r.ns)
 		}
