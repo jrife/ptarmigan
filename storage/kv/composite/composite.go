@@ -180,6 +180,19 @@ func (m *compositeMap) nodes(key composite.Key, create bool, includeKeysNode boo
 			if err := n.Unmarshal(v); err != nil {
 				return nil, err
 			}
+
+			if create && n.ChildRef == 0 {
+				n.ChildRef = m.nextNodeID()
+				marshaled, err := n.Marshal()
+
+				if err != nil {
+					return nil, fmt.Errorf("could not marshal node %#v: %s", n, err)
+				}
+
+				if err := currentNode.Put(k, marshaled); err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		nodes = append(nodes, node{Node: n})
@@ -212,9 +225,7 @@ func (m *compositeMap) Put(key composite.Key, value []byte) error {
 
 	var n compositepb.Node
 
-	if v == nil {
-		n.ChildRef = m.nextNodeID()
-	} else {
+	if v != nil {
 		if err := n.Unmarshal(v); err != nil {
 			return fmt.Errorf("could not unmarshal key %#v from node %#v: %s", key[len(key)-1], nodes[len(key)-1].ChildRef, err)
 		}
@@ -247,13 +258,7 @@ func (m *compositeMap) Delete(key composite.Key) error {
 		return nil
 	}
 
-	empty, err := m.isNodeEmpty(kv.NamespaceMap(m.flatMap, nodes[len(nodes)-1].ns))
-
-	if err != nil {
-		return fmt.Errorf("could not check is node %d is empty: %s", nodes[len(nodes)-1].ChildRef, err)
-	}
-
-	if !empty {
+	if nodes[len(nodes)-1].ChildRef != 0 {
 		nodes[len(nodes)-1].Value = nil
 		marshaledNode, err := nodes[len(nodes)-1].Marshal()
 
@@ -435,12 +440,16 @@ func (iter *iterator) Next() bool {
 			}
 
 			iter.push(nodeIter, currIter.Key(), n)
-		}
 
-		iter.key = iter.keyStack[1:]
-		iter.value = n.Value
+			if iter.order != kv.SortOrderDesc && n.Value != nil {
+				iter.key = iter.keyStack[1:]
+				iter.value = n.Value
 
-		if iter.value != nil && iter.order != kv.SortOrderDesc {
+				return true
+			}
+		} else if n.Value != nil {
+			iter.key = append(iter.keyStack[1:], currIter.Key())
+			iter.value = n.Value
 			return true
 		}
 	}

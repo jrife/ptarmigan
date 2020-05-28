@@ -135,6 +135,7 @@ func TestMapDelete(t *testing.T) {
 type op struct {
 	Key   composite_keys.Key
 	Value []byte
+	Index int
 }
 
 type ops []op
@@ -146,7 +147,7 @@ func (o ops) Len() int {
 func (o ops) Less(i, j int) bool {
 	cmp := composite_keys.Compare(o[i].Key, o[j].Key)
 
-	return cmp < 0 || (cmp == 0 && i < j)
+	return cmp < 0 || (cmp == 0 && o[i].Index < o[j].Index)
 }
 
 func (o ops) Swap(i, j int) {
@@ -171,12 +172,20 @@ func (o ops) SortAndDeduplicate() ops {
 	// copy
 	o = append(ops(nil), o...)
 
+	for i := range o {
+		o[i].Index = i
+	}
+
 	sort.Sort(o)
+
+	for i := range o {
+		o[i].Index = 0
+	}
 
 	i := 0
 
 	for j := 1; j < len(o); j++ {
-		if composite_keys.Compare(o[i].Key, o[j].Key) != 0 {
+		if composite_keys.Compare(o[i].Key, o[j].Key) != 0 && o[i].Value != nil {
 			i++
 		}
 
@@ -196,10 +205,20 @@ func (o ops) Range(keys composite_keys.Range, order kv.SortOrder) ops {
 	}
 
 	if order == kv.SortOrderDesc {
-		slice = sort.Reverse(slice).(ops)
+		slice = slice.Reverse()
 	}
 
 	return slice
+}
+
+func (o ops) Reverse() ops {
+	r := make(ops, len(o))
+
+	for i := range o {
+		r[len(r)-i-1] = o[i]
+	}
+
+	return r
 }
 
 var aBitOfEverything = []op{
@@ -254,6 +273,9 @@ var aBitOfEverything = []op{
 	{
 		Key:   [][]byte{[]byte("cc"), []byte("0002")},
 		Value: []byte("cc0002"),
+	},
+	{
+		Key: [][]byte{[]byte("aa"), []byte("0002")},
 	},
 }
 
@@ -365,6 +387,11 @@ func TestMapKeys(t *testing.T) {
 			initialState: aBitOfEverything,
 			keys:         composite_keys.Range{keys.All().Gte([]byte("aa")).Lte([]byte("bb")), keys.All().Gte([]byte("0001"))},
 			order:        kv.SortOrderAsc,
+		},
+		"aa-bb+0001-desc": {
+			initialState: aBitOfEverything,
+			keys:         composite_keys.Range{keys.All().Gte([]byte("aa")).Lte([]byte("bb")), keys.All().Gte([]byte("0001"))},
+			order:        kv.SortOrderDesc,
 		},
 	}
 

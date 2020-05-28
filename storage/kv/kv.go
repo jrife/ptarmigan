@@ -53,6 +53,10 @@ func Keys(iter Iterator, limit int) ([]KV, error) {
 
 	for iter.Next() {
 		kvs = append(kvs, KV{iter.Key(), iter.Value()})
+
+		if limit >= 0 && len(kvs) == limit {
+			break
+		}
 	}
 
 	return kvs, iter.Error()
