@@ -26,7 +26,7 @@ func (r Range) Eq(k []byte) Range {
 // Gt confines the range to keys that are
 // greater than k
 func (r Range) Gt(k []byte) Range {
-	return r.refineMin(Key(k).Next().(Key))
+	return r.refineMin(Next(k))
 }
 
 // Gte confines the range to keys that are
@@ -44,7 +44,7 @@ func (r Range) Lt(k []byte) Range {
 // Lte confines the range to keys that are
 // less than or equal to k
 func (r Range) Lte(k []byte) Range {
-	return r.refineMax(Key(k).Next().(Key))
+	return r.refineMax(Next(k))
 }
 
 // Prefix confines the range to keys that
@@ -89,7 +89,7 @@ func (r Range) refineMin(min []byte) Range {
 		min = prefix(min, r.ns)
 	}
 
-	if Key(min).Compare(Key(r.Min)) <= 0 {
+	if Compare(min, r.Min) <= 0 {
 		return r
 	}
 
@@ -107,7 +107,7 @@ func (r Range) refineMax(max []byte) Range {
 		}
 	}
 
-	if r.Max != nil && Key(max).Compare(Key(r.Max)) >= 0 {
+	if r.Max != nil && Compare(max, r.Max) >= 0 {
 		return r
 	}
 

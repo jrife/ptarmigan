@@ -29,11 +29,6 @@ func (r Range) Get(i int) keys.Range {
 	return r[i]
 }
 
-// Len returns the length of the range
-func (r Range) Len() int {
-	return len(r)
-}
-
 // Contains returns true if the range contains
 // key
 func (r Range) Contains(key Key) bool {

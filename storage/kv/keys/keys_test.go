@@ -8,5 +8,5 @@ import (
 )
 
 func TestKeys(t *testing.T) {
-	fmt.Printf("%#v\n", keys.Key([]byte{0x04, 0xff}).Inc().(keys.Key))
+	fmt.Printf("%#v\n", keys.Inc(keys.Key([]byte{0x04, 0xff})))
 }

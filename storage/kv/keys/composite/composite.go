@@ -2,54 +2,39 @@ package composite
 
 import (
 	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/utils/sequence"
 )
-
-var _ sequence.Interface = (Key)(nil)
 
 // Key is a sequence of keys
 type Key [][]byte
-
-// Len implements sequence.Interface.Len
-func (key Key) Len() int {
-	return len(key)
-}
-
-// Get implements sequence.Interface.Get
-func (key Key) Get(i int) sequence.Element {
-	return keys.Key(key[i])
-}
-
-// Set implements sequence.Interface.Set
-func (key Key) Set(i int, e sequence.Element) {
-	key[i] = e.(keys.Key)
-}
-
-// Inc implements sequence.Interface.Inc
-func (key Key) Inc() sequence.Interface {
-	return sequence.Inc(key)
-}
-
-// Copy implements sequence.Interface.Copy
-func (key Key) Copy() sequence.Interface {
-	cp := make(Key, len(key))
-
-	copy(cp, key)
-
-	return cp
-}
-
-// AppendMinElement implements sequence.Interface.AppendMinElement
-func (key Key) AppendMinElement() sequence.Interface {
-	return append(key, keys.Key{})
-}
 
 // Compare compares two keys
 // -1 means a < b
 // 1 means a > b
 // 0 means a = b
 func Compare(a, b Key) int {
-	return sequence.Compare(a, b)
+	if a == nil && b != nil {
+		return -1
+	} else if a != nil && b == nil {
+		return 1
+	}
+
+	var i int
+	var cmp int
+
+	for ; i < len(a) && i < len(b) && cmp == 0; cmp, i = keys.Compare(a[i], b[i]), i+1 {
+	}
+
+	if cmp != 0 {
+		return cmp
+	}
+
+	if len(a) < len(b) {
+		return -1
+	} else if len(a) > len(b) {
+		return 1
+	}
+
+	return 0
 }
 
 // HasPrefix returns true if
