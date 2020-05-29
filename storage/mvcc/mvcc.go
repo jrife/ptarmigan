@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	keysPrefix      = [][]byte{[]byte{1}}
-	revisionsPrefix = [][]byte{[]byte{2}}
+	keysPrefix      = [][]byte{{1}}
+	revisionsPrefix = [][]byte{{2}}
 )
 
 // b must be a byte slice of length 8

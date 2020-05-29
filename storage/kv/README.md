@@ -1,2 +1,0 @@
-# KV
-## Implementing A Plugin
