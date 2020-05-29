@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jrife/ptarmigan/utils/stream"
+	"github.com/jrife/flock/utils/stream"
 )
 
 func ints(n int) stream.Stream {

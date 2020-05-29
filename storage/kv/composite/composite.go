@@ -3,10 +3,10 @@ package composite
 import (
 	"fmt"
 
-	"github.com/jrife/ptarmigan/storage/kv"
-	compositepb "github.com/jrife/ptarmigan/storage/kv/composite/pb"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/storage/kv/keys/composite"
+	"github.com/jrife/flock/storage/kv"
+	compositepb "github.com/jrife/flock/storage/kv/composite/pb"
+	"github.com/jrife/flock/storage/kv/keys"
+	"github.com/jrife/flock/storage/kv/keys/composite"
 )
 
 const (

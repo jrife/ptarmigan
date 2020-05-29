@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/storage/mvcc"
+	"github.com/jrife/flock/storage/kv/keys"
+	"github.com/jrife/flock/storage/mvcc"
 )
 
 func testStore(builder tempStoreBuilder, t *testing.T) {

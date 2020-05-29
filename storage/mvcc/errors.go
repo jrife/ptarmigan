@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jrife/ptarmigan/storage/kv"
+	"github.com/jrife/flock/storage/kv"
 )
 
 var (

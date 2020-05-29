@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jrife/ptarmigan/storage/kv/plugins"
+	"github.com/jrife/flock/storage/kv/plugins"
 )
 
 func BenchmarkMVCC(b *testing.B) {

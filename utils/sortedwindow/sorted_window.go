@@ -2,7 +2,7 @@ package sortedwindow
 
 import (
 	"github.com/emirpasic/gods/utils"
-	"github.com/jrife/ptarmigan/utils/sortedwindow/redblacktree"
+	"github.com/jrife/flock/utils/sortedwindow/redblacktree"
 )
 
 const (

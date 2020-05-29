@@ -1,8 +1,8 @@
 package plugins
 
 import (
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/plugins/bbolt"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/plugins/bbolt"
 )
 
 var plugins []kv.Plugin

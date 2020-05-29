@@ -1,7 +1,7 @@
 package kv
 
 import (
-	"github.com/jrife/ptarmigan/utils/stream"
+	"github.com/jrife/flock/utils/stream"
 )
 
 // Stream wraps the iterator in a stream

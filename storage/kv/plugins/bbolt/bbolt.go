@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/utils/uuid"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/keys"
+	"github.com/jrife/flock/utils/uuid"
 	bolt "go.etcd.io/bbolt"
 )
 

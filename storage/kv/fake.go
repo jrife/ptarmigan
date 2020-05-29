@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/emirpasic/gods/maps/treemap"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/flock/storage/kv/keys"
 )
 
 var _ Map = (*FakeMap)(nil)

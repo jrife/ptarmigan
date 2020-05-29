@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/composite"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	composite_keys "github.com/jrife/ptarmigan/storage/kv/keys/composite"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/composite"
+	"github.com/jrife/flock/storage/kv/keys"
+	composite_keys "github.com/jrife/flock/storage/kv/keys/composite"
 )
 
 type mvccIterator struct {

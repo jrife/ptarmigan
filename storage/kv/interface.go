@@ -3,8 +3,8 @@ package kv
 import (
 	"errors"
 
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/storage/snapshot"
+	"github.com/jrife/flock/storage/kv/keys"
+	"github.com/jrife/flock/storage/snapshot"
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jrife/ptarmigan/storage/mvcc"
+	"github.com/jrife/flock/storage/mvcc"
 )
 
 func testTransaction(builder tempStoreBuilder, t *testing.T) {

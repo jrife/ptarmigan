@@ -1,4 +1,4 @@
-module github.com/jrife/ptarmigan
+module github.com/jrife/flock
 
 go 1.14
 

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	kvpb "github.com/jrife/ptarmigan/storage/kv/pb"
-	"github.com/jrife/ptarmigan/storage/snapshot"
-	"github.com/jrife/ptarmigan/utils/lvstream"
+	"github.com/jrife/flock/storage/kv/keys"
+	kvpb "github.com/jrife/flock/storage/kv/pb"
+	"github.com/jrife/flock/storage/snapshot"
+	"github.com/jrife/flock/utils/lvstream"
 )
 
 var _ snapshot.Source = (*Snapshotter)(nil)

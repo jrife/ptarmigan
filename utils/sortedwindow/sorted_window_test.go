@@ -3,7 +3,7 @@ package sortedwindow_test
 import (
 	"testing"
 
-	"github.com/jrife/ptarmigan/utils/sortedwindow"
+	"github.com/jrife/flock/utils/sortedwindow"
 )
 
 func TestSortedWindow(t *testing.T) {

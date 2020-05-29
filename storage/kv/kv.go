@@ -1,7 +1,7 @@
 package kv
 
 import (
-	"github.com/jrife/ptarmigan/utils/numbers"
+	"github.com/jrife/flock/utils/numbers"
 )
 
 const (

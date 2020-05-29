@@ -1,9 +1,9 @@
 package composite
 
 import (
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/keys/composite"
-	"github.com/jrife/ptarmigan/storage/snapshot"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/keys/composite"
+	"github.com/jrife/flock/storage/snapshot"
 )
 
 // Partition is like kv.Partition except Begin

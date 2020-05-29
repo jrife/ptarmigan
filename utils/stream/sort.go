@@ -1,6 +1,6 @@
 package stream
 
-import "github.com/jrife/ptarmigan/utils/sortedwindow"
+import "github.com/jrife/flock/utils/sortedwindow"
 
 // Sort finds the lowest N elements in a stream as defined by the comparison
 // function and returns them in ascending order. If limit > 0 then N = limit,

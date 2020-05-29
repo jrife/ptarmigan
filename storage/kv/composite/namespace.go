@@ -1,9 +1,9 @@
 package composite
 
 import (
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	composite_keys "github.com/jrife/ptarmigan/storage/kv/keys/composite"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/keys"
+	composite_keys "github.com/jrife/flock/storage/kv/keys/composite"
 )
 
 // NamespaceMapReader returns a namespaced map reader

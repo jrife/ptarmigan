@@ -1,7 +1,7 @@
 package kv
 
 import (
-	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/flock/storage/kv/keys"
 )
 
 // NamespaceMapReader returns a namespaced map reader

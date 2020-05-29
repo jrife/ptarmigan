@@ -1,7 +1,7 @@
 package composite
 
 import (
-	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/flock/storage/kv/keys"
 )
 
 // Key is a sequence of keys

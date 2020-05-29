@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/storage/kv/plugins"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/keys"
+	"github.com/jrife/flock/storage/kv/plugins"
 )
 
 var errAny = errors.New("any error")

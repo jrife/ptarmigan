@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jrife/ptarmigan/storage/kv/keys"
+	"github.com/jrife/flock/storage/kv/keys"
 )
 
 func TestKeys(t *testing.T) {

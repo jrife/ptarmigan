@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jrife/ptarmigan/utils/lvstream"
+	"github.com/jrife/flock/utils/lvstream"
 )
 
 func TestLVStreamReader(t *testing.T) {

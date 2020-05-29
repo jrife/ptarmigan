@@ -1,9 +1,9 @@
 package kv
 
 import (
-	"github.com/jrife/ptarmigan/storage/kv"
-	"github.com/jrife/ptarmigan/storage/kv/keys"
-	"github.com/jrife/ptarmigan/utils/stream"
+	"github.com/jrife/flock/storage/kv"
+	"github.com/jrife/flock/storage/kv/keys"
+	"github.com/jrife/flock/utils/stream"
 )
 
 // Marshalable describes a type that
