@@ -2094,7 +2094,7 @@ func testTransactionKeys(builder tempStoreBuilder, t *testing.T) {
 			order:     kv.SortOrderAsc,
 			err:       nil,
 			kvs: []kv.KV{
-				{[]byte("x"), []byte("b")},
+				{[]byte("a"), []byte("b")},
 				{[]byte("c"), []byte("d")},
 				{[]byte("e"), []byte("f")},
 				{[]byte("g"), []byte("h")},
