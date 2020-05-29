@@ -232,7 +232,7 @@ type revision struct {
 	Changes  map[string][]byte
 }
 
-func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
+func newEmptyStore(t testing.TB, kvPlugin kv.Plugin) mvcc.Store {
 	rootStore, err := kvPlugin.NewTempRootStore()
 
 	if err != nil {
@@ -261,7 +261,7 @@ func newEmptyStore(t *testing.T, kvPlugin kv.Plugin) mvcc.Store {
 	return mvccStore
 }
 
-func newStore(t *testing.T, kvPlugin kv.Plugin, initialState storeChangeset) mvcc.Store {
+func newStore(t testing.TB, kvPlugin kv.Plugin, initialState storeChangeset) mvcc.Store {
 	mvccStore := newEmptyStore(t, kvPlugin)
 
 	applyChanges(t, mvccStore, store{}, initialState)
@@ -269,7 +269,7 @@ func newStore(t *testing.T, kvPlugin kv.Plugin, initialState storeChangeset) mvc
 	return mvccStore
 }
 
-func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, changes storeChangeset) store {
+func applyChanges(t testing.TB, mvccStore mvcc.Store, currentState store, changes storeChangeset) store {
 	for partitionName, partitionChangeset := range changes {
 		mvccPartition := mvccStore.Partition([]byte(partitionName))
 
@@ -314,7 +314,7 @@ func applyChanges(t *testing.T, mvccStore mvcc.Store, currentState store, change
 	return currentState
 }
 
-func getStore(t *testing.T, mvccStore mvcc.Store) store {
+func getStore(t testing.TB, mvccStore mvcc.Store) store {
 	result := store{}
 
 	partitions, err := mvccStore.Partitions(keys.All(), -1)
@@ -336,7 +336,7 @@ func getStore(t *testing.T, mvccStore mvcc.Store) store {
 	return result
 }
 
-func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
+func getAllRevisions(t testing.TB, partition mvcc.Partition) []revision {
 	result := []revision{}
 	txn, err := partition.Begin(false)
 
@@ -366,7 +366,7 @@ func getAllRevisions(t *testing.T, partition mvcc.Partition) []revision {
 	return result
 }
 
-func getAllKVs(t *testing.T, revision mvcc.View) map[string][]byte {
+func getAllKVs(t testing.TB, revision mvcc.View) map[string][]byte {
 	result := map[string][]byte{}
 
 	kvs, err := revision.Keys(keys.All(), kv.SortOrderAsc)
@@ -386,7 +386,7 @@ func getAllKVs(t *testing.T, revision mvcc.View) map[string][]byte {
 	return result
 }
 
-func getAllChanges(t *testing.T, revision mvcc.View) map[string][]byte {
+func getAllChanges(t testing.TB, revision mvcc.View) map[string][]byte {
 	result := map[string][]byte{}
 
 	diffs, err := revision.Changes(keys.All(), false)
@@ -406,7 +406,7 @@ func getAllChanges(t *testing.T, revision mvcc.View) map[string][]byte {
 	return result
 }
 
-func doMutateTest(t *testing.T, store mvcc.Store, mutate func(), expectedFinalState store) {
+func doMutateTest(t testing.TB, store mvcc.Store, mutate func(), expectedFinalState store) {
 	mutate()
 
 	diff := cmp.Diff(expectedFinalState, getStore(t, store))
@@ -416,10 +416,10 @@ func doMutateTest(t *testing.T, store mvcc.Store, mutate func(), expectedFinalSt
 	}
 }
 
-type tempStoreBuilder func(t *testing.T, initialState storeChangeset) mvcc.Store
+type tempStoreBuilder func(t testing.TB, initialState storeChangeset) mvcc.Store
 
 func builder(plugin kv.Plugin) tempStoreBuilder {
-	return func(t *testing.T, initialState storeChangeset) mvcc.Store {
+	return func(t testing.TB, initialState storeChangeset) mvcc.Store {
 		return newStore(t, plugin, initialState)
 	}
 }
