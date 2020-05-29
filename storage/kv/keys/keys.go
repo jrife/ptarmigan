@@ -37,6 +37,8 @@ func Inc(key Key) Key {
 	carry := true
 	after := make(Key, len(key))
 
+	copy(after, key)
+
 	for i := len(after) - 1; i >= 0 && carry; i-- {
 		if key[i] < 0xff {
 			carry = false

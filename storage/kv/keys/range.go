@@ -61,6 +61,7 @@ func (r Range) Namespace(ns []byte) Range {
 
 	if r.Max == nil {
 		r.Max = Inc(ns)
+
 	} else {
 		r.Max = prefix(r.Max, ns)
 	}
