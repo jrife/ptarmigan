@@ -1,0 +1,29 @@
+# github.com/emirpasic/gods v1.12.0
+## explicit
+github.com/emirpasic/gods/containers
+github.com/emirpasic/gods/maps
+github.com/emirpasic/gods/maps/treemap
+github.com/emirpasic/gods/trees
+github.com/emirpasic/gods/trees/redblacktree
+github.com/emirpasic/gods/utils
+# github.com/gogo/protobuf v1.3.1
+## explicit
+github.com/gogo/protobuf/gogoproto
+github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
+# github.com/google/go-cmp v0.4.0
+## explicit
+github.com/google/go-cmp/cmp
+github.com/google/go-cmp/cmp/internal/diff
+github.com/google/go-cmp/cmp/internal/flags
+github.com/google/go-cmp/cmp/internal/function
+github.com/google/go-cmp/cmp/internal/value
+# github.com/google/uuid v1.1.1
+## explicit
+github.com/google/uuid
+# go.etcd.io/bbolt v1.3.3
+## explicit
+go.etcd.io/bbolt
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
+## explicit
+golang.org/x/sys/unix
