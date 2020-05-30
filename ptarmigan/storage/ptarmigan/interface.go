@@ -85,28 +85,36 @@ type Store interface {
 	Purge() error
 }
 
-// RaftCommandStore contains functions that apply incoming raft
-// commands to the store. It is up to the caller to ensure only
-// one thread at a time call these functions, as raft commands
-// must be applied in the order indicated by their index.
-type RaftCommandStore interface {
-	// RaftStatus returns the latest raft status for this store.
-	// Each update operation passes in a raft status containing the raft
-	// index and raft term associated with that update.
-	RaftStatus() (ptarmiganpb.RaftStatus, error)
+type KVStore interface {
+	// Query executes a query
+	Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error)
+	// Txn executes a transaction
+	Txn(raftStatus ptarmiganpb.RaftStatus, txn ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error)
+	// Compact compacts the history up to this revision.
+	Compact(revision int64) error
+	// Changes returns a set of change events associated with this
+	// revision. Events are always sorted in ascending order by the
+	// byte order of their key. Returns events whose key is > start up
+	// to limit. In other words, start acts as a cursor and limit
+	// limits the size of the resulting events.
+	Changes(watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error)
+}
+
+type LeaseStore interface {
 	// CreateLease create a lease with the given TTL in this replica store.
 	CreateLease(raftStatus ptarmiganpb.RaftStatus, ttl int64) (ptarmiganpb.Lease, error)
 	// RevokeLease deletes the lease with this ID from the replica store
 	// and deletes any keys associated with this lease. It creates a new
 	// revision whose changeset includes the deleted keys.
 	RevokeLease(raftStatus ptarmiganpb.RaftStatus, id int64) error
-	// NewRevision lets a consumer build a new revision.
-	NewRevision(raftStatus ptarmiganpb.RaftStatus) (Revision, error)
+	// Leases lists all leases stored in this replica store
+	Leases() ([]ptarmiganpb.Lease, error)
+	// GetLease reads the lease with this ID out of the replica store
+	GetLease(id int64) (ptarmiganpb.Lease, error)
 }
 
 // ReplicaStore describes a storage interface for a flock replica.
 type ReplicaStore interface {
-	RaftCommandStore
 	// Name returns the name of this replica store
 	Name() string
 	// Create initializes this replica store with some metadata.
@@ -117,17 +125,12 @@ type ReplicaStore interface {
 	Delete() error
 	// Metadata retrieves the metadata associated with this replica store
 	Metadata() ([]byte, error)
-	// Leases lists all leases stored in this replica store
-	Leases() ([]ptarmiganpb.Lease, error)
-	// GetLease reads the lease with this ID out of the replica store
-	GetLease(id int64) (ptarmiganpb.Lease, error)
-	// Compact compacts the history up to this revision.
-	Compact(revision int64) error
-	// View returns a view of the store at some revision. It returns
-	// ErrCompacted if the requested revision is too old and has been
-	// compacted away. It returns ErrRevisionTooHigh if the requested
-	// revision is higher than the newest revision.
-	View(revision int64) (View, error)
+	// RaftStatus returns the latest raft status for this store.
+	// Each update operation passes in a raft status containing the raft
+	// index and raft term associated with that update.
+	RaftStatus() (ptarmiganpb.RaftStatus, error)
+	KVStore
+	LeaseStore
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot.
 	snapshot.Acceptor
@@ -136,41 +139,4 @@ type ReplicaStore interface {
 	// ApplySnapshot() such that its return value could be applied
 	// to ApplySnapshot() in order to replicate its state elsewhere.
 	snapshot.Source
-}
-
-// View describes a view of a replica store
-// at some revision. It lets a consumer read
-// the state of the keys at that revision.
-type View interface {
-	// Query executes a query on this view (ignores revision in request)
-	Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error)
-	// Get reads a key at a revision. It returns ErrNotFound if the key
-	// does not exist at this revision.
-	Get(key []byte) (ptarmiganpb.KeyValue, error)
-	// Revision returns the revision index of this view
-	Revision() int64
-	// Changes returns a set of change events associated with this
-	// revision. Events are always sorted in ascending order by the
-	// byte order of their key. Returns events whose key is > start up
-	// to limit. In other words, start acts as a cursor and limit
-	// limits the size of the resulting events.
-	Changes(start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error)
-	// Close must be called when a consumer is done with the view
-	Close() error
-}
-
-// Revision lets a consumer build a new revision
-type Revision interface {
-	View
-	// Put creates or updates a key.
-	Put(req ptarmiganpb.KVPutRequest) (ptarmiganpb.KVPutResponse, error)
-	// Delete deletes a key. If the key doesn't
-	// exist no error is returned.
-	Delete(req ptarmiganpb.KVDeleteRequest) (ptarmiganpb.KVDeleteResponse, error)
-	// Commit commits this revision, making its
-	// effects visible.
-	Commit() error
-	// Rollback discards this revision. Its effects
-	// will not be visible to any observers.
-	Rollback() error
 }
