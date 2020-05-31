@@ -57,7 +57,7 @@ var (
 )
 
 // Store describes a storage interface
-// for a flock node.
+// for a ptarmigan node.
 type Store interface {
 	// ReplicaStores lets a consumer iterate through
 	// all the replica stores for this node. Replica
@@ -85,6 +85,7 @@ type Store interface {
 	Purge() error
 }
 
+// KVStore describes a storage interface for a ptarmigan node's KV service
 type KVStore interface {
 	// Query executes a query
 	Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error)
@@ -100,6 +101,7 @@ type KVStore interface {
 	Changes(watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error)
 }
 
+// LeaseStore describes a storage interface for a ptarmigan node's lease service
 type LeaseStore interface {
 	// CreateLease create a lease with the given TTL in this replica store.
 	CreateLease(raftStatus ptarmiganpb.RaftStatus, ttl int64) (ptarmiganpb.Lease, error)
@@ -113,7 +115,7 @@ type LeaseStore interface {
 	GetLease(id int64) (ptarmiganpb.Lease, error)
 }
 
-// ReplicaStore describes a storage interface for a flock replica.
+// ReplicaStore describes a storage interface for a ptarmigan replica.
 type ReplicaStore interface {
 	// Name returns the name of this replica store
 	Name() string

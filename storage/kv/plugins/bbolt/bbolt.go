@@ -428,7 +428,7 @@ func (partition *Partition) begin(writable bool, ensurePartitionExists bool) (kv
 		}
 	}
 
-	return &Transaction{txn: txn, bucket: partitionBucket}, nil
+	return &Transaction{txn: txn, bucket: partitionBucket, iterators: make(map[*Iterator]bool)}, nil
 }
 
 func (partition *Partition) ensureBuckets(txn *bolt.Tx) (*bolt.Bucket, bool, error) {
@@ -484,7 +484,7 @@ func (partition *Partition) Create(metadata []byte) error {
 		if !exists {
 			// This bucket was newly created. Set metadata since this
 			// is the first time
-			transaction := &Transaction{txn: txn, bucket: partitionBucket}
+			transaction := &Transaction{txn: txn, bucket: partitionBucket, iterators: make(map[*Iterator]bool)}
 
 			if err := transaction.SetMetadata(metadata); err != nil {
 				return fmt.Errorf("could not set metadata: %s", err)
@@ -558,7 +558,7 @@ func (partition *Partition) Begin(writable bool) (kv.Transaction, error) {
 		return nil, err
 	}
 
-	return &Transaction{txn: txn, bucket: partitionBucket}, nil
+	return &Transaction{txn: txn, bucket: partitionBucket, iterators: make(map[*Iterator]bool)}, nil
 }
 
 var _ kv.Transaction = (*Transaction)(nil)
@@ -566,10 +566,11 @@ var _ kv.Transaction = (*Transaction)(nil)
 // Transaction implements kv.Transaction on top of
 // a bbolt transaction.
 type Transaction struct {
-	txn    *bolt.Tx
-	bucket *bolt.Bucket
-	kv     *bolt.Bucket
-	meta   *bolt.Bucket
+	txn       *bolt.Tx
+	bucket    *bolt.Bucket
+	kv        *bolt.Bucket
+	meta      *bolt.Bucket
+	iterators map[*Iterator]bool
 }
 
 func (transaction *Transaction) kvBucket() (*bolt.Bucket, error) {
@@ -596,6 +597,12 @@ func (transaction *Transaction) metaBucket() (*bolt.Bucket, error) {
 	return transaction.meta, nil
 }
 
+func (transaction *Transaction) notifyIterators() {
+	for iter := range transaction.iterators {
+		iter.notify()
+	}
+}
+
 // Put implements Transaction.Put
 func (transaction *Transaction) Put(key, value []byte) error {
 	if len(key) == 0 {
@@ -611,6 +618,8 @@ func (transaction *Transaction) Put(key, value []byte) error {
 	if err != nil {
 		return err
 	}
+
+	transaction.notifyIterators()
 
 	return bucket.Put(key, value)
 }
@@ -642,6 +651,8 @@ func (transaction *Transaction) Delete(key []byte) error {
 		return err
 	}
 
+	transaction.notifyIterators()
+
 	return bucket.Delete(key)
 }
 
@@ -664,6 +675,8 @@ func (transaction *Transaction) SetMetadata(metadata []byte) error {
 		return err
 	}
 
+	transaction.notifyIterators()
+
 	return bucket.Put(metaKey, metadata)
 }
 
@@ -684,6 +697,17 @@ func (transaction *Transaction) Keys(keys keys.Range, order kv.SortOrder) (kv.It
 
 		return cursor.Next()
 	}
+	seek := func() ([]byte, []byte) {
+		k, v := cursor.Seek(iter.key)
+
+		if order == kv.SortOrderDesc {
+			return cursor.Prev()
+		} else if bytes.Compare(k, iter.key) == 0 {
+			return cursor.Next()
+		}
+
+		return k, v
+	}
 	end := func(key []byte) bool {
 		if order == kv.SortOrderDesc {
 			return keys.Min != nil && bytes.Compare(key, keys.Min) < 0
@@ -694,9 +718,17 @@ func (transaction *Transaction) Keys(keys keys.Range, order kv.SortOrder) (kv.It
 
 	iter.next = func() ([]byte, []byte) {
 		iter.next = func() ([]byte, []byte) {
-			k, v := advance()
+			var k []byte
+			var v []byte
+
+			if iter.seek {
+				k, v = seek()
+			} else {
+				k, v = advance()
+			}
 
 			if k == nil || end(k) {
+				delete(transaction.iterators, iter)
 				return nil, nil
 			}
 
@@ -721,12 +753,15 @@ func (transaction *Transaction) Keys(keys keys.Range, order kv.SortOrder) (kv.It
 			}
 		}
 
-		if end(k) {
+		if k == nil || end(k) {
+			delete(transaction.iterators, iter)
 			k, v = nil, nil
 		}
 
 		return k, v
 	}
+
+	transaction.iterators[iter] = true
 
 	return iter, nil
 }
@@ -747,7 +782,12 @@ type Iterator struct {
 	next  func() ([]byte, []byte)
 	key   []byte
 	value []byte
+	seek  bool
 	done  bool
+}
+
+func (iterator *Iterator) notify() {
+	iterator.seek = true
 }
 
 // Next implements Iterator.Next

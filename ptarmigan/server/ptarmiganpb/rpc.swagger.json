@@ -816,6 +816,11 @@
           "$ref": "#/definitions/ptarmiganpbKVSelection",
           "title": "Only keys matching the predicates in the selection will be updated"
         },
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "title": "key is the key, in bytes, to create or update. Selection is ignored\nif key is specified"
+        },
         "value": {
           "type": "string",
           "format": "byte",

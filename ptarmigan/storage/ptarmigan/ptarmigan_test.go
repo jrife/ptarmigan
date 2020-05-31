@@ -45,19 +45,11 @@ func TestPtarmiganStorage(t *testing.T) {
 		t.Fatalf("expected err to be nil, got %#v", err)
 	}
 
-	revision, err := myReplicaStore.NewRevision(ptarmiganpb.RaftStatus{RaftIndex: 1})
+	response, err := myReplicaStore.Txn(ptarmiganpb.RaftStatus{RaftIndex: 1}, ptarmiganpb.KVTxnRequest{})
 
 	if err != nil {
 		t.Fatalf("expected err to be nil, got %#v", err)
 	}
 
-	defer revision.Rollback()
-
-	kv, err := revision.Get([]byte("a"))
-
-	if err != nil {
-		t.Fatalf("expected err to be nil, got %#v", err)
-	}
-
-	fmt.Printf("KV: %#v\n", kv)
+	fmt.Printf("Txn Response: %#v\n", response)
 }

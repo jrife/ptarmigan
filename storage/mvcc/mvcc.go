@@ -522,86 +522,50 @@ func (transaction *transaction) Compact(revision int64) error {
 		return ErrCompacted
 	}
 
-	keysNs, revsNs, errors := transaction.compactKeys(revision)
 	keysTxn := transaction.partition.keysNamespace(transaction.txn)
 	revsTxn := transaction.partition.revisionsNamespace(transaction.txn)
 
-	for {
-		select {
-		case key := <-keysNs:
-			keysTxn.Delete(key)
-		case key := <-revsNs:
-			revsTxn.Delete(key)
-		case err := <-errors:
-			return err
+	revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(transaction.txn), nil, &revisionsCursor{revision: revision}, kv.SortOrderAsc)
+
+	if err != nil {
+		return wrapError("could not create revisions iterator", err)
+	}
+
+	keysIter, err := newKeysIterator(transaction.partition.keysNamespace(transaction.txn), nil, nil, kv.SortOrderDesc)
+
+	if err != nil {
+		return wrapError("could not create keys iterator", err)
+	}
+
+	for revsIter.next() {
+		if err := revsTxn.Delete([][]byte(newRevisionsKey(revsIter.revision(), revsIter.key()))); err != nil {
+			return wrapError(fmt.Sprintf("could not delete revisions key %d/%#v", revsIter.revision(), revsIter.key()), err)
 		}
 	}
-}
 
-func (transaction *transaction) compactKeys(revision int64) (<-chan [][]byte, <-chan [][]byte, <-chan error) {
-	keysNs := make(chan [][]byte)
-	revsNs := make(chan [][]byte)
-	errors := make(chan error, 1)
+	if revsIter.error() != nil {
+		return wrapError("revisions iteration error", err)
+	}
 
-	go func() {
-		txn, err := transaction.partition.beginTxn(false)
-
-		if err != nil {
-			errors <- wrapError("could not begin transaction", err)
-
-			return
+	for prevKey, prevRev := []byte(nil), int64(0); keysIter.next(); prevKey, prevRev = keysIter.key(), keysIter.revision() {
+		if keysIter.revision() >= revision {
+			continue
 		}
 
-		defer txn.Rollback()
-
-		revsIter, err := newRevisionsIterator(transaction.partition.revisionsNamespace(txn), nil, &revisionsCursor{revision: revision}, kv.SortOrderAsc)
-
-		if err != nil {
-			errors <- wrapError("could not create revisions iterator", err)
-
-			return
-		}
-
-		keysIter, err := newKeysIterator(transaction.partition.keysNamespace(txn), nil, nil, kv.SortOrderDesc)
-
-		if err != nil {
-			errors <- wrapError("could not create keys iterator", err)
-
-			return
-		}
-
-		for revsIter.next() {
-			revsNs <- newRevisionsKey(revsIter.revision(), revsIter.key())
-		}
-
-		if revsIter.error() != nil {
-			errors <- revsIter.error()
-
-			return
-		}
-
-		for prevKey, prevRev := []byte(nil), int64(0); keysIter.next(); prevKey, prevRev = keysIter.key(), keysIter.revision() {
-			if keysIter.revision() >= revision {
-				continue
-			}
-
-			// Keep only the newest version of each key as of the compact revision.
-			// Always compact tombstones
-			if keysIter.value() == nil || bytes.Compare(prevKey, keysIter.key()) == 0 && prevRev <= revision {
-				keysNs <- newKeysKey(keysIter.key(), keysIter.revision())
+		// Keep only the newest version of each key as of the compact revision.
+		// Always compact tombstones
+		if keysIter.value() == nil || bytes.Compare(prevKey, keysIter.key()) == 0 && prevRev <= revision {
+			if err := keysTxn.Delete([][]byte(newKeysKey(keysIter.key(), keysIter.revision()))); err != nil {
+				return wrapError(fmt.Sprintf("could not delete keys key %#v/%d", keysIter.key(), keysIter.revision()), err)
 			}
 		}
+	}
 
-		if keysIter.error() != nil {
-			errors <- keysIter.error()
+	if keysIter.error() != nil {
+		return wrapError("keys iteration error", err)
+	}
 
-			return
-		}
-
-		errors <- nil
-	}()
-
-	return keysNs, revsNs, errors
+	return nil
 }
 
 // Commit implements Transaction.Commit

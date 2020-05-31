@@ -9,6 +9,7 @@ import (
 	"github.com/jrife/flock/storage/kv"
 	"github.com/jrife/flock/storage/kv/keys"
 	kv_marshaled "github.com/jrife/flock/storage/kv/marshaled"
+	"github.com/jrife/flock/storage/mvcc"
 
 	"github.com/jrife/flock/utils/stream"
 )
@@ -18,7 +19,10 @@ const (
 	defaultBufferInitialCapacity = 100
 )
 
-// Query implements View.Query
+type view struct {
+	view mvcc.View
+}
+
 func (view *view) Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
 	iter, err := kvMapReader(view.view).Keys(keyRange(query), sortOrder(query.SortOrder))
 
@@ -68,6 +72,57 @@ func (view *view) Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryRe
 	}
 
 	return response, nil
+}
+
+// Changes implements View.Changes
+func (view *view) Changes(start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
+	diffsIter, err := view.view.Changes(keys.All().Gt(start), includePrev)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not list changes: %s", err)
+	}
+
+	diffs, err := mvcc.Diffs(diffsIter, limit)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not list changes: %s", err)
+	}
+
+	events := make([]ptarmiganpb.Event, len(diffs))
+
+	for i, diff := range diffs {
+		event := ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT}
+
+		if diff[1] == nil {
+			event.Type = ptarmiganpb.Event_DELETE
+		}
+
+		if diff[1] != nil {
+			kv, err := unmarshalKV(diff[1])
+
+			if err != nil {
+				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diff[1], err)
+			}
+
+			k := kv.(ptarmiganpb.KeyValue)
+			event.Kv = &k
+		}
+
+		if includePrev && diff[2] != nil {
+			kv, err := unmarshalKV(diff[2])
+
+			if err != nil {
+				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diff[1], err)
+			}
+
+			k := kv.(ptarmiganpb.KeyValue)
+			event.PrevKv = &k
+		}
+
+		events[i] = event
+	}
+
+	return events, nil
 }
 
 func makeKvs(limit int64) []*ptarmiganpb.KeyValue {

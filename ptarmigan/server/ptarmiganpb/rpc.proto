@@ -219,20 +219,23 @@ message KVPutRequest {
   PartitionRequestHeader header = 1;
   // Only keys matching the predicates in the selection will be updated
   KVSelection selection = 2;
+  // key is the key, in bytes, to create or update. Selection is ignored
+  // if key is specified
+  bytes key = 3;
   // value is the value, in bytes, to associate with the key in the key-value store.
-  bytes value = 3;
+  bytes value = 4;
   // lease is the lease ID to associate with the key in the key-value store. A lease
   // value of 0 indicates no lease.
-  int64 lease = 4;
+  int64 lease = 5;
   // If prev_kv is set, ptarmigan gets the previous key-value pair before changing it.
   // The previous key-value pair will be returned in the put response.
-  bool prev_kv = 5;
+  bool prev_kv = 6;
   // If ignore_value is set, ptarmigan updates the key using its current value.
   // Returns an error if the key does not exist.
-  bool ignore_value = 6;
+  bool ignore_value = 7;
   // If ignore_lease is set, ptarmigan updates the key using its current lease.
   // Returns an error if the key does not exist.
-  bool ignore_lease = 7;
+  bool ignore_lease = 8;
 }
 
 message KVPutResponse {

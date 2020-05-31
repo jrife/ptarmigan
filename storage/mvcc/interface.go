@@ -142,23 +142,3 @@ type DiffIterator interface {
 	IsDelete() bool
 	Prev() []byte
 }
-
-// NamespaceView returns a view that will prefix
-// all keys with ns
-func NamespaceView(view View, ns []byte) View {
-	if len(ns) == 0 {
-		return view
-	}
-
-	return nil
-}
-
-// NamespaceRevision returns a revision that will
-// prefix all keys with ns
-func NamespaceRevision(revision Revision, ns []byte) Revision {
-	if len(ns) == 0 {
-		return revision
-	}
-
-	return nil
-}

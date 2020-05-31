@@ -69,7 +69,7 @@ func (replicaStore *replicaStore) raftStatus(view mvcc.View) (ptarmiganpb.RaftSt
 	}
 
 	if len(raftStatusKv) == 0 {
-		return ptarmiganpb.RaftStatus{}, fmt.Errorf("raft status key does not exist")
+		return ptarmiganpb.RaftStatus{}, nil
 	}
 
 	var raftStatus ptarmiganpb.RaftStatus
@@ -255,6 +255,20 @@ func (replicaStore *replicaStore) RevokeLease(raftStatus ptarmiganpb.RaftStatus,
 	})
 }
 
+// Query implements ReplicaStore.Query
+func (replicaStore *replicaStore) Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
+	var response ptarmiganpb.KVQueryResponse
+
+	err := replicaStore.view(query.Revision, kvsNs, func(mvccView mvcc.View) error {
+		var err error
+		response, err = (&view{view: mvccView}).Query(query)
+
+		return err
+	})
+
+	return response, err
+}
+
 // Compact implements ReplicaStore.Compact
 func (replicaStore *replicaStore) Compact(revision int64) error {
 	return replicaStore.update(func(transaction mvcc.Transaction) error {
@@ -262,51 +276,20 @@ func (replicaStore *replicaStore) Compact(revision int64) error {
 	})
 }
 
-// View implements ReplicaStore.View
-func (replicaStore *replicaStore) View(revision int64) (View, error) {
-	mvccTxn, err := replicaStore.partition.Begin(false)
+// Changes implements ReplicaStore.Changes
+func (replicaStore *replicaStore) Changes(watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
+	var response []ptarmiganpb.Event
 
-	if err != nil {
-		return nil, fmt.Errorf("could not start mvcc transaction: %s", err.Error())
-	}
+	err := replicaStore.view(watch.Start.Revision, kvsNs, func(mvccView mvcc.View) error {
+		ptarmiganView := &view{view: mvccView}
 
-	mvccView, err := mvccTxn.View(revision)
+		var err error
+		response, err = ptarmiganView.Changes(watch.Start.Key, limit, watch.PrevKv)
 
-	if err != nil {
-		return nil, fmt.Errorf("could not get view at revision %d: %s", revision, err)
-	}
+		return err
+	})
 
-	v := mvcc.NamespaceView(mvccView, kvsNs)
-
-	return &view{
-		view:        v,
-		transaction: mvccTxn,
-	}, nil
-}
-
-// NewRevision implements ReplicaStore.NewRevision
-func (replicaStore *replicaStore) NewRevision(raftStatus ptarmiganpb.RaftStatus) (Revision, error) {
-	mvccTxn, err := replicaStore.partition.Begin(true)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not start mvcc transaction: %s", err.Error())
-	}
-
-	mvccRevision, err := mvccTxn.NewRevision()
-
-	if err != nil {
-		mvccTxn.Rollback()
-
-		return nil, fmt.Errorf("could not create new revision: %s", err)
-	}
-
-	return &revision{
-		view: view{
-			view: mvcc.NamespaceView(mvccRevision, kvsNs),
-		},
-		transaction: mvccTxn,
-		revision:    mvcc.NamespaceRevision(mvccRevision, kvsNs),
-	}, nil
+	return response, err
 }
 
 // ApplySnapshot implements ReplicaStore.ApplySnapshot
