@@ -1,4 +1,4 @@
-package ptarmigan
+package storage
 
 import (
 	"bytes"
@@ -19,12 +19,8 @@ const (
 	defaultBufferInitialCapacity = 100
 )
 
-type view struct {
-	view mvcc.View
-}
-
-func (view *view) Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
-	iter, err := kvMapReader(view.view).Keys(keyRange(query), sortOrder(query.SortOrder))
+func query(view mvcc.View, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
+	iter, err := kvMapReader(view).Keys(keyRange(query), sortOrder(query.SortOrder))
 
 	if err != nil {
 		return ptarmiganpb.KVQueryResponse{}, fmt.Errorf("could not create keys iterator: %s", err)
@@ -75,8 +71,8 @@ func (view *view) Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryRe
 }
 
 // Changes implements View.Changes
-func (view *view) Changes(start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
-	diffsIter, err := view.view.Changes(keys.All().Gt(start), includePrev)
+func changes(view mvcc.View, start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
+	diffsIter, err := view.Changes(keys.All().Gt(start), includePrev)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not list changes: %s", err)

@@ -1,4 +1,4 @@
-package ptarmigan
+package storage
 
 import (
 	"errors"
@@ -7,46 +7,13 @@ import (
 	"github.com/jrife/flock/storage/snapshot"
 )
 
-const (
-	// RevisionOldest can be used in place
-	// of a revision index to indicate the
-	// oldest available revision.
-	RevisionOldest = -1
-	// RevisionNewest can be used in place
-	// of a revision index to indicate the
-	// newest available revision.
-	RevisionNewest = -2
-	// ReplicaStoreMin can be used in place
-	// of a replica store name to indicate
-	// the replica store with the lexicographically
-	// lowest name.
-	ReplicaStoreMin = ""
-	// ReplicaStoreMax can be used in place
-	// of a replica store name to indicate
-	// the replica store with the lexicographically
-	// highest name.
-	ReplicaStoreMax = ""
-)
-
 var (
 	// ErrNoSuchReplicaStore is returned when a replica store
 	// is requested that does not exist.
 	ErrNoSuchReplicaStore = errors.New("No such replica store")
-	// ErrCompacted is returned when an operation cannot be completed
-	// because it needs to read data that was compacted away.
-	ErrCompacted = errors.New("Replica store was compacted")
-	// ErrRevisionTooHigh is returned when an operation tries to access
-	// a revision number that is higher than the newest revision.
-	ErrRevisionTooHigh = errors.New("Requested revision number is higher than the newest revision")
-	// ErrNotFound is returned when an operation tries to access a key
+	// ErrLeaseNotFound is returned when an operation tries to access a key
 	// that does not exist at the current revision.
-	ErrNotFound = errors.New("No such key")
-	// ErrClosed is returned when an operation is attempted
-	// after the store is closed.
-	ErrClosed = errors.New("The store was closed")
-	// ErrKeyNotFound is returned by get when the requested key is
-	// not found
-	ErrKeyNotFound = errors.New("Key not found")
+	ErrLeaseNotFound = errors.New("No such lease")
 )
 
 var (

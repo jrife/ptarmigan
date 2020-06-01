@@ -1,4 +1,4 @@
-package ptarmigan
+package storage
 
 import (
 	"fmt"
@@ -229,7 +229,7 @@ func (replicaStore *replicaStore) GetLease(id int64) (ptarmiganpb.Lease, error) 
 		}
 
 		if l == nil {
-			return ErrNotFound
+			return ErrLeaseNotFound
 		}
 
 		lease = l.(ptarmiganpb.Lease)
@@ -256,12 +256,12 @@ func (replicaStore *replicaStore) RevokeLease(raftStatus ptarmiganpb.RaftStatus,
 }
 
 // Query implements ReplicaStore.Query
-func (replicaStore *replicaStore) Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
+func (replicaStore *replicaStore) Query(q ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
 	var response ptarmiganpb.KVQueryResponse
 
-	err := replicaStore.view(query.Revision, kvsNs, func(mvccView mvcc.View) error {
+	err := replicaStore.view(q.Revision, kvsNs, func(mvccView mvcc.View) error {
 		var err error
-		response, err = (&view{view: mvccView}).Query(query)
+		response, err = query(mvccView, q)
 
 		return err
 	})
@@ -281,10 +281,8 @@ func (replicaStore *replicaStore) Changes(watch ptarmiganpb.KVWatchRequest, limi
 	var response []ptarmiganpb.Event
 
 	err := replicaStore.view(watch.Start.Revision, kvsNs, func(mvccView mvcc.View) error {
-		ptarmiganView := &view{view: mvccView}
-
 		var err error
-		response, err = ptarmiganView.Changes(watch.Start.Key, limit, watch.PrevKv)
+		response, err = changes(mvccView, watch.Start.Key, limit, watch.PrevKv)
 
 		return err
 	})

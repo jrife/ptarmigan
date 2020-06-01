@@ -1,4 +1,4 @@
-package ptarmigan
+package storage
 
 import (
 	"bytes"
@@ -123,6 +123,8 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 	responses := make([]*ptarmiganpb.KVResponseOp, len(ops))
 
 	for i, op := range ops {
+		var responseOp ptarmiganpb.KVResponseOp
+
 		switch op.Request.(type) {
 		case *ptarmiganpb.KVRequestOp_RequestDelete:
 			r, err := executeDeleteOp(revision, *op.GetRequestDelete())
@@ -131,7 +133,7 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
-			responses[i].Response = &ptarmiganpb.KVResponseOp_ResponseDelete{
+			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseDelete{
 				ResponseDelete: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestPut:
@@ -141,17 +143,17 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
-			responses[i].Response = &ptarmiganpb.KVResponseOp_ResponsePut{
+			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponsePut{
 				ResponsePut: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestQuery:
-			r, err := executeQueryOp(revision, *op.GetRequestQuery())
+			r, err := query(revision, *op.GetRequestQuery())
 
 			if err != nil {
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
-			responses[i].Response = &ptarmiganpb.KVResponseOp_ResponseQuery{
+			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseQuery{
 				ResponseQuery: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestTxn:
@@ -161,12 +163,14 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
-			responses[i].Response = &ptarmiganpb.KVResponseOp_ResponseTxn{
+			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseTxn{
 				ResponseTxn: &r,
 			}
 		default:
 			return nil, fmt.Errorf("unrecognized transaction op type: %d", i)
 		}
+
+		responses[i] = &responseOp
 	}
 
 	return responses, nil
@@ -278,8 +282,4 @@ func updateKV(kv ptarmiganpb.KeyValue, r ptarmiganpb.KVPutRequest, revision int6
 	kv.Version++
 
 	return kv
-}
-
-func executeQueryOp(revision mvcc.Revision, r ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
-	return (&view{view: revision}).Query(r)
 }

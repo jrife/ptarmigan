@@ -1,4 +1,4 @@
-package ptarmigan
+package storage
 
 import (
 	"fmt"

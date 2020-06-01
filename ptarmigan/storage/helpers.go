@@ -1,4 +1,4 @@
-package ptarmigan
+package storage
 
 import (
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
