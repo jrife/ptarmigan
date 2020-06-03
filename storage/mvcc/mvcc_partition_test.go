@@ -2,6 +2,7 @@ package mvcc_test
 
 import (
 	"bytes"
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -402,7 +403,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			store := builder(t, testCase.initialState)
 
-			err := store.Partition(testCase.name).ApplySnapshot(bytes.NewReader([]byte{}))
+			err := store.Partition(testCase.name).ApplySnapshot(context.Background(), bytes.NewReader([]byte{}))
 
 			if err != nil {
 				t.Fatalf("expected error to be nil, got #%v", err)
@@ -410,7 +411,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			store.Close()
 
-			if err := store.Partition(testCase.name).ApplySnapshot(bytes.NewReader([]byte{})); err != mvcc.ErrClosed {
+			if err := store.Partition(testCase.name).ApplySnapshot(context.Background(), bytes.NewReader([]byte{})); err != mvcc.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
 			}
 		})
@@ -432,13 +433,13 @@ func testPartitionApplySnapshotE2E(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	for _, partition := range partitions {
-		snap, err := sourceStore.Partition(partition).Snapshot()
+		snap, err := sourceStore.Partition(partition).Snapshot(context.Background())
 
 		if err != nil {
 			t.Fatalf("expected err to be nil, got %#v", err)
 		}
 
-		err = destStore.Partition(partition).ApplySnapshot(snap)
+		err = destStore.Partition(partition).ApplySnapshot(context.Background(), snap)
 
 		if err != nil {
 			t.Fatalf("expected err to be nil, got %#v", err)
@@ -492,7 +493,7 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			store := builder(t, testCase.initialState)
 
-			snap, err := store.Partition(testCase.name).Snapshot()
+			snap, err := store.Partition(testCase.name).Snapshot(context.Background())
 
 			if testCase.err == errAnyError {
 				if err == nil {
@@ -508,7 +509,7 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			store.Close()
 
-			if _, err := store.Partition(testCase.name).Snapshot(); err != mvcc.ErrClosed {
+			if _, err := store.Partition(testCase.name).Snapshot(context.Background()); err != mvcc.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", mvcc.ErrClosed, err)
 			}
 		})

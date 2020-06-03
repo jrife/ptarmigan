@@ -2,6 +2,7 @@ package kv_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -1589,7 +1590,7 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			snap, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot()
+			snap, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(context.Background())
 
 			if testCase.err == errAny {
 				if err == nil {
@@ -1609,7 +1610,7 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 				t.Fatalf("expected err to be nil, got %#v", err)
 			}
 
-			if _, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(); err != kv.ErrClosed {
+			if _, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(context.Background()); err != kv.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
@@ -1899,7 +1900,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 			defer rootStoreSource.Delete()
 			defer rootStoreDest.Delete()
 
-			snap, err := rootStoreSource.Store(testCase.sourceStore).Partition(testCase.sourcePartition).Snapshot()
+			snap, err := rootStoreSource.Store(testCase.sourceStore).Partition(testCase.sourcePartition).Snapshot(context.Background())
 
 			if err != nil {
 				t.Fatalf("expected err to be nil, got %#v", err)
@@ -1907,7 +1908,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			defer snap.Close()
 
-			err = rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap)
+			err = rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(context.Background(), snap)
 
 			if testCase.err == errAny {
 				if err == nil {
@@ -1933,7 +1934,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 				t.Fatalf("expected err to be nil, got %#v", err)
 			}
 
-			if err := rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap); err != kv.ErrClosed {
+			if err := rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(context.Background(), snap); err != kv.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})

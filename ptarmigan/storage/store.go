@@ -1,10 +1,12 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jrife/flock/storage/kv/keys"
 	"github.com/jrife/flock/storage/mvcc"
+	"github.com/jrife/flock/utils/log"
 	"go.uber.org/zap"
 )
 
@@ -39,11 +41,18 @@ func New(config StoreConfig) Store {
 }
 
 // ReplicaStores implements Store.ReplicaStores
-func (store *store) ReplicaStores(start string, limit int) ([]string, error) {
-	partitions, err := store.store.Partitions(keys.All().Gte([]byte(start)), -1)
+func (store *store) ReplicaStores(ctx context.Context, start string, limit int) ([]string, error) {
+	logger := log.WithContext(ctx, store.logger).With(zap.String("operation", "ReplicaStores"))
+	logger.Debug("start ReplicaStores()", zap.String("start", start), zap.Int("limit", limit))
+
+	partitions, err := store.store.Partitions(keys.All().Gt([]byte(start)), limit)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not list partitions from mvcc store: %s", err.Error())
+		err = fmt.Errorf("could not list partitions from mvcc store: %s", err)
+
+		logger.Debug("error", zap.Error(err))
+
+		return nil, err
 	}
 
 	replicaStores := make([]string, len(partitions))
@@ -51,6 +60,8 @@ func (store *store) ReplicaStores(start string, limit int) ([]string, error) {
 	for i, partition := range partitions {
 		replicaStores[i] = string(partition)
 	}
+
+	logger.Debug("return from ReplicaStores()", zap.Strings("return", replicaStores))
 
 	return replicaStores, nil
 }
@@ -60,7 +71,7 @@ func (store *store) ReplicaStore(name string) ReplicaStore {
 	return &replicaStore{
 		name:      name,
 		partition: store.store.Partition([]byte(name)),
-		logger:    store.logger,
+		logger:    store.logger.With(zap.String("replica_store", name)),
 	}
 }
 

@@ -34,7 +34,7 @@ type Snapshotter struct {
 }
 
 // Snapshot implements Partition.Snapshot
-func (snapshotter *Snapshotter) Snapshot() (io.ReadCloser, error) {
+func (snapshotter *Snapshotter) Snapshot(ctx context.Context) (io.ReadCloser, error) {
 	transaction, err := snapshotter.Begin(false, false)
 
 	if err != nil {
@@ -79,7 +79,7 @@ func (snapshotter *Snapshotter) Snapshot() (io.ReadCloser, error) {
 }
 
 // ApplySnapshot implements Partition.ApplySnapshot
-func (snapshotter *Snapshotter) ApplySnapshot(snapshot io.Reader) error {
+func (snapshotter *Snapshotter) ApplySnapshot(ctx context.Context, snapshot io.Reader) error {
 	transaction, err := snapshotter.Begin(true, true)
 
 	if err != nil {

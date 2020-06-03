@@ -28,7 +28,13 @@ type MapUpdater struct {
 
 // Put is like kv.MapUpdater.Put except it marshals the value
 func (m *MapUpdater) Put(key []byte, value Marshalable) error {
-	return nil
+	marshaledValue, err := value.Marshal()
+
+	if err != nil {
+		return err
+	}
+
+	return m.MapUpdater.Put(key, marshaledValue)
 }
 
 // MapReader is like kv.MapReader except it marshals the values
@@ -85,7 +91,7 @@ func (iterator *Iterator) Next() bool {
 
 	iterator.value, iterator.err = iterator.unmarshal(iterator.Iterator.Value())
 
-	return iterator.err != nil
+	return iterator.err == nil
 }
 
 // Value returns the unmarshaled value at the current iterator position

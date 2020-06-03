@@ -10,6 +10,7 @@ import (
 	"github.com/jrife/flock/storage/kv/keys"
 	kv_marshaled "github.com/jrife/flock/storage/kv/marshaled"
 	"github.com/jrife/flock/storage/mvcc"
+	"go.uber.org/zap"
 
 	"github.com/jrife/flock/utils/stream"
 )
@@ -19,8 +20,10 @@ const (
 	defaultBufferInitialCapacity = 100
 )
 
-func query(view mvcc.View, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
-	iter, err := kvMapReader(view).Keys(keyRange(query), sortOrder(query.SortOrder))
+func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
+	kr := keyRange(query)
+	logger.Debug("key range chosen", zap.Binary("min", kr.Min), zap.Binary("max", kr.Max))
+	iter, err := kvMapReader(view).Keys(kr, sortOrder(query.SortOrder))
 
 	if err != nil {
 		return ptarmiganpb.KVQueryResponse{}, fmt.Errorf("could not create keys iterator: %s", err)
@@ -41,6 +44,8 @@ func query(view mvcc.View, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQuer
 		limit = query.Limit + 1
 	}
 
+	logger.Debug("limit chosen", zap.Int64("limit", limit))
+
 	if query.IncludeCount {
 		counted = stream.Pipeline(results, count(&response.Count))
 		results = stream.Pipeline(counted, after(query), sort(query, int(limit)), stream.Limit(int(limit)))
@@ -49,21 +54,35 @@ func query(view mvcc.View, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQuer
 	}
 
 	for results.Next() {
+		kv := results.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+		kv.Key = results.Value().(kv_marshaled.KV).Key()
+
+		logger.Debug("next KeyValue", zap.Any("value", kv))
+
 		if query.Limit > 0 && int64(len(response.Kvs)) == query.Limit {
 			response.More = true
 
 			continue
 		}
 
-		kv := results.Value().(ptarmiganpb.KeyValue)
 		response.Kvs = append(response.Kvs, &kv)
 	}
 
+	if results.Error() != nil {
+		return ptarmiganpb.KVQueryResponse{}, fmt.Errorf("iteration error: %s", err)
+	}
+
 	if counted != nil {
+		logger.Debug("drain")
+
 		// Drain counted so we count the rest of the keys matching the
 		// selection. This is necessary because the results stream may
 		// stop after limit is hit depending on the limit setting.
 		for counted.Next() {
+		}
+
+		if counted.Error() != nil {
+			return ptarmiganpb.KVQueryResponse{}, fmt.Errorf("counted iteration error: %s", err)
 		}
 	}
 

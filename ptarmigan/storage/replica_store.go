@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/jrife/flock/storage/kv"
 	"github.com/jrife/flock/storage/kv/keys"
 	"github.com/jrife/flock/storage/mvcc"
+	"github.com/jrife/flock/utils/log"
 
 	"go.uber.org/zap"
 )
@@ -27,63 +30,66 @@ func (replicaStore *replicaStore) Name() string {
 }
 
 // Create implements ReplicaStore.Create
-func (replicaStore *replicaStore) Create(metadata []byte) error {
+func (replicaStore *replicaStore) Create(ctx context.Context, metadata []byte) error {
 	return replicaStore.partition.Create(metadata)
 }
 
 // Delete implements ReplicaStore.Delete
-func (replicaStore *replicaStore) Delete() error {
+func (replicaStore *replicaStore) Delete(ctx context.Context) error {
 	return replicaStore.partition.Delete()
 }
 
 // Metadata implements ReplicaStore.Metadata
-func (replicaStore *replicaStore) Metadata() ([]byte, error) {
+func (replicaStore *replicaStore) Metadata(ctx context.Context) ([]byte, error) {
 	return replicaStore.partition.Metadata()
 }
 
-// RaftStatus implements ReplicaStore.RaftStatus
-func (replicaStore *replicaStore) RaftStatus() (ptarmiganpb.RaftStatus, error) {
-	var raftStatus ptarmiganpb.RaftStatus
+// Index implements ReplicaStore.Index
+func (replicaStore *replicaStore) Index(ctx context.Context) (uint64, error) {
+	var index uint64
 	var err error
 
-	replicaStore.view(mvcc.RevisionNewest, raftStatusNs, func(view mvcc.View) error {
-		raftStatus, err = replicaStore.raftStatus(view)
+	replicaStore.view(mvcc.RevisionNewest, updateIndexNs, func(view mvcc.View) error {
+		index, err = replicaStore.updateIndex(view)
 
 		return err
 	})
 
-	return raftStatus, err
+	return index, err
 }
 
-func (replicaStore *replicaStore) raftStatus(view mvcc.View) (ptarmiganpb.RaftStatus, error) {
-	raftStatusKvIter, err := view.Keys(keys.All().Eq(raftStatusKey), kv.SortOrderAsc)
-
-	if err != nil {
-		return ptarmiganpb.RaftStatus{}, fmt.Errorf("could not retrieve raft status key from view: %s", err)
+func (replicaStore *replicaStore) Apply(index uint64) Update {
+	return &update{
+		replicaStore: replicaStore,
+		index:        index,
+		logger:       replicaStore.logger.With(zap.Uint64("update", index)),
 	}
-
-	raftStatusKv, err := kv.Keys(raftStatusKvIter, 1)
-
-	if err != nil {
-		return ptarmiganpb.RaftStatus{}, fmt.Errorf("could not retrieve raft status key from view: %s", err)
-	}
-
-	if len(raftStatusKv) == 0 {
-		return ptarmiganpb.RaftStatus{}, nil
-	}
-
-	var raftStatus ptarmiganpb.RaftStatus
-	if err := raftStatus.Unmarshal(raftStatusKv[1][1]); err != nil {
-		return ptarmiganpb.RaftStatus{}, fmt.Errorf("could not unmarshal raft status from %#v: %s", raftStatusKv[1][1], err)
-	}
-
-	return raftStatus, nil
 }
 
-func (replicaStore *replicaStore) applyRaftCommand(raftStatus ptarmiganpb.RaftStatus, ns []byte, revise func(revision mvcc.Revision) error) error {
+func (replicaStore *replicaStore) updateIndex(view mvcc.View) (uint64, error) {
+	updateIndexKvIter, err := view.Keys(keys.All().Eq(updateIndexKey), kv.SortOrderAsc)
+
+	if err != nil {
+		return 0, fmt.Errorf("could not retrieve update index key from view: %s", err)
+	}
+
+	updateIndexKv, err := kv.Keys(updateIndexKvIter, 1)
+
+	if err != nil {
+		return 0, fmt.Errorf("could not retrieve update index key from view: %s", err)
+	}
+
+	if len(updateIndexKv) == 0 {
+		return 0, nil
+	}
+
+	return binary.BigEndian.Uint64(updateIndexKv[1][1]), nil
+}
+
+func (replicaStore *replicaStore) applyUpdate(index uint64, ns []byte, revise func(revision mvcc.Revision) error) error {
 	return replicaStore.revise(nil, func(revision mvcc.Revision) error {
-		if err := replicaStore.compareAndSetRaftStatus(mvcc.NamespaceRevision(revision, raftStatusNs), raftStatus); err != nil {
-			return fmt.Errorf("could not CAS raft status: %s", err)
+		if err := replicaStore.compareAndSetUpdateIndex(mvcc.NamespaceRevision(revision, updateIndexNs), index); err != nil {
+			return fmt.Errorf("could not CAS update index: %s", err)
 		}
 
 		if err := revise(mvcc.NamespaceRevision(revision, ns)); err != nil {
@@ -94,25 +100,22 @@ func (replicaStore *replicaStore) applyRaftCommand(raftStatus ptarmiganpb.RaftSt
 	})
 }
 
-func (replicaStore *replicaStore) compareAndSetRaftStatus(revision mvcc.Revision, raftStatus ptarmiganpb.RaftStatus) error {
-	currentRaftStatus, err := replicaStore.raftStatus(revision)
+func (replicaStore *replicaStore) compareAndSetUpdateIndex(revision mvcc.Revision, index uint64) error {
+	currentUpdateIndex, err := replicaStore.updateIndex(revision)
 
 	if err != nil {
 		return err
 	}
 
-	if raftStatus.RaftIndex <= currentRaftStatus.RaftIndex {
-		return fmt.Errorf("consistency violation: raft index %d is not greater than current raft index %d: ", raftStatus.RaftIndex, currentRaftStatus.RaftIndex)
+	if index <= currentUpdateIndex {
+		return fmt.Errorf("consistency violation: update index %d is not greater than current update index %d: ", index, currentUpdateIndex)
 	}
 
-	marshaledRaftStatus, err := raftStatus.Marshal()
+	marshaledRaftStatus := make([]byte, 8)
+	binary.BigEndian.PutUint64(marshaledRaftStatus, currentUpdateIndex)
 
-	if err != nil {
-		return fmt.Errorf("could not marshal raft status: %s", err)
-	}
-
-	if err := revision.Put(raftStatusKey, marshaledRaftStatus); err != nil {
-		return fmt.Errorf("could not update raft status key: %s", err)
+	if err := revision.Put(updateIndexKey, marshaledRaftStatus); err != nil {
+		return fmt.Errorf("could not update update index key: %s", err)
 	}
 
 	return nil
@@ -169,27 +172,8 @@ func (replicaStore *replicaStore) update(fn func(transaction mvcc.Transaction) e
 	return nil
 }
 
-// CreateLease implements ReplicaStore.CreateLease
-func (replicaStore *replicaStore) CreateLease(raftStatus ptarmiganpb.RaftStatus, ttl int64) (ptarmiganpb.Lease, error) {
-	var lease ptarmiganpb.Lease = ptarmiganpb.Lease{ID: int64(raftStatus.RaftIndex), GrantedTTL: ttl}
-
-	err := replicaStore.applyRaftCommand(raftStatus, leasesNs, func(revision mvcc.Revision) error {
-		if err := leasesMap(revision).Put(leasesKey(lease.ID), &lease); err != nil {
-			return fmt.Errorf("could not put lease %d: %s", lease.ID, err)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return ptarmiganpb.Lease{}, err
-	}
-
-	return lease, nil
-}
-
 // Leases implements ReplicaStore.Leases
-func (replicaStore *replicaStore) Leases() ([]ptarmiganpb.Lease, error) {
+func (replicaStore *replicaStore) Leases(ctx context.Context) ([]ptarmiganpb.Lease, error) {
 	var result []ptarmiganpb.Lease
 
 	err := replicaStore.view(mvcc.RevisionNewest, leasesNs, func(view mvcc.View) error {
@@ -218,7 +202,7 @@ func (replicaStore *replicaStore) Leases() ([]ptarmiganpb.Lease, error) {
 }
 
 // GetLease implements ReplicaStore.GetLease
-func (replicaStore *replicaStore) GetLease(id int64) (ptarmiganpb.Lease, error) {
+func (replicaStore *replicaStore) GetLease(ctx context.Context, id int64) (ptarmiganpb.Lease, error) {
 	var lease ptarmiganpb.Lease
 
 	err := replicaStore.view(mvcc.RevisionNewest, leasesNs, func(view mvcc.View) error {
@@ -244,40 +228,28 @@ func (replicaStore *replicaStore) GetLease(id int64) (ptarmiganpb.Lease, error) 
 	return lease, nil
 }
 
-// RevokeLease implements ReplicaStore.RevokeLease
-func (replicaStore *replicaStore) RevokeLease(raftStatus ptarmiganpb.RaftStatus, id int64) error {
-	return replicaStore.applyRaftCommand(raftStatus, leasesNs, func(revision mvcc.Revision) error {
-		if err := leasesMap(revision).Delete(leasesKey(id)); err != nil {
-			return fmt.Errorf("could not delete lease %d: %s", id, err)
-		}
-
-		return nil
-	})
-}
-
 // Query implements ReplicaStore.Query
-func (replicaStore *replicaStore) Query(q ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
+func (replicaStore *replicaStore) Query(ctx context.Context, q ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
+	logger := log.WithContext(ctx, replicaStore.logger).With(zap.String("operation", "Query"))
+	logger.Debug("start", zap.Any("query", q))
+
 	var response ptarmiganpb.KVQueryResponse
 
 	err := replicaStore.view(q.Revision, kvsNs, func(mvccView mvcc.View) error {
 		var err error
-		response, err = query(mvccView, q)
+
+		response, err = query(logger, mvccView, q)
 
 		return err
 	})
 
+	logger.Debug("return", zap.Any("response", response), zap.Error(err))
+
 	return response, err
 }
 
-// Compact implements ReplicaStore.Compact
-func (replicaStore *replicaStore) Compact(revision int64) error {
-	return replicaStore.update(func(transaction mvcc.Transaction) error {
-		return transaction.Compact(revision)
-	})
-}
-
 // Changes implements ReplicaStore.Changes
-func (replicaStore *replicaStore) Changes(watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
+func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
 	var response []ptarmiganpb.Event
 
 	err := replicaStore.view(watch.Start.Revision, kvsNs, func(mvccView mvcc.View) error {
@@ -291,11 +263,54 @@ func (replicaStore *replicaStore) Changes(watch ptarmiganpb.KVWatchRequest, limi
 }
 
 // ApplySnapshot implements ReplicaStore.ApplySnapshot
-func (replicaStore *replicaStore) ApplySnapshot(snap io.Reader) error {
-	return replicaStore.partition.ApplySnapshot(snap)
+func (replicaStore *replicaStore) ApplySnapshot(ctx context.Context, snap io.Reader) error {
+	return replicaStore.partition.ApplySnapshot(ctx, snap)
 }
 
 // Snapshot implements ReplicaStore.Snapshot
-func (replicaStore *replicaStore) Snapshot() (io.ReadCloser, error) {
-	return replicaStore.partition.Snapshot()
+func (replicaStore *replicaStore) Snapshot(ctx context.Context) (io.ReadCloser, error) {
+	return replicaStore.partition.Snapshot(ctx)
+}
+
+type update struct {
+	replicaStore *replicaStore
+	index        uint64
+	logger       *zap.Logger
+}
+
+// RevokeLease implements Update.RevokeLease
+func (update *update) RevokeLease(ctx context.Context, id int64) error {
+	return update.replicaStore.applyUpdate(update.index, leasesNs, func(revision mvcc.Revision) error {
+		if err := leasesMap(revision).Delete(leasesKey(id)); err != nil {
+			return fmt.Errorf("could not delete lease %d: %s", id, err)
+		}
+
+		return nil
+	})
+}
+
+// CreateLease implements Update.CreateLease
+func (update *update) CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.Lease, error) {
+	var lease ptarmiganpb.Lease = ptarmiganpb.Lease{ID: int64(update.index), GrantedTTL: ttl}
+
+	err := update.replicaStore.applyUpdate(update.index, leasesNs, func(revision mvcc.Revision) error {
+		if err := leasesMap(revision).Put(leasesKey(lease.ID), &lease); err != nil {
+			return fmt.Errorf("could not put lease %d: %s", lease.ID, err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return ptarmiganpb.Lease{}, err
+	}
+
+	return lease, nil
+}
+
+// Compact implements Update.Compact
+func (update *update) Compact(ctx context.Context, revision int64) error {
+	return update.replicaStore.update(func(transaction mvcc.Transaction) error {
+		return transaction.Compact(revision)
+	})
 }

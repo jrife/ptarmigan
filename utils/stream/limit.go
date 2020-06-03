@@ -6,6 +6,10 @@ package stream
 // Otherwise it will only return up to the first limit
 // elements.
 func Limit(limit int) Processor {
+	if limit <= 0 {
+		return nil
+	}
+
 	return func(stream Stream) Stream {
 		return &limitedStream{stream, limit}
 	}

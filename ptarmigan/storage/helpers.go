@@ -52,6 +52,10 @@ func kvMap(m kv.Map) *kv_marshaled.Map {
 }
 
 func unmarshalKV(b []byte) (interface{}, error) {
+	if b == nil {
+		return nil, nil
+	}
+
 	var kv ptarmiganpb.KeyValue
 
 	if err := kv.Unmarshal(b); err != nil {

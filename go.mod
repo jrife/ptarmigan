@@ -9,6 +9,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
+	github.com/opentracing/opentracing-go v1.1.0
 	go.etcd.io/bbolt v1.3.3
 	go.uber.org/zap v1.15.0
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect

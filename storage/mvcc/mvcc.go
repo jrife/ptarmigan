@@ -2,6 +2,7 @@ package mvcc
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -373,7 +374,7 @@ func (partition *partition) Begin(writable bool) (Transaction, error) {
 }
 
 // ApplySnapshot implements Partition.ApplySnapshot
-func (partition *partition) ApplySnapshot(snap io.Reader) error {
+func (partition *partition) ApplySnapshot(ctx context.Context, snap io.Reader) error {
 	partition.store.closed.RLock()
 	defer partition.store.closed.RUnlock()
 
@@ -381,11 +382,11 @@ func (partition *partition) ApplySnapshot(snap io.Reader) error {
 		return ErrClosed
 	}
 
-	return wrapError("could not apply kv store snapshot", partition.store.kvStore.Partition(partition.name).ApplySnapshot(snap))
+	return wrapError("could not apply kv store snapshot", partition.store.kvStore.Partition(partition.name).ApplySnapshot(ctx, snap))
 }
 
 // Snapshot implements Partition.Snapshot
-func (partition *partition) Snapshot() (io.ReadCloser, error) {
+func (partition *partition) Snapshot(ctx context.Context) (io.ReadCloser, error) {
 	partition.store.closed.RLock()
 	defer partition.store.closed.RUnlock()
 
@@ -393,7 +394,7 @@ func (partition *partition) Snapshot() (io.ReadCloser, error) {
 		return nil, ErrClosed
 	}
 
-	snap, err := partition.store.kvStore.Partition(partition.name).Snapshot()
+	snap, err := partition.store.kvStore.Partition(partition.name).Snapshot(ctx)
 
 	return snap, wrapError("could not take kv store snapshot", err)
 }

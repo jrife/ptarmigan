@@ -2,37 +2,47 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/storage/kv"
 	kv_marshaled "github.com/jrife/flock/storage/kv/marshaled"
 	"github.com/jrife/flock/storage/mvcc"
+	"github.com/jrife/flock/utils/log"
 	"github.com/jrife/flock/utils/stream"
+	"go.uber.org/zap"
 )
 
-// Txn implements ReplicaStore.Txn
-func (replicaStore *replicaStore) Txn(raftStatus ptarmiganpb.RaftStatus, txn ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error) {
+// Txn implements Update.Txn
+func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error) {
+	logger := log.WithContext(ctx, update.logger).With(zap.String("operation", "Txn"))
+	logger.Debug("start", zap.Any("txn", txn))
+
 	var response ptarmiganpb.KVTxnResponse
 
-	err := replicaStore.applyRaftCommand(raftStatus, kvsNs, func(revision mvcc.Revision) error {
+	err := update.replicaStore.applyUpdate(update.index, kvsNs, func(revision mvcc.Revision) error {
 		var err error
 
-		response, err = executeTxnOp(revision, txn)
+		response, err = executeTxnOp(logger.With(zap.Int64("revision", revision.Revision())), revision, txn)
 
 		return err
 	})
 
+	logger.Debug("return", zap.Any("response", response), zap.Error(err))
+
 	return response, err
 }
 
-func executeTxnOp(revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error) {
+func executeTxnOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error) {
 	var response ptarmiganpb.KVTxnResponse
 
 	success := true
 
 	for i, compare := range r.Compare {
-		ok, err := checkCondition(revision, compare)
+		ok, err := checkCondition(logger, revision, compare)
+
+		logger.Debug("compared condition", zap.Int("i", i), zap.Bool("ok", ok), zap.Error(err))
 
 		if err != nil {
 			return ptarmiganpb.KVTxnResponse{}, fmt.Errorf("could not check condition %d: %s", i, err)
@@ -48,13 +58,16 @@ func executeTxnOp(revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmigan
 
 	var ops []*ptarmiganpb.KVRequestOp
 
+	logger.Debug("compare result", zap.Bool("success", success))
+
 	if success {
 		ops = r.Success
 	} else {
 		ops = r.Failure
 	}
 
-	responseOps, err := executeOps(revision, ops)
+	logger.Debug("ops", zap.Any("ops", ops))
+	responseOps, err := executeOps(logger, revision, ops)
 
 	if err != nil {
 		return ptarmiganpb.KVTxnResponse{}, fmt.Errorf("could not execute ops: %s", err)
@@ -65,7 +78,7 @@ func executeTxnOp(revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmigan
 	return response, nil
 }
 
-func checkCondition(view mvcc.View, compare *ptarmiganpb.Compare) (bool, error) {
+func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Compare) (bool, error) {
 	iter, err := kvMapReader(view).Keys(selectionRange(compare.Selection), kv.SortOrderAsc)
 
 	if err != nil {
@@ -75,7 +88,11 @@ func checkCondition(view mvcc.View, compare *ptarmiganpb.Compare) (bool, error) 
 	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(compare.Selection))
 
 	for selection.Next() {
-		if !checkPredicate(selection.Value().(ptarmiganpb.KeyValue), compare.Predicate) {
+		kv := selection.Value().(ptarmiganpb.KeyValue)
+
+		logger.Debug("next KeyValue", zap.Any("value", kv))
+
+		if !checkPredicate(kv, compare.Predicate) {
 			return false, nil
 		}
 	}
@@ -119,15 +136,17 @@ func checkIntPredicate(a, b int64, comparison ptarmiganpb.KVPredicate_Comparison
 	return false
 }
 
-func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, error) {
+func executeOps(logger *zap.Logger, revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, error) {
 	responses := make([]*ptarmiganpb.KVResponseOp, len(ops))
 
 	for i, op := range ops {
 		var responseOp ptarmiganpb.KVResponseOp
 
+		logger.Debug("next op", zap.Int("i", i), zap.Any("op", op))
+
 		switch op.Request.(type) {
 		case *ptarmiganpb.KVRequestOp_RequestDelete:
-			r, err := executeDeleteOp(revision, *op.GetRequestDelete())
+			r, err := executeDeleteOp(logger, revision, *op.GetRequestDelete())
 
 			if err != nil {
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
@@ -137,7 +156,7 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 				ResponseDelete: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestPut:
-			r, err := executePutOp(revision, *op.GetRequestPut())
+			r, err := executePutOp(logger, revision, *op.GetRequestPut())
 
 			if err != nil {
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
@@ -147,7 +166,7 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 				ResponsePut: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestQuery:
-			r, err := query(revision, *op.GetRequestQuery())
+			r, err := query(logger, revision, *op.GetRequestQuery())
 
 			if err != nil {
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
@@ -157,7 +176,7 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 				ResponseQuery: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestTxn:
-			r, err := executeTxnOp(revision, *op.GetRequestTxn())
+			r, err := executeTxnOp(logger, revision, *op.GetRequestTxn())
 
 			if err != nil {
 				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
@@ -176,7 +195,7 @@ func executeOps(revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptar
 	return responses, nil
 }
 
-func executeDeleteOp(revision mvcc.Revision, r ptarmiganpb.KVDeleteRequest) (ptarmiganpb.KVDeleteResponse, error) {
+func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVDeleteRequest) (ptarmiganpb.KVDeleteResponse, error) {
 	var response ptarmiganpb.KVDeleteResponse
 
 	iter, err := kvMapReader(revision).Keys(selectionRange(r.Selection), kv.SortOrderAsc)
@@ -207,12 +226,14 @@ func executeDeleteOp(revision mvcc.Revision, r ptarmiganpb.KVDeleteRequest) (pta
 	return response, nil
 }
 
-func executePutOp(revision mvcc.Revision, r ptarmiganpb.KVPutRequest) (ptarmiganpb.KVPutResponse, error) {
+func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPutRequest) (ptarmiganpb.KVPutResponse, error) {
 	var response ptarmiganpb.KVPutResponse
 
 	if r.Key != nil {
 		// Key overrides selection. Key lets a user create key as opposed to just
 		// updating existing keys
+		logger.Debug("single key", zap.Binary("key", r.Key))
+
 		v, err := kvMapReader(revision).Get(r.Key)
 
 		if err != nil {
@@ -229,7 +250,9 @@ func executePutOp(revision mvcc.Revision, r ptarmiganpb.KVPutRequest) (ptarmigan
 
 		newKV := updateKV(kv, r, revision.Revision())
 
-		if err := kvMap(revision).Put(kv.Key, &newKV); err != nil {
+		logger.Debug("new KV", zap.Any("value", newKV))
+
+		if err := kvMap(revision).Put(r.Key, &newKV); err != nil {
 			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", kv.Key, err)
 		}
 

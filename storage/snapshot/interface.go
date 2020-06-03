@@ -1,17 +1,18 @@
 package snapshot
 
 import (
+	"context"
 	"io"
 )
 
 // Acceptor describes something that can
 // apply a snapshot
 type Acceptor interface {
-	ApplySnapshot(snap io.Reader) error
+	ApplySnapshot(ctx context.Context, snap io.Reader) error
 }
 
 // Source describes something that can
 // generate a snapshot
 type Source interface {
-	Snapshot() (io.ReadCloser, error)
+	Snapshot(ctx context.Context) (io.ReadCloser, error)
 }

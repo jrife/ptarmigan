@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -17,10 +18,10 @@ var (
 )
 
 var (
-	leasesNs      = []byte{0}
-	raftStatusNs  = []byte{1}
-	kvsNs         = []byte{2}
-	raftStatusKey = []byte{0}
+	leasesNs       = []byte{0}
+	updateIndexNs  = []byte{1}
+	kvsNs          = []byte{2}
+	updateIndexKey = []byte{0}
 )
 
 // Store describes a storage interface
@@ -31,7 +32,7 @@ type Store interface {
 	// stores are returned in order by their name.
 	// Returns a list of ReplicaStores whose name is
 	// > start up to the specified limit.
-	ReplicaStores(start string, limit int) ([]string, error)
+	ReplicaStores(ctx context.Context, start string, limit int) ([]string, error)
 	// ReplicaStore returns a handle to the replica
 	// store with the given name. Calling methods on
 	// the handle will return ErrNoSuchReplicaStore
@@ -52,54 +53,34 @@ type Store interface {
 	Purge() error
 }
 
-// KVStore describes a storage interface for a ptarmigan node's KV service
-type KVStore interface {
-	// Query executes a query
-	Query(query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error)
-	// Txn executes a transaction
-	Txn(raftStatus ptarmiganpb.RaftStatus, txn ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error)
-	// Compact compacts the history up to this revision.
-	Compact(revision int64) error
-	// Changes returns a set of change events associated with this
-	// revision. Events are always sorted in ascending order by the
-	// byte order of their key. Returns events whose key is > start up
-	// to limit. In other words, start acts as a cursor and limit
-	// limits the size of the resulting events.
-	Changes(watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error)
-}
-
-// LeaseStore describes a storage interface for a ptarmigan node's lease service
-type LeaseStore interface {
-	// CreateLease create a lease with the given TTL in this replica store.
-	CreateLease(raftStatus ptarmiganpb.RaftStatus, ttl int64) (ptarmiganpb.Lease, error)
-	// RevokeLease deletes the lease with this ID from the replica store
-	// and deletes any keys associated with this lease. It creates a new
-	// revision whose changeset includes the deleted keys.
-	RevokeLease(raftStatus ptarmiganpb.RaftStatus, id int64) error
-	// Leases lists all leases stored in this replica store
-	Leases() ([]ptarmiganpb.Lease, error)
-	// GetLease reads the lease with this ID out of the replica store
-	GetLease(id int64) (ptarmiganpb.Lease, error)
-}
-
 // ReplicaStore describes a storage interface for a ptarmigan replica.
 type ReplicaStore interface {
 	// Name returns the name of this replica store
 	Name() string
 	// Create initializes this replica store with some metadata.
 	// It does nothing if the replica store already exists.
-	Create(metadata []byte) error
+	Create(ctx context.Context, metadata []byte) error
 	// Delete deletes this replica store. It does nothing if the
 	// replica store doesn't exist.
-	Delete() error
+	Delete(ctx context.Context) error
 	// Metadata retrieves the metadata associated with this replica store
-	Metadata() ([]byte, error)
-	// RaftStatus returns the latest raft status for this store.
-	// Each update operation passes in a raft status containing the raft
-	// index and raft term associated with that update.
-	RaftStatus() (ptarmiganpb.RaftStatus, error)
-	KVStore
-	LeaseStore
+	Metadata(ctx context.Context) ([]byte, error)
+	// Index returns the latest index applied to this store.
+	Index(ctx context.Context) (uint64, error)
+	// Apply an update with this update index
+	Apply(index uint64) Update
+	// Query executes a query
+	Query(ctx context.Context, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error)
+	// Changes returns a set of change events associated with this
+	// revision. Events are always sorted in ascending order by the
+	// byte order of their key. Returns events whose key is > start up
+	// to limit. In other words, start acts as a cursor and limit
+	// limits the size of the resulting events.
+	Changes(ctx context.Context, watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error)
+	// Leases lists all leases stored in this replica store
+	Leases(ctx context.Context) ([]ptarmiganpb.Lease, error)
+	// GetLease reads the lease with this ID out of the replica store
+	GetLease(ctx context.Context, id int64) (ptarmiganpb.Lease, error)
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot.
 	snapshot.Acceptor
@@ -108,4 +89,18 @@ type ReplicaStore interface {
 	// ApplySnapshot() such that its return value could be applied
 	// to ApplySnapshot() in order to replicate its state elsewhere.
 	snapshot.Source
+}
+
+// Update describes an update to a replica store
+type Update interface {
+	// Txn executes a transaction
+	Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error)
+	// Compact compacts the history up to this revision.
+	Compact(ctx context.Context, revision int64) error
+	// CreateLease create a lease with the given TTL in this replica store.
+	CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.Lease, error)
+	// RevokeLease deletes the lease with this ID from the replica store
+	// and deletes any keys associated with this lease. It creates a new
+	// revision whose changeset includes the deleted keys.
+	RevokeLease(ctx context.Context, id int64) error
 }
