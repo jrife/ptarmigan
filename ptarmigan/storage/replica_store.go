@@ -83,7 +83,7 @@ func (replicaStore *replicaStore) updateIndex(view mvcc.View) (uint64, error) {
 		return 0, nil
 	}
 
-	return binary.BigEndian.Uint64(updateIndexKv[1][1]), nil
+	return binary.BigEndian.Uint64(updateIndexKv[0][1]), nil
 }
 
 func (replicaStore *replicaStore) applyUpdate(index uint64, ns []byte, revise func(revision mvcc.Revision) error) error {
@@ -141,13 +141,13 @@ func (replicaStore *replicaStore) view(revision int64, ns []byte, fn func(view m
 		return fmt.Errorf("could not begin mvcc transaction: %s", err)
 	}
 
+	defer transaction.Rollback()
+
 	view, err := transaction.View(revision)
 
 	if err != nil {
 		return fmt.Errorf("could not create view at %d: %s", revision, err)
 	}
-
-	defer transaction.Rollback()
 
 	return fn(mvcc.NamespaceView(view, ns))
 }

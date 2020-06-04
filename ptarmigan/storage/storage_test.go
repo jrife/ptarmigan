@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,32 +25,31 @@ type tempStoreBuilder func(t testing.TB) (storage.Store, func())
 func builder(plugin kv.Plugin) tempStoreBuilder {
 	return func(t testing.TB) (storage.Store, func()) {
 		kvRootStore, err := plugins.Plugin("bbolt").NewTempRootStore()
-		cleanup := func() {}
 
 		if err != nil {
-			cleanup()
 			t.Fatalf("expected err to be nil, got %#v", err)
 		}
-
-		cleanup = func() { kvRootStore.Delete(); cleanup() }
 
 		kvStore := kvRootStore.Store([]byte("test"))
 
 		if err := kvStore.Create(); err != nil {
-			cleanup()
+			kvRootStore.Delete()
 			t.Fatalf("expected err to be nil, got %#v", err)
 		}
-
-		cleanup = func() { kvStore.Delete(); cleanup() }
 
 		mvccStore, err := mvcc.New(kvStore)
 
 		if err != nil {
-			cleanup()
+			kvStore.Delete()
+			kvRootStore.Delete()
 			t.Fatalf("expected err to be nil, got %#v", err)
 		}
 
-		cleanup = func() { mvccStore.Close(); cleanup() }
+		cleanup := func() {
+			mvccStore.Close()
+			kvStore.Delete()
+			kvRootStore.Delete()
+		}
 
 		atom := zap.NewAtomicLevel()
 		logger := zap.New(zapcore.NewCore(
@@ -108,6 +106,8 @@ func TestStorage(t *testing.T) {
 // 4) Verify End State Looks Like It Should
 // Property-based testing Properties Under Test
 // Query:
+// Changes:
+//
 
 func testStorage(builder tempStoreBuilder, t *testing.T) {
 	t.Run("Store", func(t *testing.T) { testStore(builder, t) })
@@ -217,15 +217,46 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	var genQueryCommand = gen.Const(&commands.ProtoCommand{
 		Name: "Query",
 		RunFunc: func(q commands.SystemUnderTest) commands.Result {
-			return nil
+			req := ptarmiganpb.KVQueryRequest{
+				Limit: -1,
+			}
+
+			replicaStore := q.(storage.ReplicaStore)
+			res, err := replicaStore.Query(context.Background(), req)
+
+			if err != nil {
+				panic(err)
+			}
+
+			return res
 		},
 		NextStateFunc: func(state commands.State) commands.State {
 			return nil
 		},
 		PreConditionFunc: func(state commands.State) bool {
-			return false
+			return true
 		},
 		PostConditionFunc: func(state commands.State, result commands.Result) *gopter.PropResult {
+			resp := ptarmiganpb.KVQueryResponse{
+				Kvs: []*ptarmiganpb.KeyValue{
+					{
+						Key:            []byte("aaa"),
+						Value:          []byte("xxx"),
+						CreateRevision: 1,
+						ModRevision:    1,
+						Version:        1,
+						Lease:          0,
+					},
+				},
+			}
+
+			diff := cmp.Diff(resp, result)
+
+			if diff != "" {
+				fmt.Printf("%s\n", diff)
+				return &gopter.PropResult{Status: gopter.PropFalse}
+			}
+
 			return &gopter.PropResult{Status: gopter.PropTrue}
 		},
 	})
@@ -233,34 +264,85 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	var genTxnCommand = gen.Const(&commands.ProtoCommand{
 		Name: "Txn",
 		RunFunc: func(q commands.SystemUnderTest) commands.Result {
-			return nil
+			req := &ptarmiganpb.KVTxnRequest{
+				Success: []*ptarmiganpb.KVRequestOp{
+					{
+						Request: &ptarmiganpb.KVRequestOp_RequestPut{
+							RequestPut: &ptarmiganpb.KVPutRequest{
+								Key:   []byte("aaa"),
+								Value: []byte("xxx"),
+							},
+						},
+					},
+				},
+			}
+
+			replicaStore := q.(storage.ReplicaStore)
+			index, err := replicaStore.Index(context.Background())
+
+			if err != nil {
+				panic(err)
+			}
+
+			res, err := replicaStore.Apply(index+1).Txn(context.Background(), *req)
+
+			if err != nil {
+				panic(err)
+			}
+
+			return res
 		},
 		NextStateFunc: func(state commands.State) commands.State {
 			return nil
 		},
 		PreConditionFunc: func(state commands.State) bool {
-			return false
+			return true
 		},
 		PostConditionFunc: func(state commands.State, result commands.Result) *gopter.PropResult {
+			resp := ptarmiganpb.KVTxnResponse{
+				Succeeded: true,
+				Responses: []*ptarmiganpb.KVResponseOp{
+					{
+						Response: &ptarmiganpb.KVResponseOp_ResponsePut{
+							ResponsePut: &ptarmiganpb.KVPutResponse{},
+						},
+					},
+				},
+			}
+
+			diff := cmp.Diff(resp, result)
+
+			if diff != "" {
+				fmt.Printf("%s\n", diff)
+				return &gopter.PropResult{Status: gopter.PropFalse}
+			}
+
 			return &gopter.PropResult{Status: gopter.PropTrue}
 		},
 	})
 
-	type storeWithCleanup struct {
-		storage.Store
+	type replicaStoreWithCleanup struct {
+		storage.ReplicaStore
 		cleanup func()
 	}
 
 	var cbCommands = &commands.ProtoCommands{
 		NewSystemUnderTestFunc: func(initialState commands.State) commands.SystemUnderTest {
 			store, cleanup := builder(t)
+			replicaStore := store.ReplicaStore("test")
 
-			return storeWithCleanup{Store: store, cleanup: cleanup}
+			if err := replicaStore.Create(context.Background(), []byte{}); err != nil {
+				panic(err)
+			}
+
+			return &replicaStoreWithCleanup{ReplicaStore: replicaStore, cleanup: cleanup}
 		},
 		DestroySystemUnderTestFunc: func(sut commands.SystemUnderTest) {
-			sut.(storeWithCleanup).cleanup()
+			sut.(*replicaStoreWithCleanup).cleanup()
 		},
-		InitialStateGen: gen.Struct(reflect.TypeOf(ReplicaStore{}), map[string]gopter.Gen{}),
+		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) *ReplicaStore {
+			return NewReplicaStore()
+		}),
 		InitialPreConditionFunc: func(state commands.State) bool {
 			return true
 		},
