@@ -215,98 +215,25 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	// t.Run("Snapshot", func(t *testing.T) { testReplicaStoreSnapshot(builder, t) })
 	// t.Run("ApplySnapshot", func(t *testing.T) { testReplicaStoreApplySnapshot(builder, t) })
 
-	var genQueryCommand = gen.Const(&commands.ProtoCommand{
-		Name: "Query",
-		RunFunc: func(q commands.SystemUnderTest) commands.Result {
-			req := ptarmiganpb.KVQueryRequest{
-				Limit: -1,
-			}
-
-			replicaStore := q.(storage.ReplicaStore)
-			res, _ := replicaStore.Query(context.Background(), req)
-
-			return res
-		},
-		NextStateFunc: func(state commands.State) commands.State {
-			state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest{
-				Limit: -1,
-			})
-
-			return state
-		},
-		PreConditionFunc: func(state commands.State) bool {
-			return true
-		},
-		PostConditionFunc: func(state commands.State, result commands.Result) *gopter.PropResult {
-			resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVQueryResponse)
-			diff := cmp.Diff(resp, result)
-
-			if diff != "" {
-				fmt.Printf("%s\n", diff)
-				return &gopter.PropResult{Status: gopter.PropFalse}
-			}
-
-			return &gopter.PropResult{Status: gopter.PropTrue}
-		},
+	var genQueryCommand = gopter.CombineGens().Map(func(g []interface{}) commands.Command {
+		return QueryCommand{
+			Limit: -1,
+		}
 	})
 
-	var genTxnCommand = gen.Const(&commands.ProtoCommand{
-		Name: "Txn",
-		RunFunc: func(q commands.SystemUnderTest) commands.Result {
-			req := &ptarmiganpb.KVTxnRequest{
-				Success: []*ptarmiganpb.KVRequestOp{
-					{
-						Request: &ptarmiganpb.KVRequestOp_RequestPut{
-							RequestPut: &ptarmiganpb.KVPutRequest{
-								Key:   []byte("aaa"),
-								Value: []byte("xxx"),
-							},
+	var genTxnCommand = gopter.CombineGens(gen.UInt64()).Map(func(g []interface{}) commands.Command {
+		return TxnCommand{
+			Success: []*ptarmiganpb.KVRequestOp{
+				{
+					Request: &ptarmiganpb.KVRequestOp_RequestPut{
+						RequestPut: &ptarmiganpb.KVPutRequest{
+							Key:   []byte("aaa"),
+							Value: []byte("xxx"),
 						},
 					},
 				},
-			}
-
-			replicaStore := q.(storage.ReplicaStore)
-			index, err := replicaStore.Index(context.Background())
-
-			if err != nil {
-				panic(err)
-			}
-
-			res, _ := replicaStore.Apply(index+1).Txn(context.Background(), *req)
-
-			return res
-		},
-		NextStateFunc: func(state commands.State) commands.State {
-			state.(*model.ReplicaStoreModel).ApplyTxn(state.(*model.ReplicaStoreModel).Index()+1, ptarmiganpb.KVTxnRequest{
-				Success: []*ptarmiganpb.KVRequestOp{
-					{
-						Request: &ptarmiganpb.KVRequestOp_RequestPut{
-							RequestPut: &ptarmiganpb.KVPutRequest{
-								Key:   []byte("aaa"),
-								Value: []byte("xxx"),
-							},
-						},
-					},
-				},
-			})
-
-			return state
-		},
-		PreConditionFunc: func(state commands.State) bool {
-			return true
-		},
-		PostConditionFunc: func(state commands.State, result commands.Result) *gopter.PropResult {
-			resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVTxnResponse)
-			diff := cmp.Diff(resp, result)
-
-			if diff != "" {
-				fmt.Printf("%s\n", diff)
-				return &gopter.PropResult{Status: gopter.PropFalse}
-			}
-
-			return &gopter.PropResult{Status: gopter.PropTrue}
-		},
+			},
+		}
 	})
 
 	type replicaStoreWithCleanup struct {
