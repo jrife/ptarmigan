@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 
@@ -84,6 +85,10 @@ func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest)
 		if counted.Error() != nil {
 			return ptarmiganpb.KVQueryResponse{}, fmt.Errorf("counted iteration error: %s", err)
 		}
+	}
+
+	if len(response.Kvs) > 0 {
+		response.After = base64.StdEncoding.EncodeToString(response.Kvs[len(response.Kvs)-1].Key)
 	}
 
 	return response, nil

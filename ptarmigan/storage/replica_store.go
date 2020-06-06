@@ -213,7 +213,7 @@ func (replicaStore *replicaStore) GetLease(ctx context.Context, id int64) (ptarm
 		}
 
 		if l == nil {
-			return ErrLeaseNotFound
+			return ErrNoSuchLease
 		}
 
 		lease = l.(ptarmiganpb.Lease)

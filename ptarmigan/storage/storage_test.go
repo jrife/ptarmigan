@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/ptarmigan/storage"
+	"github.com/jrife/flock/ptarmigan/storage/model"
 	"github.com/jrife/flock/storage/kv"
 	"github.com/jrife/flock/storage/kv/plugins"
 	"github.com/jrife/flock/storage/mvcc"
@@ -222,34 +223,22 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 			}
 
 			replicaStore := q.(storage.ReplicaStore)
-			res, err := replicaStore.Query(context.Background(), req)
-
-			if err != nil {
-				panic(err)
-			}
+			res, _ := replicaStore.Query(context.Background(), req)
 
 			return res
 		},
 		NextStateFunc: func(state commands.State) commands.State {
-			return nil
+			state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest{
+				Limit: -1,
+			})
+
+			return state
 		},
 		PreConditionFunc: func(state commands.State) bool {
 			return true
 		},
 		PostConditionFunc: func(state commands.State, result commands.Result) *gopter.PropResult {
-			resp := ptarmiganpb.KVQueryResponse{
-				Kvs: []*ptarmiganpb.KeyValue{
-					{
-						Key:            []byte("aaa"),
-						Value:          []byte("xxx"),
-						CreateRevision: 1,
-						ModRevision:    1,
-						Version:        1,
-						Lease:          0,
-					},
-				},
-			}
-
+			resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVQueryResponse)
 			diff := cmp.Diff(resp, result)
 
 			if diff != "" {
@@ -284,32 +273,31 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 				panic(err)
 			}
 
-			res, err := replicaStore.Apply(index+1).Txn(context.Background(), *req)
-
-			if err != nil {
-				panic(err)
-			}
+			res, _ := replicaStore.Apply(index+1).Txn(context.Background(), *req)
 
 			return res
 		},
 		NextStateFunc: func(state commands.State) commands.State {
-			return nil
+			state.(*model.ReplicaStoreModel).ApplyTxn(state.(*model.ReplicaStoreModel).Index()+1, ptarmiganpb.KVTxnRequest{
+				Success: []*ptarmiganpb.KVRequestOp{
+					{
+						Request: &ptarmiganpb.KVRequestOp_RequestPut{
+							RequestPut: &ptarmiganpb.KVPutRequest{
+								Key:   []byte("aaa"),
+								Value: []byte("xxx"),
+							},
+						},
+					},
+				},
+			})
+
+			return state
 		},
 		PreConditionFunc: func(state commands.State) bool {
 			return true
 		},
 		PostConditionFunc: func(state commands.State, result commands.Result) *gopter.PropResult {
-			resp := ptarmiganpb.KVTxnResponse{
-				Succeeded: true,
-				Responses: []*ptarmiganpb.KVResponseOp{
-					{
-						Response: &ptarmiganpb.KVResponseOp_ResponsePut{
-							ResponsePut: &ptarmiganpb.KVPutResponse{},
-						},
-					},
-				},
-			}
-
+			resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVTxnResponse)
 			diff := cmp.Diff(resp, result)
 
 			if diff != "" {
@@ -340,8 +328,8 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 		DestroySystemUnderTestFunc: func(sut commands.SystemUnderTest) {
 			sut.(*replicaStoreWithCleanup).cleanup()
 		},
-		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) *ReplicaStore {
-			return NewReplicaStore()
+		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) *model.ReplicaStoreModel {
+			return model.NewReplicaStoreModel()
 		}),
 		InitialPreConditionFunc: func(state commands.State) bool {
 			return true
