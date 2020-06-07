@@ -116,6 +116,18 @@ type ReplicaStore interface {
 	// Returns ErrNoSuchReplicaStore if the replica store does not exist
 	// Returns ErrNoSuchLease if a lease with this ID does not exist
 	GetLease(ctx context.Context, id int64) (ptarmiganpb.Lease, error)
+	// NewestRevision returns the newest revision number
+	//
+	// Returns ErrClosed if it is called after the store is closed
+	// Returns ErrNoSuchReplicaStore if the replica store does not exist
+	// Returns mvcc.ErrNoRevisions if there are no revisions
+	NewestRevision() (int64, error)
+	// OldestRevision returns the oldest revision number
+	//
+	// Returns ErrClosed if it is called after the store is closed
+	// Returns ErrNoSuchReplicaStore if the replica store does not exist
+	// Returns mvcc.ErrNoRevisions if there are no revisions
+	OldestRevision() (int64, error)
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot. If the replica store does not
 	// exist it will be created.

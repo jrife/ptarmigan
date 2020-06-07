@@ -12,6 +12,62 @@ import (
 	"github.com/leanovate/gopter/commands"
 )
 
+func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.ReplicaStoreModel) (string, error) {
+	if index, err := replicaStore.Index(context.Background()); err != nil {
+		return "", fmt.Errorf("could not retrieve index from replica store: %s", err)
+	} else if index != model.Index() {
+		return fmt.Sprintf("model index = %d, actual index = %d\n", model.Index(), index), nil
+	}
+
+	if leases, err := replicaStore.Leases(context.Background()); err != nil {
+		return "", fmt.Errorf("could not retrieve leases from replica store: %s", err)
+	} else {
+		if diff := cmp.Diff(model.Leases(), leases); diff != "" {
+			return fmt.Sprintf("leases don't match: %s", diff), nil
+		}
+	}
+
+	oldestRevision, err := replicaStore.OldestRevision()
+
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve oldest revision from replica store: %s", err)
+	}
+
+	newestRevision, err := replicaStore.NewestRevision()
+
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve newest revision from replica store: %s", err)
+	}
+
+	if oldestRevision != model.OldestRevision() {
+		return fmt.Sprintf("model oldest revision = %d, actual oldest revision = %d\n", model.OldestRevision(), oldestRevision), nil
+	}
+
+	if newestRevision != model.NewestRevision() {
+		return fmt.Sprintf("model newest revision = %d, actual newest revision = %d\n", model.NewestRevision(), newestRevision), nil
+	}
+
+	for revision := oldestRevision; revision <= newestRevision; revision++ {
+		if kvs, err := replicaStore.Query(context.Background(), ptarmiganpb.KVQueryRequest{Revision: revision}); err != nil {
+			return "", fmt.Errorf("could not retrieve kvs from replica store at revision %d: %s", revision, err)
+		} else {
+			if diff := cmp.Diff(model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}), kvs); diff != "" {
+				return fmt.Sprintf("kvs don't match at revision %d: %s", revision, diff), nil
+			}
+		}
+	}
+
+	if changes, err := replicaStore.Changes(context.Background(), ptarmiganpb.KVWatchRequest{}, -1); err != nil {
+		return "", fmt.Errorf("could not retrieve changes from replica store: %s", err)
+	} else {
+		if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{}, -1), changes); diff != "" {
+			return fmt.Sprintf("changes don't match: %s", diff), nil
+		}
+	}
+
+	return "", nil
+}
+
 type TxnCommand ptarmiganpb.KVTxnRequest
 
 func (command TxnCommand) Run(sut commands.SystemUnderTest) commands.Result {
@@ -60,7 +116,6 @@ func (command QueryCommand) Run(sut commands.SystemUnderTest) commands.Result {
 }
 
 func (command QueryCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest(command))
 	return state
 }
 
@@ -69,8 +124,7 @@ func (command QueryCommand) PreCondition(state commands.State) bool {
 }
 
 func (command QueryCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVQueryResponse)
-	diff := cmp.Diff(resp, result)
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest(command)), result)
 
 	if diff != "" {
 		fmt.Printf("%s\n", diff)

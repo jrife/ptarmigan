@@ -276,7 +276,6 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyRevokeLease(index uint64, id in
 
 func (replicaStoreModel *ReplicaStoreModel) Query(request ptarmiganpb.KVQueryRequest) ptarmiganpb.KVQueryResponse {
 	response, _ := query(request, replicaStoreModel)
-	replicaStoreModel.response = response
 	return response
 }
 
@@ -284,14 +283,12 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 	changes := []ptarmiganpb.Event{}
 
 	if watch.Start == nil {
-		replicaStoreModel.response = changes
-		return changes
+		watch.Start = &ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}
 	}
 
 	startRevision, index := replicaStoreModel.revision(watch.Start.Revision)
 
 	if index == -1 {
-		replicaStoreModel.response = changes
 		return changes
 	}
 
@@ -332,7 +329,6 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 		}
 	}
 
-	replicaStoreModel.response = changes
 	return changes
 }
 
@@ -343,7 +339,6 @@ func (replicaStoreModel *ReplicaStoreModel) Leases() []ptarmiganpb.Lease {
 		leases = append(leases, value.(ptarmiganpb.Lease))
 	})
 
-	replicaStoreModel.response = leases
 	return leases
 }
 
@@ -351,12 +346,26 @@ func (replicaStoreModel *ReplicaStoreModel) GetLease(id int64) ptarmiganpb.Lease
 	lease, found := replicaStoreModel.leases.Get(id)
 
 	if !found {
-		replicaStoreModel.response = ptarmiganpb.Lease{}
 		return ptarmiganpb.Lease{}
 	}
 
-	replicaStoreModel.response = lease
 	return lease.(ptarmiganpb.Lease)
+}
+
+func (replicaStoreModel *ReplicaStoreModel) NewestRevision() int64 {
+	if len(replicaStoreModel.revisions) == 0 {
+		return 0
+	}
+
+	return replicaStoreModel.revisions[len(replicaStoreModel.revisions)-1].revision
+}
+
+func (replicaStoreModel *ReplicaStoreModel) OldestRevision() int64 {
+	if len(replicaStoreModel.revisions) == 0 {
+		return 0
+	}
+
+	return replicaStoreModel.revisions[0].revision
 }
 
 type RevisionModel struct {

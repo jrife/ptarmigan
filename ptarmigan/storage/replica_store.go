@@ -262,6 +262,36 @@ func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb
 	return response, err
 }
 
+func (replicaStore *replicaStore) NewestRevision() (int64, error) {
+	var revision int64
+
+	err := replicaStore.view(mvcc.RevisionNewest, kvsNs, func(mvccView mvcc.View) error {
+		revision = mvccView.Revision()
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return revision, nil
+}
+
+func (replicaStore *replicaStore) OldestRevision() (int64, error) {
+	var revision int64
+
+	err := replicaStore.view(mvcc.RevisionOldest, kvsNs, func(mvccView mvcc.View) error {
+		revision = mvccView.Revision()
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return revision, nil
+}
+
 // ApplySnapshot implements ReplicaStore.ApplySnapshot
 func (replicaStore *replicaStore) ApplySnapshot(ctx context.Context, snap io.Reader) error {
 	return replicaStore.partition.ApplySnapshot(ctx, snap)
