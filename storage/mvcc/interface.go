@@ -105,6 +105,11 @@ type Transaction interface {
 	// ErrCompacted.  If this is a read-only transaction it must
 	// return ErrReadOnly
 	Compact(revision int64) error
+	// Flat returns a handle to a flat kv.Map associated
+	// with this mvcc partition. This provides a way to
+	// read and write non-versioned keys within a transaction.
+	// Keys in the flat map do not overlap with versioned keys.
+	Flat() kv.Map
 	// Commit commits the changes made in this transaction.
 	// If this is a read-only transaction it must
 	// return ErrReadOnly

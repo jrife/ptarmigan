@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
+	"github.com/jrife/flock/storage/mvcc"
 )
 
 type kvList []ptarmiganpb.KeyValue
@@ -208,6 +209,10 @@ func query(request ptarmiganpb.KVQueryRequest, state *ReplicaStoreModel) (ptarmi
 	var response ptarmiganpb.KVQueryResponse
 	response.Kvs = []*ptarmiganpb.KeyValue{}
 	var revision RevisionModel
+
+	if len(state.revisions) == 0 && request.Revision == mvcc.RevisionNewest {
+		return ptarmiganpb.KVQueryResponse{Kvs: []*ptarmiganpb.KeyValue{}}, true
+	}
 
 	revision, i := state.revision(request.Revision)
 

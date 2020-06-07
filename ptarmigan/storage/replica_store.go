@@ -47,15 +47,22 @@ func (replicaStore *replicaStore) Metadata(ctx context.Context) ([]byte, error) 
 // Index implements ReplicaStore.Index
 func (replicaStore *replicaStore) Index(ctx context.Context) (uint64, error) {
 	var index uint64
-	var err error
 
-	replicaStore.view(mvcc.RevisionNewest, updateIndexNs, func(view mvcc.View) error {
-		index, err = replicaStore.updateIndex(view)
+	err := replicaStore.read(func(transaction mvcc.Transaction) error {
+		i, err := replicaStore.updateIndex(kv.NamespaceMap(transaction.Flat(), updateIndexNs))
+
+		if err == nil {
+			index = i
+		}
 
 		return err
 	})
 
-	return index, err
+	if err != nil {
+		return 0, err
+	}
+
+	return index, nil
 }
 
 func (replicaStore *replicaStore) Apply(index uint64) Update {
@@ -66,8 +73,8 @@ func (replicaStore *replicaStore) Apply(index uint64) Update {
 	}
 }
 
-func (replicaStore *replicaStore) updateIndex(view mvcc.View) (uint64, error) {
-	updateIndexKvIter, err := view.Keys(keys.All().Eq(updateIndexKey), kv.SortOrderAsc)
+func (replicaStore *replicaStore) updateIndex(updateIndexMap kv.Map) (uint64, error) {
+	updateIndexKvIter, err := updateIndexMap.Keys(keys.All().Eq(updateIndexKey), kv.SortOrderAsc)
 
 	if err != nil {
 		return 0, fmt.Errorf("could not retrieve update index key from view: %s", err)
@@ -86,22 +93,22 @@ func (replicaStore *replicaStore) updateIndex(view mvcc.View) (uint64, error) {
 	return binary.BigEndian.Uint64(updateIndexKv[0][1]), nil
 }
 
-func (replicaStore *replicaStore) applyUpdate(index uint64, ns []byte, revise func(revision mvcc.Revision) error) error {
-	return replicaStore.revise(nil, func(revision mvcc.Revision) error {
-		if err := replicaStore.compareAndSetUpdateIndex(mvcc.NamespaceRevision(revision, updateIndexNs), index); err != nil {
+func (replicaStore *replicaStore) apply(index uint64, update func(transaction mvcc.Transaction) error) error {
+	return replicaStore.update(func(transaction mvcc.Transaction) error {
+		if err := replicaStore.compareAndSetUpdateIndex(kv.NamespaceMap(transaction.Flat(), updateIndexNs), index); err != nil {
 			return fmt.Errorf("could not CAS update index: %s", err)
 		}
 
-		if err := revise(mvcc.NamespaceRevision(revision, ns)); err != nil {
-			return fmt.Errorf("could not apply new revision: %s", err)
+		if err := update(transaction); err != nil {
+			return fmt.Errorf("could not apply update: %s", err)
 		}
 
 		return nil
 	})
 }
 
-func (replicaStore *replicaStore) compareAndSetUpdateIndex(revision mvcc.Revision, index uint64) error {
-	currentUpdateIndex, err := replicaStore.updateIndex(revision)
+func (replicaStore *replicaStore) compareAndSetUpdateIndex(updateIndexMap kv.Map, index uint64) error {
+	currentUpdateIndex, err := replicaStore.updateIndex(updateIndexMap)
 
 	if err != nil {
 		return err
@@ -111,45 +118,26 @@ func (replicaStore *replicaStore) compareAndSetUpdateIndex(revision mvcc.Revisio
 		return fmt.Errorf("consistency violation: update index %d is not greater than current update index %d: ", index, currentUpdateIndex)
 	}
 
-	marshaledRaftStatus := make([]byte, 8)
-	binary.BigEndian.PutUint64(marshaledRaftStatus, currentUpdateIndex)
+	marshaledIndex := make([]byte, 8)
+	binary.BigEndian.PutUint64(marshaledIndex, index)
 
-	if err := revision.Put(updateIndexKey, marshaledRaftStatus); err != nil {
+	if err := updateIndexMap.Put(updateIndexKey, marshaledIndex); err != nil {
 		return fmt.Errorf("could not update update index key: %s", err)
 	}
 
 	return nil
 }
 
-func (replicaStore *replicaStore) revise(ns []byte, fn func(revision mvcc.Revision) error) error {
-	return replicaStore.update(func(transaction mvcc.Transaction) error {
-		revision, err := transaction.NewRevision()
+func (replicaStore *replicaStore) view(revision int64, fn func(view mvcc.View) error) error {
+	return replicaStore.read(func(transaction mvcc.Transaction) error {
+		view, err := transaction.View(revision)
 
 		if err != nil {
-
-			return fmt.Errorf("could not create new revision: %s", err)
+			return wrapError(fmt.Sprintf("could not create view at %d", revision), err)
 		}
 
-		return fn(mvcc.NamespaceRevision(revision, ns))
+		return fn(view)
 	})
-}
-
-func (replicaStore *replicaStore) view(revision int64, ns []byte, fn func(view mvcc.View) error) error {
-	transaction, err := replicaStore.partition.Begin(false)
-
-	if err != nil {
-		return fmt.Errorf("could not begin mvcc transaction: %s", err)
-	}
-
-	defer transaction.Rollback()
-
-	view, err := transaction.View(revision)
-
-	if err != nil {
-		return fmt.Errorf("could not create view at %d: %s", revision, err)
-	}
-
-	return fn(mvcc.NamespaceView(view, ns))
 }
 
 func (replicaStore *replicaStore) update(fn func(transaction mvcc.Transaction) error) error {
@@ -172,12 +160,24 @@ func (replicaStore *replicaStore) update(fn func(transaction mvcc.Transaction) e
 	return nil
 }
 
+func (replicaStore *replicaStore) read(fn func(transaction mvcc.Transaction) error) error {
+	transaction, err := replicaStore.partition.Begin(false)
+
+	if err != nil {
+		return fmt.Errorf("could not begin mvcc transaction: %s", err)
+	}
+
+	defer transaction.Rollback()
+
+	return fn(transaction)
+}
+
 // Leases implements ReplicaStore.Leases
 func (replicaStore *replicaStore) Leases(ctx context.Context) ([]ptarmiganpb.Lease, error) {
-	var result []ptarmiganpb.Lease
+	var result []ptarmiganpb.Lease = []ptarmiganpb.Lease{}
 
-	err := replicaStore.view(mvcc.RevisionNewest, leasesNs, func(view mvcc.View) error {
-		kvs, err := leasesMapReader(view).Keys(keys.All(), kv.SortOrderAsc)
+	err := replicaStore.read(func(transaction mvcc.Transaction) error {
+		kvs, err := leasesMapReader(kv.NamespaceMap(transaction.Flat(), leasesNs)).Keys(keys.All(), kv.SortOrderAsc)
 
 		if err != nil {
 			return fmt.Errorf("could not list leases: %s", err)
@@ -205,11 +205,11 @@ func (replicaStore *replicaStore) Leases(ctx context.Context) ([]ptarmiganpb.Lea
 func (replicaStore *replicaStore) GetLease(ctx context.Context, id int64) (ptarmiganpb.Lease, error) {
 	var lease ptarmiganpb.Lease
 
-	err := replicaStore.view(mvcc.RevisionNewest, leasesNs, func(view mvcc.View) error {
-		l, err := leasesMapReader(view).Get(leasesKey(id))
+	err := replicaStore.read(func(transaction mvcc.Transaction) error {
+		l, err := leasesMapReader(kv.NamespaceMap(transaction.Flat(), leasesNs)).Get(leasesKey(id))
 
 		if err != nil {
-			return fmt.Errorf("could not list leases: %s", err)
+			return fmt.Errorf("could not get lease: %s", err)
 		}
 
 		if l == nil {
@@ -235,13 +235,18 @@ func (replicaStore *replicaStore) Query(ctx context.Context, q ptarmiganpb.KVQue
 
 	var response ptarmiganpb.KVQueryResponse
 
-	err := replicaStore.view(q.Revision, kvsNs, func(mvccView mvcc.View) error {
+	err := replicaStore.view(q.Revision, func(mvccView mvcc.View) error {
 		var err error
 
 		response, err = query(logger, mvccView, q)
 
 		return err
 	})
+
+	if err == mvcc.ErrNoRevisions && q.Revision == mvcc.RevisionNewest {
+		response = ptarmiganpb.KVQueryResponse{Kvs: []*ptarmiganpb.KeyValue{}}
+		err = nil
+	}
 
 	logger.Debug("return", zap.Any("response", response), zap.Error(err))
 
@@ -252,12 +257,21 @@ func (replicaStore *replicaStore) Query(ctx context.Context, q ptarmiganpb.KVQue
 func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
 	var response []ptarmiganpb.Event
 
-	err := replicaStore.view(watch.Start.Revision, kvsNs, func(mvccView mvcc.View) error {
+	if watch.Start == nil {
+		watch.Start = &ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}
+	}
+
+	err := replicaStore.view(watch.Start.Revision, func(mvccView mvcc.View) error {
 		var err error
 		response, err = changes(mvccView, watch.Start.Key, limit, watch.PrevKv)
 
 		return err
 	})
+
+	if err == mvcc.ErrNoRevisions && watch.Start.Revision == mvcc.RevisionOldest {
+		response = []ptarmiganpb.Event{}
+		err = nil
+	}
 
 	return response, err
 }
@@ -265,7 +279,7 @@ func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb
 func (replicaStore *replicaStore) NewestRevision() (int64, error) {
 	var revision int64
 
-	err := replicaStore.view(mvcc.RevisionNewest, kvsNs, func(mvccView mvcc.View) error {
+	err := replicaStore.view(mvcc.RevisionNewest, func(mvccView mvcc.View) error {
 		revision = mvccView.Revision()
 		return nil
 	})
@@ -280,7 +294,7 @@ func (replicaStore *replicaStore) NewestRevision() (int64, error) {
 func (replicaStore *replicaStore) OldestRevision() (int64, error) {
 	var revision int64
 
-	err := replicaStore.view(mvcc.RevisionOldest, kvsNs, func(mvccView mvcc.View) error {
+	err := replicaStore.view(mvcc.RevisionOldest, func(mvccView mvcc.View) error {
 		revision = mvccView.Revision()
 		return nil
 	})
@@ -310,8 +324,8 @@ type update struct {
 
 // RevokeLease implements Update.RevokeLease
 func (update *update) RevokeLease(ctx context.Context, id int64) error {
-	return update.replicaStore.applyUpdate(update.index, leasesNs, func(revision mvcc.Revision) error {
-		if err := leasesMap(revision).Delete(leasesKey(id)); err != nil {
+	return update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
+		if err := leasesMap(kv.NamespaceMap(transaction.Flat(), leasesNs)).Delete(leasesKey(id)); err != nil {
 			return fmt.Errorf("could not delete lease %d: %s", id, err)
 		}
 
@@ -323,8 +337,8 @@ func (update *update) RevokeLease(ctx context.Context, id int64) error {
 func (update *update) CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.Lease, error) {
 	var lease ptarmiganpb.Lease = ptarmiganpb.Lease{ID: int64(update.index), GrantedTTL: ttl}
 
-	err := update.replicaStore.applyUpdate(update.index, leasesNs, func(revision mvcc.Revision) error {
-		if err := leasesMap(revision).Put(leasesKey(lease.ID), &lease); err != nil {
+	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
+		if err := leasesMap(kv.NamespaceMap(transaction.Flat(), leasesNs)).Put(leasesKey(lease.ID), &lease); err != nil {
 			return fmt.Errorf("could not put lease %d: %s", lease.ID, err)
 		}
 
@@ -340,7 +354,33 @@ func (update *update) CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.L
 
 // Compact implements Update.Compact
 func (update *update) Compact(ctx context.Context, revision int64) error {
-	return update.replicaStore.update(func(transaction mvcc.Transaction) error {
-		return transaction.Compact(revision)
+	logger := log.WithContext(ctx, update.logger).With(zap.String("operation", "Compact"), zap.Int64("revision", revision))
+	logger.Debug("start")
+
+	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
+		err := transaction.Compact(revision)
+
+		// These failures contitute a precondition
+		// failure rather than a disk storage
+		// failure or some such thing that requires
+		// us to abort the transaction. The update
+		// index should still be recorded as this
+		// update was "applied" it just has no effect
+		switch err {
+		case mvcc.ErrCompacted:
+			fallthrough
+		case mvcc.ErrRevisionTooHigh:
+			fallthrough
+		case mvcc.ErrNoRevisions:
+			logger.Debug("precondition failed for compaction", zap.Error(err))
+
+			return nil
+		}
+
+		return err
 	})
+
+	logger.Debug("return", zap.Error(err))
+
+	return err
 }

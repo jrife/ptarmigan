@@ -73,6 +73,7 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyTxn(index uint64, txn ptarmigan
 
 	replicaStoreModel.revisions = append(replicaStoreModel.revisions, revision)
 	replicaStoreModel.response = result
+
 	return result
 }
 
@@ -239,9 +240,20 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyCompact(index uint64, revision 
 
 	replicaStoreModel.index = index
 
+	if len(replicaStoreModel.revisions) == 0 {
+		return
+	}
+
+	if revision == mvcc.RevisionNewest {
+		revision = replicaStoreModel.revisions[len(replicaStoreModel.revisions)-1].revision
+	} else if revision == mvcc.RevisionOldest {
+		revision = replicaStoreModel.revisions[0].revision
+	}
+
 	for i, r := range replicaStoreModel.revisions {
 		if r.revision == revision {
 			replicaStoreModel.revisions = replicaStoreModel.revisions[i:]
+
 			return
 		}
 	}

@@ -236,6 +236,10 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 		}
 	})
 
+	var genCompactCommand = gen.Int64Range(-1, 10).Map(func(n int64) commands.Command {
+		return CompactCommand(n)
+	})
+
 	type replicaStoreWithCleanup struct {
 		storage.ReplicaStore
 		cleanup func()
@@ -262,7 +266,7 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 			return true
 		},
 		GenCommandFunc: func(state commands.State) gopter.Gen {
-			return gen.OneGenOf(genQueryCommand, genTxnCommand)
+			return gen.OneGenOf(genQueryCommand, genTxnCommand, genCompactCommand)
 		},
 	}
 

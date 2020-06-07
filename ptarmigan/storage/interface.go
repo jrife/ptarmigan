@@ -25,7 +25,6 @@ var (
 var (
 	leasesNs       = []byte{0}
 	updateIndexNs  = []byte{1}
-	kvsNs          = []byte{2}
 	updateIndexKey = []byte{0}
 )
 

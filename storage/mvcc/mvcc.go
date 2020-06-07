@@ -26,6 +26,7 @@ const (
 var (
 	keysPrefix      = [][]byte{{1}}
 	revisionsPrefix = [][]byte{{2}}
+	flatPrefix      = [][]byte{{3}}
 )
 
 // b must be a byte slice of length 8
@@ -291,6 +292,10 @@ func (partition *partition) revisionsNamespace(transaction composite.Transaction
 
 func (partition *partition) keysNamespace(transaction composite.Transaction) composite.Transaction {
 	return composite.Namespace(transaction, keysPrefix)
+}
+
+func (partition *partition) flatNamespace(transaction composite.Transaction) composite.Transaction {
+	return composite.Namespace(transaction, flatPrefix)
 }
 
 // Name implements Partition.Name
@@ -567,6 +572,10 @@ func (transaction *transaction) Compact(revision int64) error {
 	}
 
 	return nil
+}
+
+func (transaction *transaction) Flat() kv.Map {
+	return composite.FlattenMap(transaction.partition.flatNamespace(transaction.txn))
 }
 
 // Commit implements Transaction.Commit

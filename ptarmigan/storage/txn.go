@@ -21,8 +21,13 @@ func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (pt
 
 	var response ptarmiganpb.KVTxnResponse
 
-	err := update.replicaStore.applyUpdate(update.index, kvsNs, func(revision mvcc.Revision) error {
-		var err error
+	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
+		revision, err := transaction.NewRevision()
+
+		if err != nil {
+
+			return fmt.Errorf("could not create new revision: %s", err)
+		}
 
 		response, err = executeTxnOp(logger.With(zap.Int64("revision", revision.Revision())), revision, txn)
 

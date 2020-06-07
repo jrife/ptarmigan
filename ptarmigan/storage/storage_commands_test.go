@@ -8,6 +8,7 @@ import (
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/ptarmigan/storage"
 	"github.com/jrife/flock/ptarmigan/storage/model"
+	"github.com/jrife/flock/storage/mvcc"
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/commands"
 )
@@ -29,13 +30,13 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 
 	oldestRevision, err := replicaStore.OldestRevision()
 
-	if err != nil {
+	if err != nil && err != mvcc.ErrNoRevisions {
 		return "", fmt.Errorf("could not retrieve oldest revision from replica store: %s", err)
 	}
 
 	newestRevision, err := replicaStore.NewestRevision()
 
-	if err != nil {
+	if err != nil && err != mvcc.ErrNoRevisions {
 		return "", fmt.Errorf("could not retrieve newest revision from replica store: %s", err)
 	}
 
@@ -105,6 +106,65 @@ func (command TxnCommand) PostCondition(state commands.State, result commands.Re
 
 func (command TxnCommand) String() string {
 	return fmt.Sprintf("Txn(%#v)", command)
+}
+
+type CompactCommand int64
+
+func (command CompactCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	index, err := replicaStore.Index(context.Background())
+
+	if err != nil {
+		panic(err)
+	}
+
+	// var newestRevision int64
+	// var oldestRevision int64
+	// revision := oldestRevision + int64(command)%(newestRevision-oldestRevision)
+	replicaStore.Apply(index+1).Compact(context.Background(), int64(command))
+
+	return sut
+}
+
+func (command CompactCommand) NextState(state commands.State) commands.State {
+	state.(*model.ReplicaStoreModel).ApplyCompact(state.(*model.ReplicaStoreModel).Index()+1, int64(command))
+	return state
+}
+
+func (command CompactCommand) PreCondition(state commands.State) bool {
+	if int64(command) == mvcc.RevisionNewest || int64(command) == mvcc.RevisionOldest {
+		return true
+	}
+
+	if int64(command) < state.(*model.ReplicaStoreModel).OldestRevision() || int64(command) > state.(*model.ReplicaStoreModel).NewestRevision() {
+		return false
+	}
+
+	return true
+}
+
+func (command CompactCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	model := state.(*model.ReplicaStoreModel)
+	replicaStore := result.(storage.ReplicaStore)
+
+	diff, err := replicaStoreModelDiff(replicaStore, model)
+
+	if err != nil {
+		fmt.Printf("%#v\n", err)
+
+		return &gopter.PropResult{Status: gopter.PropFalse, Error: err}
+	}
+
+	if diff != "" {
+		fmt.Printf("%s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command CompactCommand) String() string {
+	return fmt.Sprintf("Compact(%#v)", command)
 }
 
 type QueryCommand ptarmiganpb.KVQueryRequest
