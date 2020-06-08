@@ -11,12 +11,12 @@ import (
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/ptarmigan/storage"
 	"github.com/jrife/flock/ptarmigan/storage/model"
+	command_gen "github.com/jrife/flock/ptarmigan/storage/model/gen"
 	"github.com/jrife/flock/storage/kv"
 	"github.com/jrife/flock/storage/kv/plugins"
 	"github.com/jrife/flock/storage/mvcc"
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/commands"
-	"github.com/leanovate/gopter/gen"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -214,47 +214,6 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	// t.Run("GetLease", func(t *testing.T) { testReplicaStoreGetLease(builder, t) })
 	// t.Run("Snapshot", func(t *testing.T) { testReplicaStoreSnapshot(builder, t) })
 	// t.Run("ApplySnapshot", func(t *testing.T) { testReplicaStoreApplySnapshot(builder, t) })
-	var genSelection = gopter.CombineGens().Map(func(g []interface{}) *ptarmiganpb.KVSelection {
-	})
-
-	var genPredicate = gopter.CombineGens().Map(func(g []interface{}) *ptarmiganpb.KVPredicate {
-	})
-
-	var genQueryCommand = gopter.CombineGens().Map(func(g []interface{}) commands.Command {
-		return QueryCommand{
-			Limit: -1,
-		}
-	})
-
-	var genChangesCommand = gopter.CombineGens().Map(func(g []interface{}) commands.Command {
-		return ChangesCommand{}
-	})
-
-	var genTxnCompare = gopter.CombineGens().Map(func(g []interface{}) *ptarmiganpb.Compare {
-		return &ptarmiganpb.Compare{}
-	})
-
-	var genTxnCommand = gopter.CombineGens(
-		gen.UInt64(),
-	).Map(func(g []interface{}) commands.Command {
-		return TxnCommand{
-			Success: []*ptarmiganpb.KVRequestOp{
-				{
-					Request: &ptarmiganpb.KVRequestOp_RequestPut{
-						RequestPut: &ptarmiganpb.KVPutRequest{
-							Key:   []byte("aaa"),
-							Value: []byte("xxx"),
-						},
-					},
-				},
-			},
-		}
-	})
-
-	var genCompactCommand = gen.Int64().Map(func(n int64) commands.Command {
-		return CompactCommand(n)
-	})
-
 	type replicaStoreWithCleanup struct {
 		storage.ReplicaStore
 		cleanup func()
@@ -282,7 +241,7 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 		},
 		GenCommandFunc: func(state commands.State) gopter.Gen {
 			// TODO: we can use the current state in our generators to only generate valid inputs
-			return gen.OneGenOf(genQueryCommand, genChangesCommand, genTxnCommand, genCompactCommand)
+			return command_gen.Commands(state.(*model.ReplicaStoreModel))
 		},
 	}
 

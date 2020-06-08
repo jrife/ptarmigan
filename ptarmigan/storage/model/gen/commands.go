@@ -1,4 +1,4 @@
-package storage_test
+package gen
 
 import (
 	"context"
@@ -20,12 +20,14 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 		return fmt.Sprintf("model index = %d, actual index = %d\n", model.Index(), index), nil
 	}
 
-	if leases, err := replicaStore.Leases(context.Background()); err != nil {
+	leases, err := replicaStore.Leases(context.Background())
+
+	if err != nil {
 		return "", fmt.Errorf("could not retrieve leases from replica store: %s", err)
-	} else {
-		if diff := cmp.Diff(model.Leases(), leases); diff != "" {
-			return fmt.Sprintf("leases don't match: %s", diff), nil
-		}
+	}
+
+	if diff := cmp.Diff(model.Leases(), leases); diff != "" {
+		return fmt.Sprintf("leases don't match: %s", diff), nil
 	}
 
 	oldestRevision, err := replicaStore.OldestRevision()
@@ -49,24 +51,28 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 	}
 
 	for revision := oldestRevision; revision <= newestRevision; revision++ {
-		if kvs, err := replicaStore.Query(context.Background(), ptarmiganpb.KVQueryRequest{Revision: revision}); err != nil {
+		kvs, err := replicaStore.Query(context.Background(), ptarmiganpb.KVQueryRequest{Revision: revision})
+
+		if err != nil {
 			return "", fmt.Errorf("could not retrieve kvs from replica store at revision %d: %s", revision, err)
-		} else {
-			if diff := cmp.Diff(model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}), kvs); diff != "" {
-				return fmt.Sprintf("kvs don't match at revision %d: %s", revision, diff), nil
-			}
+		}
+
+		if diff := cmp.Diff(model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}), kvs); diff != "" {
+			return fmt.Sprintf("kvs don't match at revision %d: %s", revision, diff), nil
 		}
 	}
 
-	if changes, err := replicaStore.Changes(context.Background(), ptarmiganpb.KVWatchRequest{}, -1); err != nil {
-		return "", fmt.Errorf("could not retrieve changes from replica store: %s", err)
-	} else {
-		if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{}, -1), changes); diff != "" {
-			fmt.Printf("model %#v\n", model.Changes(ptarmiganpb.KVWatchRequest{}, -1))
-			fmt.Printf("actual %#v\n", changes)
+	changes, err := replicaStore.Changes(context.Background(), ptarmiganpb.KVWatchRequest{}, -1)
 
-			return fmt.Sprintf("changes don't match: %s", diff), nil
-		}
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve changes from replica store: %s", err)
+	}
+
+	if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{}, -1), changes); diff != "" {
+		fmt.Printf("model %#v\n", model.Changes(ptarmiganpb.KVWatchRequest{}, -1))
+		fmt.Printf("actual %#v\n", changes)
+
+		return fmt.Sprintf("changes don't match: %s", diff), nil
 	}
 
 	return "", nil
@@ -76,9 +82,9 @@ func indexFromRange(seed int64, min int64, max int64) int64 {
 	return min + seed%(max-min)
 }
 
-type TxnCommand ptarmiganpb.KVTxnRequest
+type txnCommand ptarmiganpb.KVTxnRequest
 
-func (command TxnCommand) Run(sut commands.SystemUnderTest) commands.Result {
+func (command txnCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
 	index, err := replicaStore.Index(context.Background())
 
@@ -90,16 +96,16 @@ func (command TxnCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	return res
 }
 
-func (command TxnCommand) NextState(state commands.State) commands.State {
+func (command txnCommand) NextState(state commands.State) commands.State {
 	state.(*model.ReplicaStoreModel).ApplyTxn(state.(*model.ReplicaStoreModel).Index()+1, ptarmiganpb.KVTxnRequest(command))
 	return state
 }
 
-func (command TxnCommand) PreCondition(state commands.State) bool {
+func (command txnCommand) PreCondition(state commands.State) bool {
 	return true
 }
 
-func (command TxnCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+func (command txnCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
 	resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVTxnResponse)
 	diff := cmp.Diff(resp, result)
 
@@ -111,13 +117,13 @@ func (command TxnCommand) PostCondition(state commands.State, result commands.Re
 	return &gopter.PropResult{Status: gopter.PropTrue}
 }
 
-func (command TxnCommand) String() string {
+func (command txnCommand) String() string {
 	return fmt.Sprintf("Txn(%#v)", command)
 }
 
-type CompactCommand int64
+type compactCommand int64
 
-func (command CompactCommand) Run(sut commands.SystemUnderTest) commands.Result {
+func (command compactCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
 	index, err := replicaStore.Index(context.Background())
 
@@ -125,35 +131,21 @@ func (command CompactCommand) Run(sut commands.SystemUnderTest) commands.Result 
 		panic(err)
 	}
 
-	oldestRevision, err := replicaStore.OldestRevision()
-
-	if err != nil && err != mvcc.ErrNoRevisions {
-		panic(err)
-	}
-
-	newestRevision, err := replicaStore.NewestRevision()
-
-	if err != nil && err != mvcc.ErrNoRevisions {
-		panic(err)
-	}
-
-	replicaStore.Apply(index+1).Compact(context.Background(), indexFromRange(int64(command), oldestRevision, newestRevision))
+	replicaStore.Apply(index+1).Compact(context.Background(), int64(command))
 
 	return sut
 }
 
-func (command CompactCommand) NextState(state commands.State) commands.State {
-	oldestRevision := state.(*model.ReplicaStoreModel).OldestRevision()
-	newestRevision := state.(*model.ReplicaStoreModel).NewestRevision()
-	state.(*model.ReplicaStoreModel).ApplyCompact(state.(*model.ReplicaStoreModel).Index()+1, indexFromRange(int64(command), oldestRevision, newestRevision))
+func (command compactCommand) NextState(state commands.State) commands.State {
+	state.(*model.ReplicaStoreModel).ApplyCompact(state.(*model.ReplicaStoreModel).Index()+1, int64(command))
 	return state
 }
 
-func (command CompactCommand) PreCondition(state commands.State) bool {
-	return state.(*model.ReplicaStoreModel).OldestRevision() != state.(*model.ReplicaStoreModel).NewestRevision()
+func (command compactCommand) PreCondition(state commands.State) bool {
+	return true
 }
 
-func (command CompactCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+func (command compactCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
 	model := state.(*model.ReplicaStoreModel)
 	replicaStore := result.(storage.ReplicaStore)
 
@@ -173,27 +165,27 @@ func (command CompactCommand) PostCondition(state commands.State, result command
 	return &gopter.PropResult{Status: gopter.PropTrue}
 }
 
-func (command CompactCommand) String() string {
+func (command compactCommand) String() string {
 	return fmt.Sprintf("Compact(%#v)", command)
 }
 
-type QueryCommand ptarmiganpb.KVQueryRequest
+type queryCommand ptarmiganpb.KVQueryRequest
 
-func (command QueryCommand) Run(sut commands.SystemUnderTest) commands.Result {
+func (command queryCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
 	res, _ := replicaStore.Query(context.Background(), ptarmiganpb.KVQueryRequest(command))
 	return res
 }
 
-func (command QueryCommand) NextState(state commands.State) commands.State {
+func (command queryCommand) NextState(state commands.State) commands.State {
 	return state
 }
 
-func (command QueryCommand) PreCondition(state commands.State) bool {
+func (command queryCommand) PreCondition(state commands.State) bool {
 	return true
 }
 
-func (command QueryCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+func (command queryCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
 	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest(command)), result)
 
 	if diff != "" {
@@ -204,16 +196,16 @@ func (command QueryCommand) PostCondition(state commands.State, result commands.
 	return &gopter.PropResult{Status: gopter.PropTrue}
 }
 
-func (command QueryCommand) String() string {
+func (command queryCommand) String() string {
 	return fmt.Sprintf("Query(%#v)", command)
 }
 
-type ChangesCommand struct {
+type changesCommand struct {
 	ptarmiganpb.KVWatchRequest
 	Limit int
 }
 
-func (command ChangesCommand) Run(sut commands.SystemUnderTest) commands.Result {
+func (command changesCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
 
 	oldestRevision, err := replicaStore.OldestRevision()
@@ -236,15 +228,15 @@ func (command ChangesCommand) Run(sut commands.SystemUnderTest) commands.Result 
 	return res
 }
 
-func (command ChangesCommand) NextState(state commands.State) commands.State {
+func (command changesCommand) NextState(state commands.State) commands.State {
 	return state
 }
 
-func (command ChangesCommand) PreCondition(state commands.State) bool {
+func (command changesCommand) PreCondition(state commands.State) bool {
 	return true
 }
 
-func (command ChangesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+func (command changesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
 	oldestRevision := state.(*model.ReplicaStoreModel).OldestRevision()
 	newestRevision := state.(*model.ReplicaStoreModel).NewestRevision()
 
@@ -262,6 +254,6 @@ func (command ChangesCommand) PostCondition(state commands.State, result command
 	return &gopter.PropResult{Status: gopter.PropTrue}
 }
 
-func (command ChangesCommand) String() string {
+func (command changesCommand) String() string {
 	return fmt.Sprintf("Changes(%#v)", command)
 }

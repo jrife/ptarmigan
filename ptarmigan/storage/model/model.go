@@ -67,8 +67,8 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyTxn(index uint64, txn ptarmigan
 	result, commit := replicaStoreModel.txn(txn, lastRevision, revision)
 
 	if !commit {
-		replicaStoreModel.response = ptarmiganpb.KVTxnResponse{}
-		return ptarmiganpb.KVTxnResponse{}
+		replicaStoreModel.response = result
+		return result
 	}
 
 	replicaStoreModel.revisions = append(replicaStoreModel.revisions, revision)

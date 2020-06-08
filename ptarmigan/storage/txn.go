@@ -22,14 +22,25 @@ func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (pt
 	var response ptarmiganpb.KVTxnResponse
 
 	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
-		revision, err := transaction.NewRevision()
+		// revision, err := transaction.NewRevision()
 
-		if err != nil {
+		// if err != nil {
 
-			return fmt.Errorf("could not create new revision: %s", err)
+		// 	return fmt.Errorf("could not create new revision: %s", err)
+		// }
+		// logger.With(zap.Int64("revision", revision.Revision()))
+		view, err := transaction.View(mvcc.RevisionNewest)
+
+		if err != nil && err != mvcc.ErrNoRevisions {
+			return fmt.Errorf("could not create view of latest revision: %s", err)
 		}
 
-		response, err = executeTxnOp(logger.With(zap.Int64("revision", revision.Revision())), revision, txn)
+		var revision mvcc.Revision
+		response, revision, err = executeTxnOp(logger, transaction, view, nil, txn)
+
+		if revision != nil {
+			logger.Debug("new revision created", zap.Int64("revision", revision.Revision()))
+		}
 
 		return err
 	})
@@ -39,18 +50,18 @@ func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (pt
 	return response, err
 }
 
-func executeTxnOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error) {
+func executeTxnOp(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, mvcc.Revision, error) {
 	var response ptarmiganpb.KVTxnResponse
 
 	success := true
 
 	for i, compare := range r.Compare {
-		ok, err := checkCondition(logger, revision, compare)
+		ok, err := checkCondition(logger, view, compare)
 
 		logger.Debug("compared condition", zap.Int("i", i), zap.Bool("ok", ok), zap.Error(err))
 
 		if err != nil {
-			return ptarmiganpb.KVTxnResponse{}, fmt.Errorf("could not check condition %d: %s", i, err)
+			return ptarmiganpb.KVTxnResponse{}, nil, fmt.Errorf("could not check condition %d: %s", i, err)
 		}
 
 		if !ok {
@@ -72,18 +83,22 @@ func executeTxnOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVTx
 	}
 
 	logger.Debug("ops", zap.Any("ops", ops))
-	responseOps, err := executeOps(logger, revision, ops)
+	responseOps, revision, err := executeOps(logger, transaction, view, revision, ops)
 
 	if err != nil {
-		return ptarmiganpb.KVTxnResponse{}, fmt.Errorf("could not execute ops: %s", err)
+		return ptarmiganpb.KVTxnResponse{}, nil, fmt.Errorf("could not execute ops: %s", err)
 	}
 
 	response.Responses = responseOps
 
-	return response, nil
+	return response, revision, nil
 }
 
 func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Compare) (bool, error) {
+	if compare == nil {
+		return true, nil
+	}
+
 	iter, err := kvMapReader(view).Keys(selectionRange(compare.Selection), kv.SortOrderAsc)
 
 	if err != nil {
@@ -110,6 +125,10 @@ func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Com
 }
 
 func checkPredicate(kv ptarmiganpb.KeyValue, predicate *ptarmiganpb.KVPredicate) bool {
+	if predicate == nil {
+		return true
+	}
+
 	switch predicate.Target {
 	case ptarmiganpb.KVPredicate_CREATE:
 		return checkIntPredicate(kv.CreateRevision, predicate.GetCreateRevision(), predicate.Comparison)
@@ -141,30 +160,55 @@ func checkIntPredicate(a, b int64, comparison ptarmiganpb.KVPredicate_Comparison
 	return false
 }
 
-func executeOps(logger *zap.Logger, revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, error) {
+func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, mvcc.Revision, error) {
 	responses := make([]*ptarmiganpb.KVResponseOp, len(ops))
 
 	for i, op := range ops {
 		var responseOp ptarmiganpb.KVResponseOp
+		var err error
 
 		logger.Debug("next op", zap.Int("i", i), zap.Any("op", op))
 
 		switch op.Request.(type) {
 		case *ptarmiganpb.KVRequestOp_RequestDelete:
+			if revision == nil {
+				revision, err = transaction.NewRevision()
+
+				if err != nil {
+					return nil, nil, fmt.Errorf("could not create new revision: %s", err)
+				}
+
+				view = revision
+				logger = logger.With(zap.Int64("revision", revision.Revision()))
+				logger.Debug("new revision")
+			}
+
 			r, err := executeDeleteOp(logger, revision, *op.GetRequestDelete())
 
 			if err != nil {
-				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
+				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseDelete{
 				ResponseDelete: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestPut:
+			if revision == nil {
+				revision, err = transaction.NewRevision()
+
+				if err != nil {
+					return nil, nil, fmt.Errorf("could not create new revision: %s", err)
+				}
+
+				view = revision
+				logger = logger.With(zap.Int64("revision", revision.Revision()))
+				logger.Debug("new revision")
+			}
+
 			r, err := executePutOp(logger, revision, *op.GetRequestPut())
 
 			if err != nil {
-				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
+				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponsePut{
@@ -174,30 +218,36 @@ func executeOps(logger *zap.Logger, revision mvcc.Revision, ops []*ptarmiganpb.K
 			r, err := query(logger, revision, *op.GetRequestQuery())
 
 			if err != nil {
-				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
+				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseQuery{
 				ResponseQuery: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestTxn:
-			r, err := executeTxnOp(logger, revision, *op.GetRequestTxn())
+			r, rev, err := executeTxnOp(logger, transaction, view, revision, *op.GetRequestTxn())
 
 			if err != nil {
-				return nil, fmt.Errorf("could not execute op %d: %s", i, err)
+				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
+			}
+
+			if rev != nil && revision == nil {
+				revision = rev
+				view = revision
+				logger = logger.With(zap.Int64("revision", revision.Revision()))
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseTxn{
 				ResponseTxn: &r,
 			}
 		default:
-			return nil, fmt.Errorf("unrecognized transaction op type: %d", i)
+			return nil, nil, fmt.Errorf("unrecognized transaction op type: %d", i)
 		}
 
 		responses[i] = &responseOp
 	}
 
-	return responses, nil
+	return responses, revision, nil
 }
 
 func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVDeleteRequest) (ptarmiganpb.KVDeleteResponse, error) {
