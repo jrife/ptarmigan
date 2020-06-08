@@ -45,6 +45,10 @@ func Diffs(iter DiffIterator, limit int) ([]Diff, error) {
 
 	for iter.Next() {
 		diffs = append(diffs, Diff{iter.Key(), iter.Value(), iter.Prev()})
+
+		if limit >= 0 && len(diffs) == limit {
+			break
+		}
 	}
 
 	return diffs, iter.Error()

@@ -95,51 +95,48 @@ func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest)
 }
 
 // Changes implements View.Changes
-func changes(view mvcc.View, start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
+func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
 	diffsIter, err := view.Changes(keys.All().Gt(start), includePrev)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not list changes: %s", err)
 	}
 
-	diffs, err := mvcc.Diffs(diffsIter, limit)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not list changes: %s", err)
-	}
-
-	events := make([]ptarmiganpb.Event, len(diffs))
-
-	for i, diff := range diffs {
+	for diffsIter.Next() && (limit <= 0 || len(events) < limit) {
 		event := ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT}
 
-		if diff[1] == nil {
+		if diffsIter.IsDelete() {
 			event.Type = ptarmiganpb.Event_DELETE
 		}
 
-		if diff[1] != nil {
-			kv, err := unmarshalKV(diff[1])
+		if diffsIter.IsPut() {
+			kv, err := unmarshalKV(diffsIter.Value())
 
 			if err != nil {
-				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diff[1], err)
+				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diffsIter.Value(), err)
 			}
 
 			k := kv.(ptarmiganpb.KeyValue)
+			k.Key = diffsIter.Key()
 			event.Kv = &k
 		}
 
-		if includePrev && diff[2] != nil {
-			kv, err := unmarshalKV(diff[2])
+		if includePrev && diffsIter.Prev() != nil {
+			kv, err := unmarshalKV(diffsIter.Prev())
 
 			if err != nil {
-				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diff[1], err)
+				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diffsIter.Prev(), err)
 			}
 
 			k := kv.(ptarmiganpb.KeyValue)
 			event.PrevKv = &k
 		}
 
-		events[i] = event
+		events = append(events, event)
+	}
+
+	if diffsIter.Error() != nil {
+		return nil, fmt.Errorf("iteration error: %s", diffsIter.Error())
 	}
 
 	return events, nil

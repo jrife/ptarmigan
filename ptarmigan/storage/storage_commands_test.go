@@ -62,11 +62,18 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 		return "", fmt.Errorf("could not retrieve changes from replica store: %s", err)
 	} else {
 		if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{}, -1), changes); diff != "" {
+			fmt.Printf("model %#v\n", model.Changes(ptarmiganpb.KVWatchRequest{}, -1))
+			fmt.Printf("actual %#v\n", changes)
+
 			return fmt.Sprintf("changes don't match: %s", diff), nil
 		}
 	}
 
 	return "", nil
+}
+
+func indexFromRange(seed int64, min int64, max int64) int64 {
+	return min + seed%(max-min)
 }
 
 type TxnCommand ptarmiganpb.KVTxnRequest
@@ -118,29 +125,32 @@ func (command CompactCommand) Run(sut commands.SystemUnderTest) commands.Result 
 		panic(err)
 	}
 
-	// var newestRevision int64
-	// var oldestRevision int64
-	// revision := oldestRevision + int64(command)%(newestRevision-oldestRevision)
-	replicaStore.Apply(index+1).Compact(context.Background(), int64(command))
+	oldestRevision, err := replicaStore.OldestRevision()
+
+	if err != nil && err != mvcc.ErrNoRevisions {
+		panic(err)
+	}
+
+	newestRevision, err := replicaStore.NewestRevision()
+
+	if err != nil && err != mvcc.ErrNoRevisions {
+		panic(err)
+	}
+
+	replicaStore.Apply(index+1).Compact(context.Background(), indexFromRange(int64(command), oldestRevision, newestRevision))
 
 	return sut
 }
 
 func (command CompactCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyCompact(state.(*model.ReplicaStoreModel).Index()+1, int64(command))
+	oldestRevision := state.(*model.ReplicaStoreModel).OldestRevision()
+	newestRevision := state.(*model.ReplicaStoreModel).NewestRevision()
+	state.(*model.ReplicaStoreModel).ApplyCompact(state.(*model.ReplicaStoreModel).Index()+1, indexFromRange(int64(command), oldestRevision, newestRevision))
 	return state
 }
 
 func (command CompactCommand) PreCondition(state commands.State) bool {
-	if int64(command) == mvcc.RevisionNewest || int64(command) == mvcc.RevisionOldest {
-		return true
-	}
-
-	if int64(command) < state.(*model.ReplicaStoreModel).OldestRevision() || int64(command) > state.(*model.ReplicaStoreModel).NewestRevision() {
-		return false
-	}
-
-	return true
+	return state.(*model.ReplicaStoreModel).OldestRevision() != state.(*model.ReplicaStoreModel).NewestRevision()
 }
 
 func (command CompactCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
@@ -196,4 +206,62 @@ func (command QueryCommand) PostCondition(state commands.State, result commands.
 
 func (command QueryCommand) String() string {
 	return fmt.Sprintf("Query(%#v)", command)
+}
+
+type ChangesCommand struct {
+	ptarmiganpb.KVWatchRequest
+	Limit int
+}
+
+func (command ChangesCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+
+	oldestRevision, err := replicaStore.OldestRevision()
+
+	if err != nil && err != mvcc.ErrNoRevisions {
+		panic(err)
+	}
+
+	newestRevision, err := replicaStore.NewestRevision()
+
+	if err != nil && err != mvcc.ErrNoRevisions {
+		panic(err)
+	}
+
+	if command.Start != nil {
+		command.Start = &ptarmiganpb.KVWatchCursor{Revision: indexFromRange(command.Start.Revision, oldestRevision, newestRevision), Key: command.Start.Key}
+	}
+
+	res, _ := replicaStore.Changes(context.Background(), command.KVWatchRequest, command.Limit)
+	return res
+}
+
+func (command ChangesCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command ChangesCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command ChangesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	oldestRevision := state.(*model.ReplicaStoreModel).OldestRevision()
+	newestRevision := state.(*model.ReplicaStoreModel).NewestRevision()
+
+	if command.Start != nil {
+		command.Start = &ptarmiganpb.KVWatchCursor{Revision: indexFromRange(command.Start.Revision, oldestRevision, newestRevision), Key: command.Start.Key}
+	}
+
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Changes(command.KVWatchRequest, command.Limit), result)
+
+	if diff != "" {
+		fmt.Printf("%s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command ChangesCommand) String() string {
+	return fmt.Sprintf("Changes(%#v)", command)
 }

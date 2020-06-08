@@ -214,6 +214,11 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	// t.Run("GetLease", func(t *testing.T) { testReplicaStoreGetLease(builder, t) })
 	// t.Run("Snapshot", func(t *testing.T) { testReplicaStoreSnapshot(builder, t) })
 	// t.Run("ApplySnapshot", func(t *testing.T) { testReplicaStoreApplySnapshot(builder, t) })
+	var genSelection = gopter.CombineGens().Map(func(g []interface{}) *ptarmiganpb.KVSelection {
+	})
+
+	var genPredicate = gopter.CombineGens().Map(func(g []interface{}) *ptarmiganpb.KVPredicate {
+	})
 
 	var genQueryCommand = gopter.CombineGens().Map(func(g []interface{}) commands.Command {
 		return QueryCommand{
@@ -221,7 +226,17 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 		}
 	})
 
-	var genTxnCommand = gopter.CombineGens(gen.UInt64()).Map(func(g []interface{}) commands.Command {
+	var genChangesCommand = gopter.CombineGens().Map(func(g []interface{}) commands.Command {
+		return ChangesCommand{}
+	})
+
+	var genTxnCompare = gopter.CombineGens().Map(func(g []interface{}) *ptarmiganpb.Compare {
+		return &ptarmiganpb.Compare{}
+	})
+
+	var genTxnCommand = gopter.CombineGens(
+		gen.UInt64(),
+	).Map(func(g []interface{}) commands.Command {
 		return TxnCommand{
 			Success: []*ptarmiganpb.KVRequestOp{
 				{
@@ -236,7 +251,7 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 		}
 	})
 
-	var genCompactCommand = gen.Int64Range(-1, 10).Map(func(n int64) commands.Command {
+	var genCompactCommand = gen.Int64().Map(func(n int64) commands.Command {
 		return CompactCommand(n)
 	})
 
@@ -266,7 +281,8 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 			return true
 		},
 		GenCommandFunc: func(state commands.State) gopter.Gen {
-			return gen.OneGenOf(genQueryCommand, genTxnCommand, genCompactCommand)
+			// TODO: we can use the current state in our generators to only generate valid inputs
+			return gen.OneGenOf(genQueryCommand, genChangesCommand, genTxnCommand, genCompactCommand)
 		},
 	}
 

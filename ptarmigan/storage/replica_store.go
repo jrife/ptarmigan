@@ -255,22 +255,46 @@ func (replicaStore *replicaStore) Query(ctx context.Context, q ptarmiganpb.KVQue
 
 // Changes implements ReplicaStore.Changes
 func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
-	var response []ptarmiganpb.Event
+	var response []ptarmiganpb.Event = []ptarmiganpb.Event{}
 
 	if watch.Start == nil {
 		watch.Start = &ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}
 	}
 
-	err := replicaStore.view(watch.Start.Revision, func(mvccView mvcc.View) error {
-		var err error
-		response, err = changes(mvccView, watch.Start.Key, limit, watch.PrevKv)
+	err := replicaStore.read(func(transaction mvcc.Transaction) error {
+		view, err := transaction.View(watch.Start.Revision)
+
+		if err == mvcc.ErrNoRevisions && watch.Start.Revision == mvcc.RevisionOldest {
+			response = []ptarmiganpb.Event{}
+
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		for err != mvcc.ErrRevisionTooHigh && (limit <= 0 || len(response) < limit) {
+			response, err = changes(response, view, watch.Start.Key, limit, watch.PrevKv)
+
+			if err != nil {
+				continue
+			}
+
+			view, err = transaction.View(view.Revision() + 1)
+
+			if err != nil {
+				continue
+			}
+		}
+
+		if err == mvcc.ErrRevisionTooHigh {
+			err = nil
+		}
 
 		return err
 	})
 
-	if err == mvcc.ErrNoRevisions && watch.Start.Revision == mvcc.RevisionOldest {
-		response = []ptarmiganpb.Event{}
-		err = nil
+	if err != nil {
+		return nil, err
 	}
 
 	return response, err
