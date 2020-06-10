@@ -119,19 +119,16 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			kvs := revision.AllKvs().selection(op.GetRequestDelete().Selection)
 
 			for i := range kvs {
-				kv := kvs[i]
-				kv.ModRevision = revision.revision
-
-				if lastKVRaw, found := lastRevision.kvs.Get(kv.Key); found {
+				if lastKVRaw, found := lastRevision.kvs.Get(kvs[i].Key); found {
 					// This key existed before this transaction. Need a DELETE event
 					lastKV := lastKVRaw.(ptarmiganpb.KeyValue)
-					revision.changes.Put(kv.Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_DELETE, Kv: &kv, PrevKv: &lastKV})
+					revision.changes.Put(kvs[i].Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_DELETE, Kv: &ptarmiganpb.KeyValue{Key: kvs[i].Key, ModRevision: revision.revision}, PrevKv: &lastKV})
 				} else {
 					// This key was entirely created within this transaction. No need for a DELETE event
-					revision.changes.Remove(kv.Key)
+					revision.changes.Remove(kvs[i].Key)
 				}
 
-				revision.kvs.Remove(kv.Key)
+				revision.kvs.Remove(kvs[i].Key)
 				resp.Deleted++
 
 				if op.GetRequestDelete().PrevKv {
@@ -207,7 +204,12 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 				ResponsePut: &resp,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestQuery:
-			resp, ok := query(*op.GetRequestQuery(), replicaStoreModel)
+			// Query should see the uncommitted revision.
+			replicaStoreModelCopy := *replicaStoreModel
+			replicaStoreModelCopy.revisions = append([]RevisionModel{}, replicaStoreModelCopy.revisions...)
+			replicaStoreModelCopy.revisions = append(replicaStoreModelCopy.revisions, revision)
+
+			resp, ok := query(*op.GetRequestQuery(), &replicaStoreModelCopy)
 
 			if !ok {
 				return ptarmiganpb.KVTxnResponse{}, false
@@ -258,6 +260,11 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyCompact(index uint64, revision 
 	for i, r := range replicaStoreModel.revisions {
 		if r.revision == revision {
 			replicaStoreModel.revisions = replicaStoreModel.revisions[i:]
+
+			for _, change := range replicaStoreModel.revisions[0].AllChanges() {
+				change.PrevKv = nil
+				replicaStoreModel.revisions[0].changes.Put(change.Kv.Key, change)
+			}
 
 			return
 		}

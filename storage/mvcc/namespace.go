@@ -23,8 +23,36 @@ type namespacedView struct {
 	ns   []byte
 }
 
-func (nsView *namespacedView) Changes(keys keys.Range, includePrev bool) (DiffIterator, error) {
-	iterator, err := nsView.view.Changes(keys.Namespace(nsView.ns), includePrev)
+func (nsView *namespacedView) Next() (View, error) {
+	next, err := nsView.view.Next()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &namespacedView{
+		MapReader: nsView.MapReader,
+		view:      next,
+		ns:        nsView.ns,
+	}, nil
+}
+
+func (nsView *namespacedView) Prev() (View, error) {
+	prev, err := nsView.view.Prev()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &namespacedView{
+		MapReader: nsView.MapReader,
+		view:      prev,
+		ns:        nsView.ns,
+	}, nil
+}
+
+func (nsView *namespacedView) Changes(keys keys.Range) (DiffIterator, error) {
+	iterator, err := nsView.view.Changes(keys.Namespace(nsView.ns))
 
 	if err != nil {
 		return nil, err

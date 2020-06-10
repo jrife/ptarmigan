@@ -21,6 +21,10 @@ const (
 	defaultBufferInitialCapacity = 100
 )
 
+func copy(b []byte) []byte {
+	return append([]byte(nil), b...)
+}
+
 func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest) (ptarmiganpb.KVQueryResponse, error) {
 	kr := keyRange(query)
 	logger.Debug("key range chosen", zap.Binary("min", kr.Min), zap.Binary("max", kr.Max))
@@ -56,7 +60,7 @@ func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest)
 
 	for results.Next() {
 		kv := results.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
-		kv.Key = results.Value().(kv_marshaled.KV).Key()
+		kv.Key = copy(results.Value().(kv_marshaled.KV).Key())
 
 		logger.Debug("next KeyValue", zap.Any("value", kv))
 
@@ -96,10 +100,16 @@ func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest)
 
 // Changes implements View.Changes
 func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
-	diffsIter, err := view.Changes(keys.All().Gt(start), includePrev)
+	diffsIter, err := view.Changes(keys.All().Gt(start))
 
 	if err != nil {
 		return nil, fmt.Errorf("could not list changes: %s", err)
+	}
+
+	prev, err := view.Prev()
+
+	if err != nil && err != mvcc.ErrCompacted {
+		return nil, fmt.Errorf("could not retrieve view for previous revision: %s", err)
 	}
 
 	for diffsIter.Next() && (limit <= 0 || len(events) < limit) {
@@ -107,6 +117,26 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 
 		if diffsIter.IsDelete() {
 			event.Type = ptarmiganpb.Event_DELETE
+			event.Kv = &ptarmiganpb.KeyValue{
+				Key:         copy(diffsIter.Key()),
+				ModRevision: view.Revision(),
+			}
+
+			if prev != nil && includePrev {
+				rawKV, err := kvMapReader(prev).Get(diffsIter.Key())
+
+				if err != nil {
+					return nil, fmt.Errorf("could not get key %#v from previous revision: %s", diffsIter.Key(), err)
+				}
+
+				if rawKV == nil {
+					return nil, fmt.Errorf("consistency violation: revision %d contains a delete event for key %#v but the previous revision does not contain that key", view.Revision(), diffsIter.Key())
+				}
+
+				prevKV := rawKV.(ptarmiganpb.KeyValue)
+				prevKV.Key = event.Kv.Key
+				event.PrevKv = &prevKV
+			}
 		} else if diffsIter.IsPut() {
 			kv, err := unmarshalKV(diffsIter.Value())
 
@@ -115,19 +145,22 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 			}
 
 			k := kv.(ptarmiganpb.KeyValue)
-			k.Key = diffsIter.Key()
+			k.Key = copy(diffsIter.Key())
 			event.Kv = &k
-		}
 
-		if includePrev && diffsIter.Prev() != nil {
-			kv, err := unmarshalKV(diffsIter.Prev())
+			if prev != nil && includePrev {
+				rawKV, err := kvMapReader(prev).Get(diffsIter.Key())
 
-			if err != nil {
-				return nil, fmt.Errorf("could not unmarshal value %#v: %s", diffsIter.Prev(), err)
+				if err != nil {
+					return nil, fmt.Errorf("could not get key %#v from previous revision: %s", diffsIter.Key(), err)
+				}
+
+				if rawKV != nil {
+					prevKV := rawKV.(ptarmiganpb.KeyValue)
+					prevKV.Key = k.Key
+					event.PrevKv = &prevKV
+				}
 			}
-
-			k := kv.(ptarmiganpb.KeyValue)
-			event.PrevKv = &k
 		}
 
 		events = append(events, event)

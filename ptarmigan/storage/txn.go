@@ -22,13 +22,6 @@ func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (pt
 	var response ptarmiganpb.KVTxnResponse
 
 	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
-		// revision, err := transaction.NewRevision()
-
-		// if err != nil {
-
-		// 	return fmt.Errorf("could not create new revision: %s", err)
-		// }
-		// logger.With(zap.Int64("revision", revision.Revision()))
 		view, err := transaction.View(mvcc.RevisionNewest)
 
 		if err != nil && err != mvcc.ErrNoRevisions {
@@ -215,10 +208,17 @@ func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View
 				ResponsePut: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestQuery:
-			r, err := query(logger, revision, *op.GetRequestQuery())
+			var r ptarmiganpb.KVQueryResponse
 
-			if err != nil {
-				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
+			if view == nil {
+				r.Kvs = []*ptarmiganpb.KeyValue{}
+			} else {
+				// view can be nil if this store has no revisions
+				r, err = query(logger, view, *op.GetRequestQuery())
+
+				if err != nil {
+					return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
+				}
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseQuery{
@@ -267,6 +267,7 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 		response.Deleted++
 
 		if r.PrevKv {
+			kv.Key = copy(key)
 			response.PrevKvs = append(response.PrevKvs, &kv)
 		}
 
@@ -328,12 +329,12 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 	for selection.Next() {
 		key := selection.Value().(kv_marshaled.KV).Key()
 		kv := selection.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+		newKV := updateKV(kv, r, revision.Revision())
 
 		if r.PrevKv {
+			kv.Key = copy(key)
 			response.PrevKvs = append(response.PrevKvs, &kv)
 		}
-
-		newKV := updateKV(kv, r, revision.Revision())
 
 		logger.Debug("update KV", zap.Binary("key", key), zap.Any("new", newKV), zap.Any("old", kv))
 

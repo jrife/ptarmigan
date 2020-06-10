@@ -73,7 +73,7 @@ func Compare(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 // valid for the replica store
 func KVRequestOp(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
-		// KVQueryRequest(replicaStore),
+		KVQueryRequest(replicaStore),
 		KVPutRequest(replicaStore),
 		KVDeleteRequest(replicaStore),
 		// KVTxnRequest(replicaStore),
@@ -154,8 +154,19 @@ func ExistingKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 }
 
 func KVQueryRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.PtrOf(gen.Const(ptarmiganpb.KVQueryRequest{
-		Limit: -1,
+	return gen.PtrOf(gopter.CombineGens(
+		KVSelection(replicaStore),
+	).Map(func(g []interface{}) ptarmiganpb.KVQueryRequest {
+		var queryRequest ptarmiganpb.KVQueryRequest
+
+		queryRequest.Selection = g[0].(*ptarmiganpb.KVSelection)
+		queryRequest.After = ""
+		queryRequest.Limit = 0
+		queryRequest.Revision = 0
+		queryRequest.SortOrder = ptarmiganpb.KVQueryRequest_ASC
+		queryRequest.SortTarget = ptarmiganpb.KVQueryRequest_KEY
+
+		return queryRequest
 	}))
 }
 

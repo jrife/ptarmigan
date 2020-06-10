@@ -270,22 +270,6 @@ func (partition *partition) oldestRevision(transaction composite.Transaction) (i
 	return iter.revision(), nil
 }
 
-func (partition *partition) nextRevision(transaction composite.Transaction) (int64, error) {
-	lastRevision, err := partition.newestRevision(transaction)
-
-	if err != nil {
-		return 0, err
-	}
-
-	nextRevision := lastRevision + 1
-
-	if nextRevision < 0 {
-		return 0, fmt.Errorf("rollover detected, this should not happen")
-	}
-
-	return nextRevision, nil
-}
-
 func (partition *partition) revisionsNamespace(transaction composite.Transaction) composite.Transaction {
 	return composite.Namespace(transaction, revisionsPrefix)
 }
@@ -422,10 +406,22 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 		return nil, ErrReadOnly
 	}
 
-	nextRevision, err := transaction.partition.nextRevision(transaction.txn)
+	newestRevision, err := transaction.partition.newestRevision(transaction.txn)
 
 	if err != nil {
-		return nil, wrapError("could not calculate next revision number", err)
+		return nil, wrapError("unable to retrieve current revision", err)
+	}
+
+	oldestRevision, err := transaction.partition.oldestRevision(transaction.txn)
+
+	if err != nil {
+		return nil, wrapError("unable to retrieve oldest revision", err)
+	}
+
+	nextRevision := newestRevision + 1
+
+	if nextRevision < 0 {
+		return nil, fmt.Errorf("rollover detected, this should not happen")
 	}
 
 	revisionsTxn := transaction.partition.revisionsNamespace(transaction.txn)
@@ -436,9 +432,11 @@ func (transaction *transaction) NewRevision() (Revision, error) {
 
 	r := &revision{
 		view: view{
-			partition: transaction.partition,
-			txn:       transaction.txn,
-			revision:  nextRevision,
+			oldestRevision: oldestRevision,
+			newestRevision: nextRevision,
+			partition:      transaction.partition,
+			txn:            transaction.txn,
+			revision:       nextRevision,
 		},
 	}
 
@@ -486,7 +484,13 @@ func (transaction *transaction) View(revision int64) (View, error) {
 		return nil, ErrCompacted
 	}
 
-	return &view{partition: transaction.partition, revision: revision, txn: transaction.txn}, nil
+	return &view{
+		oldestRevision: oldestRevision,
+		newestRevision: newestRevision,
+		partition:      transaction.partition,
+		revision:       revision,
+		txn:            transaction.txn,
+	}, nil
 }
 
 // Compact implements Transaction.Compact
@@ -607,14 +611,27 @@ func (revision *revision) Put(key []byte, value []byte) error {
 
 // Delete implements Revision.Delete
 func (revision *revision) Delete(key []byte) error {
-	v, err := revision.Get(key)
+	var lastValue []byte
+	var err error
 
-	if err != nil {
-		return wrapError("could not get key", err)
+	latestView, _ := revision.Prev()
+
+	if latestView != nil {
+		lastValue, err = latestView.Get(key)
+
+		if err != nil {
+			return wrapError("could not get key", err)
+		}
 	}
 
-	if v == nil {
-		return nil
+	if lastValue == nil {
+		// If this key was not present in the last revision then nothing will have changed
+		// if it is "deleted" in this revision. Delete any trace of it in this revision.
+		if err := revision.partition.revisionsNamespace(revision.txn).Delete(composite_keys.Key(newRevisionsKey(revision.revision, key))); err != nil {
+			return err
+		}
+
+		return revision.partition.keysNamespace(revision.txn).Delete(composite_keys.Key(newKeysKey(key, revision.revision)))
 	}
 
 	if err := revision.partition.revisionsNamespace(revision.txn).Put(composite_keys.Key(newRevisionsKey(revision.revision, key)), newRevisionsValue(nil)); err != nil {
@@ -625,15 +642,45 @@ func (revision *revision) Delete(key []byte) error {
 }
 
 type view struct {
-	revision  int64
-	partition *partition
-	txn       composite.Transaction
-	close     sync.Once
+	revision       int64
+	oldestRevision int64
+	newestRevision int64
+	partition      *partition
+	txn            composite.Transaction
+}
+
+// Next implements View.Next
+func (v *view) Next() (View, error) {
+	if v.revision == v.newestRevision {
+		return nil, ErrRevisionTooHigh
+	}
+
+	return &view{
+		revision:       v.revision + 1,
+		oldestRevision: v.oldestRevision,
+		newestRevision: v.newestRevision,
+		partition:      v.partition,
+		txn:            v.txn,
+	}, nil
+}
+
+func (v *view) Prev() (View, error) {
+	if v.revision == v.oldestRevision || v.revision == 1 {
+		return nil, ErrCompacted
+	}
+
+	return &view{
+		revision:       v.revision - 1,
+		oldestRevision: v.oldestRevision,
+		newestRevision: v.newestRevision,
+		partition:      v.partition,
+		txn:            v.txn,
+	}, nil
 }
 
 // Get implements View.Get
-func (view *view) Get(key []byte) ([]byte, error) {
-	iter, err := view.Keys(keys.All().Eq(key), kv.SortOrderAsc)
+func (v *view) Get(key []byte) ([]byte, error) {
+	iter, err := v.Keys(keys.All().Eq(key), kv.SortOrderAsc)
 
 	if err != nil {
 		return nil, err
@@ -647,8 +694,8 @@ func (view *view) Get(key []byte) ([]byte, error) {
 }
 
 // Keys implements View.Keys
-func (view *view) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error) {
-	iter, err := newViewRevisionsIterator(view.partition.keysNamespace(view.txn), keys.Min, keys.Max, view.revision, order)
+func (v *view) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error) {
+	iter, err := newViewRevisionsIterator(v.partition.keysNamespace(v.txn), keys.Min, keys.Max, v.revision, order)
 
 	if err != nil {
 		return nil, wrapError("could not create iterator", err)
@@ -658,8 +705,8 @@ func (view *view) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error)
 }
 
 // Changes implements View.Changes
-func (view *view) Changes(keys keys.Range, includePrev bool) (DiffIterator, error) {
-	iter, err := newViewRevisionDiffsIterator(view.partition.revisionsNamespace(view.txn), keys.Min, keys.Max, view.revision)
+func (v *view) Changes(keys keys.Range) (DiffIterator, error) {
+	iter, err := newViewRevisionDiffsIterator(v.partition.revisionsNamespace(v.txn), keys.Min, keys.Max, v.revision)
 
 	if err != nil {
 		return nil, wrapError("could not create diff iterator", err)
@@ -669,6 +716,6 @@ func (view *view) Changes(keys keys.Range, includePrev bool) (DiffIterator, erro
 }
 
 // Revision implements View.Revision
-func (view *view) Revision() int64 {
-	return view.revision
+func (v *view) Revision() int64 {
+	return v.revision
 }

@@ -255,6 +255,9 @@ func (replicaStore *replicaStore) Query(ctx context.Context, q ptarmiganpb.KVQue
 
 // Changes implements ReplicaStore.Changes
 func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
+	logger := log.WithContext(ctx, replicaStore.logger).With(zap.String("operation", "Changes"))
+	logger.Debug("start", zap.Any("watch", watch))
+
 	var response []ptarmiganpb.Event = []ptarmiganpb.Event{}
 
 	if watch.Start == nil {
@@ -272,7 +275,7 @@ func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb
 			return err
 		}
 
-		for err != mvcc.ErrRevisionTooHigh && (limit <= 0 || len(response) < limit) {
+		for err == nil && (limit <= 0 || len(response) < limit) {
 			response, err = changes(response, view, watch.Start.Key, limit, watch.PrevKv)
 
 			if err != nil {
@@ -292,6 +295,8 @@ func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb
 
 		return err
 	})
+
+	logger.Debug("return", zap.Any("response", response), zap.Error(err))
 
 	if err != nil {
 		return nil, err
