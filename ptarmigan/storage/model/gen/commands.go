@@ -58,6 +58,7 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 		}
 
 		if diff := cmp.Diff(model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}), kvs); diff != "" {
+			fmt.Printf("expected: %#v\nactual: %#v\n", model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}).Kvs[0], kvs.Kvs[0])
 			return fmt.Sprintf("kvs don't match at revision %d: %s", revision, diff), nil
 		}
 	}
@@ -248,6 +249,7 @@ func (command changesCommand) PostCondition(state commands.State, result command
 
 	if diff != "" {
 		fmt.Printf("%s\n", diff)
+		fmt.Printf("expected %#v\n", state.(*model.ReplicaStoreModel).Changes(command.KVWatchRequest, command.Limit))
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 

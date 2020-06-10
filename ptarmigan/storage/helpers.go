@@ -62,5 +62,9 @@ func unmarshalKV(b []byte) (interface{}, error) {
 		return nil, err
 	}
 
+	if kv.Value == nil {
+		kv.Value = []byte{}
+	}
+
 	return kv, nil
 }

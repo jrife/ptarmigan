@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -155,7 +156,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 				resp.PrevKvs = []*ptarmiganpb.KeyValue{}
 			}
 
-			if op.GetRequestPut().Key != nil {
+			if len(op.GetRequestPut().Key) != 0 {
 				rawKV, ok := revision.kvs.Get(op.GetRequestPut().Key)
 
 				if ok {
@@ -177,8 +178,12 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 					newKV.Lease = op.GetRequestPut().Lease
 				}
 
-				if !op.GetRequestPut().IgnoreValue && op.GetRequestPut().Value != nil {
+				if !op.GetRequestPut().IgnoreValue {
 					newKV.Value = op.GetRequestPut().Value
+				}
+
+				if newKV.Value == nil {
+					newKV.Value = []byte{}
 				}
 
 				if op.GetRequestPut().PrevKv {
@@ -340,6 +345,8 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 			changes[i] = change
 		}
 	}
+
+	fmt.Printf("Model changes %#v\n", changes)
 
 	return changes
 }

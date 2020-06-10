@@ -107,9 +107,7 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 
 		if diffsIter.IsDelete() {
 			event.Type = ptarmiganpb.Event_DELETE
-		}
-
-		if diffsIter.IsPut() {
+		} else if diffsIter.IsPut() {
 			kv, err := unmarshalKV(diffsIter.Value())
 
 			if err != nil {

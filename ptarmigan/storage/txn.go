@@ -241,7 +241,7 @@ func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View
 				ResponseTxn: &r,
 			}
 		default:
-			return nil, nil, fmt.Errorf("unrecognized transaction op type: %d", i)
+			logger.Debug("unrecognized transaction op type", zap.Int("i", i))
 		}
 
 		responses[i] = &responseOp
@@ -262,14 +262,17 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(r.Selection))
 
 	for selection.Next() {
-		kv := selection.Value().(ptarmiganpb.KeyValue)
+		key := selection.Value().(kv_marshaled.KV).Key()
+		kv := selection.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 		response.Deleted++
 
 		if r.PrevKv {
 			response.PrevKvs = append(response.PrevKvs, &kv)
 		}
 
-		if err := revision.Delete(kv.Key); err != nil {
+		logger.Debug("delete KV", zap.Binary("key", key), zap.Any("old", kv))
+
+		if err := revision.Delete(key); err != nil {
 			return ptarmiganpb.KVDeleteResponse{}, fmt.Errorf("could not delete key %#v: %s", kv.Key, err)
 		}
 	}
@@ -284,7 +287,7 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPutRequest) (ptarmiganpb.KVPutResponse, error) {
 	var response ptarmiganpb.KVPutResponse
 
-	if r.Key != nil {
+	if len(r.Key) != 0 {
 		// Key overrides selection. Key lets a user create key as opposed to just
 		// updating existing keys
 		logger.Debug("single key", zap.Binary("key", r.Key))
@@ -323,7 +326,8 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(r.Selection))
 
 	for selection.Next() {
-		kv := selection.Value().(ptarmiganpb.KeyValue)
+		key := selection.Value().(kv_marshaled.KV).Key()
+		kv := selection.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 
 		if r.PrevKv {
 			response.PrevKvs = append(response.PrevKvs, &kv)
@@ -331,8 +335,10 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 
 		newKV := updateKV(kv, r, revision.Revision())
 
-		if err := kvMap(revision).Put(kv.Key, &newKV); err != nil {
-			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", kv.Key, err)
+		logger.Debug("update KV", zap.Binary("key", key), zap.Any("new", newKV), zap.Any("old", kv))
+
+		if err := kvMap(revision).Put(key, &newKV); err != nil {
+			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", key, err)
 		}
 	}
 
