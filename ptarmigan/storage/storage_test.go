@@ -246,6 +246,8 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	parameters := gopter.DefaultTestParametersWithSeed(1234)
+	parameters.MinSuccessfulTests = 100
+	parameters.MaxSize = 50
 	properties := gopter.NewProperties(parameters)
 	properties.Property("", commands.Prop(cbCommands))
 	properties.TestingRun(t)

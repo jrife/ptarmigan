@@ -88,7 +88,7 @@ func executeTxnOp(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.Vi
 }
 
 func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Compare) (bool, error) {
-	if compare == nil {
+	if compare == nil || view == nil {
 		return true, nil
 	}
 
@@ -101,7 +101,9 @@ func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Com
 	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(compare.Selection))
 
 	for selection.Next() {
-		kv := selection.Value().(ptarmiganpb.KeyValue)
+		key := selection.Value().(kv_marshaled.KV).Key()
+		kv := selection.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+		kv.Key = key
 
 		logger.Debug("next KeyValue", zap.Any("value", kv))
 
@@ -124,14 +126,34 @@ func checkPredicate(kv ptarmiganpb.KeyValue, predicate *ptarmiganpb.KVPredicate)
 
 	switch predicate.Target {
 	case ptarmiganpb.KVPredicate_CREATE:
+		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_CreateRevision); !ok {
+			return false
+		}
+
 		return checkIntPredicate(kv.CreateRevision, predicate.GetCreateRevision(), predicate.Comparison)
 	case ptarmiganpb.KVPredicate_VERSION:
+		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_Version); !ok {
+			return false
+		}
+
 		return checkIntPredicate(kv.Version, predicate.GetVersion(), predicate.Comparison)
 	case ptarmiganpb.KVPredicate_MOD:
+		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_ModRevision); !ok {
+			return false
+		}
+
 		return checkIntPredicate(kv.ModRevision, predicate.GetModRevision(), predicate.Comparison)
 	case ptarmiganpb.KVPredicate_LEASE:
+		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_Lease); !ok {
+			return false
+		}
+
 		return checkIntPredicate(kv.Lease, predicate.GetLease(), predicate.Comparison)
 	case ptarmiganpb.KVPredicate_VALUE:
+		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_Value); !ok {
+			return false
+		}
+
 		return checkIntPredicate(int64(bytes.Compare(kv.Value, predicate.GetValue())), 0, predicate.Comparison)
 	}
 
@@ -208,16 +230,33 @@ func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View
 				ResponsePut: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestQuery:
-			var r ptarmiganpb.KVQueryResponse
+			var r ptarmiganpb.KVQueryResponse = ptarmiganpb.KVQueryResponse{Kvs: []*ptarmiganpb.KeyValue{}}
+			var queryView mvcc.View
+			var err error
 
-			if view == nil {
-				r.Kvs = []*ptarmiganpb.KeyValue{}
-			} else {
-				// view can be nil if this store has no revisions
-				r, err = query(logger, view, *op.GetRequestQuery())
+			if view != nil {
+				if op.GetRequestQuery().Revision == mvcc.RevisionNewest {
+					queryView = view
+				} else {
+					queryView, err = transaction.View(op.GetRequestQuery().Revision)
+				}
 
-				if err != nil {
-					return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
+				switch err {
+				case mvcc.ErrRevisionTooHigh:
+					logger.Debug("revision number too high")
+				case mvcc.ErrCompacted:
+					logger.Debug("revision compacted")
+				case mvcc.ErrNoRevisions:
+					logger.Debug("no revisions")
+				case nil:
+					// view can be nil if this store has no revisions
+					r, err = query(logger, queryView, *op.GetRequestQuery())
+
+					if err != nil {
+						return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
+					}
+				default:
+					return nil, nil, fmt.Errorf("could not retrieve revision %d: %s", op.GetRequestQuery().Revision, err)
 				}
 			}
 
@@ -256,8 +295,6 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 	if r.PrevKv {
 		response.PrevKvs = []*ptarmiganpb.KeyValue{}
 	}
-
-	fmt.Printf("selection range %#v\n", selectionRange(r.Selection))
 
 	iter, err := kvMapReader(revision).Keys(selectionRange(r.Selection), kv.SortOrderAsc)
 

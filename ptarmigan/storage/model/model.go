@@ -30,7 +30,7 @@ func (replicaStoreModel ReplicaStoreModel) revision(r int64) (RevisionModel, int
 
 	if r == mvcc.RevisionNewest {
 		r = replicaStoreModel.revisions[len(replicaStoreModel.revisions)-1].revision
-	} else if r == mvcc.RevisionOldest {
+	} else if r <= mvcc.RevisionOldest {
 		r = replicaStoreModel.revisions[0].revision
 	}
 
@@ -225,7 +225,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			resp, ok := query(*op.GetRequestQuery(), &replicaStoreModelCopy)
 
 			if !ok {
-				return ptarmiganpb.KVTxnResponse{}, false
+				resp.Kvs = []*ptarmiganpb.KeyValue{}
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseQuery{

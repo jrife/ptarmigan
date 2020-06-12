@@ -55,12 +55,21 @@ func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest)
 		counted = stream.Pipeline(results, count(&response.Count))
 		results = stream.Pipeline(counted, after(query), sort(query, int(limit)), stream.Limit(int(limit)))
 	} else {
-		results = stream.Pipeline(results, after(query), sort(query, int(limit)), stream.Limit(int(limit)))
+		results = stream.Pipeline(
+			results,
+			after(query),
+			sort(query, int(limit)),
+			stream.Limit(int(limit)),
+		)
 	}
 
 	for results.Next() {
 		kv := results.Value().(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 		kv.Key = copy(results.Value().(kv_marshaled.KV).Key())
+
+		if query.ExcludeValues {
+			kv.Value = nil
+		}
 
 		logger.Debug("next KeyValue", zap.Any("value", kv))
 
@@ -92,10 +101,32 @@ func query(logger *zap.Logger, view mvcc.View, query ptarmiganpb.KVQueryRequest)
 	}
 
 	if len(response.Kvs) > 0 {
-		response.After = base64.StdEncoding.EncodeToString(response.Kvs[len(response.Kvs)-1].Key)
+		response.After = cursor(*response.Kvs[len(response.Kvs)-1], query.SortTarget)
 	}
 
 	return response, nil
+}
+
+func cursor(kv ptarmiganpb.KeyValue, sortTarget ptarmiganpb.KVQueryRequest_SortTarget) string {
+	var cursorBytes []byte
+
+	switch sortTarget {
+	case ptarmiganpb.KVQueryRequest_VERSION:
+		cursorBytes = make([]byte, 8)
+		binary.BigEndian.PutUint64(cursorBytes, uint64(kv.Version))
+	case ptarmiganpb.KVQueryRequest_CREATE:
+		cursorBytes = make([]byte, 8)
+		binary.BigEndian.PutUint64(cursorBytes, uint64(kv.CreateRevision))
+	case ptarmiganpb.KVQueryRequest_MOD:
+		cursorBytes = make([]byte, 8)
+		binary.BigEndian.PutUint64(cursorBytes, uint64(kv.ModRevision))
+	case ptarmiganpb.KVQueryRequest_VALUE:
+		cursorBytes = kv.Value
+	default:
+		cursorBytes = kv.Key
+	}
+
+	return base64.StdEncoding.EncodeToString(cursorBytes)
 }
 
 // Changes implements View.Changes
@@ -210,40 +241,26 @@ func selectionRange(selection *ptarmiganpb.KVSelection) keys.Range {
 		return keyRange
 	}
 
-	fmt.Printf("%#v\n", selection)
-
 	// short circuits any range specifier
-	if len(selection.GetKey()) != 0 {
-		fmt.Printf("eq %#v\n", selection.GetKey())
-
-		return keyRange.Eq(selection.GetKey())
+	if selection.GetKey() != nil {
+		keyRange = keyRange.Eq(selection.GetKey())
 	}
 
 	switch selection.KeyRangeMin.(type) {
 	case *ptarmiganpb.KVSelection_KeyGte:
-		fmt.Printf("gte %#v\n", selection.GetKeyGte())
-
 		keyRange = keyRange.Gte(selection.GetKeyGte())
 	case *ptarmiganpb.KVSelection_KeyGt:
-		fmt.Printf("gt %#v\n", selection.GetKeyGt())
-
 		keyRange = keyRange.Gt(selection.GetKeyGt())
 	}
 
 	switch selection.KeyRangeMax.(type) {
 	case *ptarmiganpb.KVSelection_KeyLte:
-		fmt.Printf("lte %#v\n", selection.GetKeyLte())
-
 		keyRange = keyRange.Lte(selection.GetKeyLte())
 	case *ptarmiganpb.KVSelection_KeyLt:
-		fmt.Printf("lt %#v\n", selection.GetKeyLt())
-
 		keyRange = keyRange.Lt(selection.GetKeyLt())
 	}
 
 	if len(selection.GetKeyStartsWith()) != 0 {
-		fmt.Printf("prefix %#v\n", selection.GetKeyStartsWith())
-
 		keyRange = keyRange.Prefix(selection.GetKeyStartsWith())
 	}
 
@@ -258,20 +275,29 @@ func refineRange(keyRange keys.Range, query ptarmiganpb.KVQueryRequest) keys.Ran
 		return keyRange
 	}
 
-	if query.SortTarget != ptarmiganpb.KVQueryRequest_KEY {
-		// Key order is not correlated with sort order for query. Must search entire
-		// range and filter.
+	switch query.SortTarget {
+	case ptarmiganpb.KVQueryRequest_VERSION:
+		fallthrough
+	case ptarmiganpb.KVQueryRequest_CREATE:
+		fallthrough
+	case ptarmiganpb.KVQueryRequest_MOD:
+		fallthrough
+	case ptarmiganpb.KVQueryRequest_VALUE:
 		return keyRange
 	}
 
 	if query.After != "" {
-		switch query.SortOrder {
-		case ptarmiganpb.KVQueryRequest_DESC:
-			keyRange = keyRange.Lt([]byte(query.After))
-		case ptarmiganpb.KVQueryRequest_ASC:
-			fallthrough
-		default:
-			keyRange = keyRange.Gt([]byte(query.After))
+		a, err := base64.StdEncoding.DecodeString(query.After)
+
+		if err == nil {
+			switch query.SortOrder {
+			case ptarmiganpb.KVQueryRequest_DESC:
+				keyRange = keyRange.Lt(a)
+			case ptarmiganpb.KVQueryRequest_ASC:
+				fallthrough
+			default:
+				keyRange = keyRange.Gt(a)
+			}
 		}
 	}
 
@@ -300,43 +326,78 @@ func (counter *counter) Next() bool {
 }
 
 func after(query ptarmiganpb.KVQueryRequest) stream.Processor {
+	a, err := base64.StdEncoding.DecodeString(query.After)
+
+	if err != nil {
+		a = []byte{}
+	}
+
 	switch query.SortTarget {
 	case ptarmiganpb.KVQueryRequest_VERSION:
-		return stream.Filter(func(a interface{}) bool {
-			if len(a.([]byte)) != 8 {
+		return stream.Filter(func(rawKV interface{}) bool {
+			if len(a) != 8 {
 				return true
 			}
 
-			v := int64(binary.BigEndian.Uint64(a.([]byte)[:]))
+			if query.SortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				return rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).Version < int64(binary.BigEndian.Uint64(a))
+			}
 
-			return a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).Version > v
+			return rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).Version > int64(binary.BigEndian.Uint64(a))
 		})
 	case ptarmiganpb.KVQueryRequest_CREATE:
-		return stream.Filter(func(a interface{}) bool {
-			if len(a.([]byte)) != 8 {
+		return stream.Filter(func(rawKV interface{}) bool {
+			if len(a) != 8 {
 				return true
 			}
 
-			v := int64(binary.BigEndian.Uint64(a.([]byte)[:]))
+			if query.SortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				return rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).CreateRevision < int64(binary.BigEndian.Uint64(a))
+			}
 
-			return a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).CreateRevision > v
+			return rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).CreateRevision > int64(binary.BigEndian.Uint64(a))
 		})
 	case ptarmiganpb.KVQueryRequest_MOD:
-		return stream.Filter(func(a interface{}) bool {
-			if len(a.([]byte)) != 8 {
+		return stream.Filter(func(rawKV interface{}) bool {
+			if len(a) != 8 {
 				return true
 			}
 
-			v := int64(binary.BigEndian.Uint64(a.([]byte)[:]))
+			if query.SortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				return rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).ModRevision < int64(binary.BigEndian.Uint64(a))
+			}
 
-			return a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).ModRevision > v
+			return rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).ModRevision > int64(binary.BigEndian.Uint64(a))
 		})
 	case ptarmiganpb.KVQueryRequest_VALUE:
-		return stream.Filter(func(a interface{}) bool {
-			return bytes.Compare(a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).Value, []byte(query.After)) > 0
+		return stream.Filter(func(rawKV interface{}) bool {
+			if len(a) == 0 {
+				return true
+			}
+
+			if query.SortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				return bytes.Compare(rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).Value, a) < 0
+			}
+
+			return bytes.Compare(rawKV.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue).Value, a) > 0
 		})
 	default:
-		return nil
+		if !query.IncludeCount {
+			return nil
+		}
+
+		// Must count all keys matching the selection every time. Must enforce cursor here instead of letting KV driver do it.
+		return stream.Filter(func(rawKV interface{}) bool {
+			if len(a) == 0 {
+				return true
+			}
+
+			if query.SortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				return bytes.Compare(rawKV.(kv_marshaled.KV).Key(), a) < 0
+			}
+
+			return bytes.Compare(rawKV.(kv_marshaled.KV).Key(), a) > 0
+		})
 	}
 }
 
@@ -406,8 +467,8 @@ func sort(query ptarmiganpb.KVQueryRequest, limit int) stream.Processor {
 	switch query.SortTarget {
 	case ptarmiganpb.KVQueryRequest_VERSION:
 		compare = func(a interface{}, b interface{}) int {
-			kvA := a.(ptarmiganpb.KeyValue)
-			kvB := b.(ptarmiganpb.KeyValue)
+			kvA := a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+			kvB := b.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 
 			if kvA.Version < kvB.Version {
 				return -1
@@ -415,12 +476,12 @@ func sort(query ptarmiganpb.KVQueryRequest, limit int) stream.Processor {
 				return 1
 			}
 
-			return 0
+			return bytes.Compare(a.(kv_marshaled.KV).Key(), b.(kv_marshaled.KV).Key())
 		}
 	case ptarmiganpb.KVQueryRequest_CREATE:
 		compare = func(a interface{}, b interface{}) int {
-			kvA := a.(ptarmiganpb.KeyValue)
-			kvB := b.(ptarmiganpb.KeyValue)
+			kvA := a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+			kvB := b.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 
 			if kvA.CreateRevision < kvB.CreateRevision {
 				return -1
@@ -428,12 +489,12 @@ func sort(query ptarmiganpb.KVQueryRequest, limit int) stream.Processor {
 				return 1
 			}
 
-			return 0
+			return bytes.Compare(a.(kv_marshaled.KV).Key(), b.(kv_marshaled.KV).Key())
 		}
 	case ptarmiganpb.KVQueryRequest_MOD:
 		compare = func(a interface{}, b interface{}) int {
-			kvA := a.(ptarmiganpb.KeyValue)
-			kvB := b.(ptarmiganpb.KeyValue)
+			kvA := a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+			kvB := b.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 
 			if kvA.ModRevision < kvB.ModRevision {
 				return -1
@@ -441,22 +502,29 @@ func sort(query ptarmiganpb.KVQueryRequest, limit int) stream.Processor {
 				return 1
 			}
 
-			return 0
+			return bytes.Compare(a.(kv_marshaled.KV).Key(), b.(kv_marshaled.KV).Key())
 		}
 	case ptarmiganpb.KVQueryRequest_VALUE:
 		compare = func(a interface{}, b interface{}) int {
-			kvA := a.(ptarmiganpb.KeyValue)
-			kvB := b.(ptarmiganpb.KeyValue)
+			kvA := a.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+			kvB := b.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 
-			return bytes.Compare(kvA.Value, kvB.Value)
+			cmp := bytes.Compare(kvA.Value, kvB.Value)
+
+			if cmp != 0 {
+				return cmp
+			}
+
+			return bytes.Compare(a.(kv_marshaled.KV).Key(), b.(kv_marshaled.KV).Key())
 		}
 	default:
 		return nil
 	}
 
 	if query.SortOrder == ptarmiganpb.KVQueryRequest_DESC {
+		oldCompare := compare
 		compare = func(a interface{}, b interface{}) int {
-			return -1 * compare(a, b)
+			return -1 * oldCompare(a, b)
 		}
 	}
 

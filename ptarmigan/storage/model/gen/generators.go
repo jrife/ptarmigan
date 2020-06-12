@@ -1,6 +1,9 @@
 package gen
 
 import (
+	"encoding/base64"
+	"encoding/binary"
+
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/ptarmigan/storage/model"
 	"github.com/jrife/flock/storage/mvcc"
@@ -49,7 +52,7 @@ func ChangesCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 // TxnCommand returns a generator that generates txn commands
 // that are valid for the replica store
 func TxnCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return KVTxnRequest(replicaStore).SuchThat(func(txnRequest *ptarmiganpb.KVTxnRequest) bool {
+	return KVTxnRequest(replicaStore, 0).SuchThat(func(txnRequest *ptarmiganpb.KVTxnRequest) bool {
 		return txnRequest != nil
 	}).Map(func(txnRequest *ptarmiganpb.KVTxnRequest) commands.Command {
 		return txnCommand(*txnRequest)
@@ -71,22 +74,45 @@ func CompactCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 // Compare returns a generator that generates comparisons that are
 // valid for the replica store
 func Compare(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Int64().Map(func(n int64) *ptarmiganpb.Compare {
-		var compare *ptarmiganpb.Compare
+	return gen.PtrOf(gopter.CombineGens(
+		KVSelection(replicaStore),
+		KVPredicate(replicaStore),
+	).Map(func(g []interface{}) ptarmiganpb.Compare {
+		var compare ptarmiganpb.Compare
+
+		if g[0] != nil {
+			compare.Selection = g[0].(*ptarmiganpb.KVSelection)
+		}
+
+		if g[1] != nil {
+			compare.Predicate = g[1].(*ptarmiganpb.KVPredicate)
+		}
 
 		return compare
-	})
+	}))
 }
 
 // KVRequestOp returns a generator that generates request ops that are
 // valid for the replica store
-func KVRequestOp(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.OneGenOf(
-		KVQueryRequest(replicaStore),
-		KVPutRequest(replicaStore),
-		KVDeleteRequest(replicaStore),
-		// KVTxnRequest(replicaStore),
-	).Map(func(g *gopter.GenResult) *ptarmiganpb.KVRequestOp {
+func KVRequestOp(replicaStore *model.ReplicaStoreModel, depth int) gopter.Gen {
+	return gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen:    KVTxnRequest(replicaStore, depth+1),
+		},
+		{
+			Weight: 50,
+			Gen:    KVQueryRequest(replicaStore),
+		},
+		{
+			Weight: 50,
+			Gen:    KVPutRequest(replicaStore),
+		},
+		{
+			Weight: 50,
+			Gen:    KVDeleteRequest(replicaStore),
+		},
+	}).Map(func(g *gopter.GenResult) *ptarmiganpb.KVRequestOp {
 		var requestOp ptarmiganpb.KVRequestOp
 
 		switch g.Result.(type) {
@@ -215,6 +241,13 @@ func ExistingKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 func KVQueryRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gopter.CombineGens(
 		KVSelection(replicaStore),
+		gen.Int64Range(-1, 100),
+		Revision(replicaStore),
+		SortOrder(),
+		SortTarget(),
+		gen.Bool(),
+		gen.Bool(),
+		After(replicaStore),
 	).Map(func(g []interface{}) ptarmiganpb.KVQueryRequest {
 		var queryRequest ptarmiganpb.KVQueryRequest
 
@@ -222,14 +255,60 @@ func KVQueryRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 			queryRequest.Selection = g[0].(*ptarmiganpb.KVSelection)
 		}
 
-		queryRequest.After = ""
-		queryRequest.Limit = 0
-		queryRequest.Revision = 0
-		queryRequest.SortOrder = ptarmiganpb.KVQueryRequest_ASC
-		queryRequest.SortTarget = ptarmiganpb.KVQueryRequest_KEY
+		queryRequest.Limit = g[1].(int64)
+		queryRequest.Revision = g[2].(int64)
+		queryRequest.SortOrder = g[3].(ptarmiganpb.KVQueryRequest_SortOrder)
+		queryRequest.SortTarget = g[4].(ptarmiganpb.KVQueryRequest_SortTarget)
+		queryRequest.IncludeCount = g[5].(bool)
+		queryRequest.ExcludeValues = g[6].(bool)
+		queryRequest.After = g[7].(string)
 
 		return queryRequest
 	}))
+}
+
+func After(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.OneGenOf(
+		gen.OneGenOf(
+			Key(replicaStore),
+			Value(replicaStore),
+		).Map(func(g interface{}) []byte {
+			return g.(*gopter.GenResult).Result.([]byte)
+		}),
+		gen.OneGenOf(
+			ExistingVersion(replicaStore).Map(func(v ptarmiganpb.KVPredicate_Version) int64 { return v.Version }),
+			ExistingRevision(replicaStore),
+			gen.Int64(),
+		).Map(func(g interface{}) []byte {
+			i := g.(*gopter.GenResult).Result.(int64)
+			b := make([]byte, 8)
+
+			binary.BigEndian.PutUint64(b, uint64(i))
+
+			return b
+		}),
+	).Map(func(b []byte) string {
+		return base64.StdEncoding.EncodeToString(b)
+	})
+}
+
+func SortOrder() gopter.Gen {
+	return gen.OneGenOf(
+		gen.Const(ptarmiganpb.KVQueryRequest_ASC),
+		gen.Const(ptarmiganpb.KVQueryRequest_DESC),
+		gen.Int32().Map(func(i int32) ptarmiganpb.KVQueryRequest_SortOrder { return ptarmiganpb.KVQueryRequest_SortOrder(i) }),
+	)
+}
+
+func SortTarget() gopter.Gen {
+	return gen.OneGenOf(
+		gen.Const(ptarmiganpb.KVQueryRequest_KEY),
+		gen.Const(ptarmiganpb.KVQueryRequest_VERSION),
+		gen.Const(ptarmiganpb.KVQueryRequest_CREATE),
+		gen.Const(ptarmiganpb.KVQueryRequest_MOD),
+		gen.Const(ptarmiganpb.KVQueryRequest_VALUE),
+		gen.Int32().Map(func(i int32) ptarmiganpb.KVQueryRequest_SortTarget { return ptarmiganpb.KVQueryRequest_SortTarget(i) }),
+	)
 }
 
 func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
@@ -282,11 +361,15 @@ func KVDeleteRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
-func KVTxnRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func KVTxnRequest(replicaStore *model.ReplicaStoreModel, depth int) gopter.Gen {
+	if depth > 1 {
+		return gen.Const(nil)
+	}
+
 	return gen.PtrOf(gopter.CombineGens(
 		gen.PtrOf(gen.SliceOf(Compare(replicaStore))),
-		gen.PtrOf(gen.SliceOf(KVRequestOp(replicaStore))),
-		gen.PtrOf(gen.SliceOf(KVRequestOp(replicaStore))),
+		gen.PtrOf(gen.SliceOf(KVRequestOp(replicaStore, depth))),
+		gen.PtrOf(gen.SliceOf(KVRequestOp(replicaStore, depth))),
 	).Map(func(g []interface{}) ptarmiganpb.KVTxnRequest {
 		var txnRequest = ptarmiganpb.KVTxnRequest{}
 
@@ -601,9 +684,186 @@ func ExistingLease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 // KVPredicate returns a generator that generates predicates that are
 // valid for the replica store
 func KVPredicate(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Int64().Map(func(n int64) *ptarmiganpb.KVPredicate {
-		var predicate *ptarmiganpb.KVPredicate
+	return gen.PtrOf(gopter.CombineGens(
+		Comparison(),
+		Target(replicaStore),
+	).Map(func(g []interface{}) ptarmiganpb.KVPredicate {
+		var predicate ptarmiganpb.KVPredicate
+		target := g[1].([]interface{})
+
+		predicate.Comparison = g[0].(ptarmiganpb.KVPredicate_Comparison)
+		predicate.Target = target[0].(ptarmiganpb.KVPredicate_Target)
+
+		switch target[1].(type) {
+		case *ptarmiganpb.KVPredicate_CreateRevision:
+			predicate.TargetUnion = target[1].(*ptarmiganpb.KVPredicate_CreateRevision)
+		case *ptarmiganpb.KVPredicate_ModRevision:
+			predicate.TargetUnion = target[1].(*ptarmiganpb.KVPredicate_ModRevision)
+		case *ptarmiganpb.KVPredicate_Version:
+			predicate.TargetUnion = target[1].(*ptarmiganpb.KVPredicate_Version)
+		case *ptarmiganpb.KVPredicate_Lease:
+			predicate.TargetUnion = target[1].(*ptarmiganpb.KVPredicate_Lease)
+		case *ptarmiganpb.KVPredicate_Value:
+			predicate.TargetUnion = target[1].(*ptarmiganpb.KVPredicate_Value)
+		}
 
 		return predicate
+	}))
+}
+
+func Comparison() gopter.Gen {
+	return gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen:    gen.Int32().Map(func(i int32) ptarmiganpb.KVPredicate_Comparison { return ptarmiganpb.KVPredicate_Comparison(i) }),
+		},
+		{
+			Weight: 90,
+			Gen:    ValidComparison(),
+		},
 	})
+}
+
+func ValidComparison() gopter.Gen {
+	return gen.Int32Range(int32(ptarmiganpb.KVPredicate_EQUAL), int32(ptarmiganpb.KVPredicate_NOT_EQUAL)).Map(func(i int32) ptarmiganpb.KVPredicate_Comparison {
+		return ptarmiganpb.KVPredicate_Comparison(i)
+	})
+}
+
+func Target(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.OneGenOf(
+		AnyTarget(replicaStore),
+		ValidTarget(replicaStore),
+	)
+}
+
+func AnyTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gopter.CombineGens(
+		gen.Int32Range(int32(ptarmiganpb.KVPredicate_VERSION), int32(ptarmiganpb.KVPredicate_LEASE)).Map(func(i int32) ptarmiganpb.KVPredicate_Target {
+			return ptarmiganpb.KVPredicate_Target(i)
+		}),
+		TargetUnion(replicaStore),
+	)
+}
+
+func ValidTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return TargetUnion(replicaStore).Map(func(targetUnion interface{}) []interface{} {
+		switch targetUnion.(type) {
+		case *ptarmiganpb.KVPredicate_CreateRevision:
+			return []interface{}{ptarmiganpb.KVPredicate_CREATE, targetUnion.(*gopter.GenResult).Result}
+		case *ptarmiganpb.KVPredicate_ModRevision:
+			return []interface{}{ptarmiganpb.KVPredicate_MOD, targetUnion.(*gopter.GenResult).Result}
+		case *ptarmiganpb.KVPredicate_Version:
+			return []interface{}{ptarmiganpb.KVPredicate_VERSION, targetUnion.(*gopter.GenResult).Result}
+		case *ptarmiganpb.KVPredicate_Lease:
+			return []interface{}{ptarmiganpb.KVPredicate_LEASE, targetUnion.(*gopter.GenResult).Result}
+		case *ptarmiganpb.KVPredicate_Value:
+			return []interface{}{ptarmiganpb.KVPredicate_VALUE, targetUnion.(*gopter.GenResult).Result}
+		}
+
+		return []interface{}{ptarmiganpb.KVPredicate_Target(0), targetUnion.(*gopter.GenResult).Result}
+	})
+}
+
+func TargetUnion(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen:    gen.Const(nil),
+		},
+		{
+			Weight: 90,
+			Gen: gen.OneGenOf(
+				KVPredicate_Version(replicaStore),
+				KVPredicate_ModRevision(replicaStore),
+				KVPredicate_CreateRevision(replicaStore),
+				KVPredicate_Lease(replicaStore),
+				KVPredicate_Value(replicaStore),
+			),
+		},
+	})
+}
+
+func KVPredicate_Version(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen: gen.Int64().Map(func(i int64) ptarmiganpb.KVPredicate_Version {
+				return ptarmiganpb.KVPredicate_Version{Version: i}
+			}),
+		},
+		{
+			Weight: 90,
+			Gen:    ExistingVersion(replicaStore),
+		},
+	}))
+}
+
+func ExistingVersion(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Int().Map(func(i int) ptarmiganpb.KVPredicate_Version {
+		kvs := replicaStore.Query(ptarmiganpb.KVQueryRequest{}).Kvs
+
+		if len(kvs) == 0 {
+			return ptarmiganpb.KVPredicate_Version{}
+		}
+
+		return ptarmiganpb.KVPredicate_Version{Version: kvs[abs(i)%len(kvs)].Version}
+	})
+}
+
+func KVPredicate_ModRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen: gen.Int64().Map(func(i int64) ptarmiganpb.KVPredicate_ModRevision {
+				return ptarmiganpb.KVPredicate_ModRevision{ModRevision: i}
+			}),
+		},
+		{
+			Weight: 90,
+			Gen: ExistingRevision(replicaStore).Map(func(i int64) ptarmiganpb.KVPredicate_ModRevision {
+				return ptarmiganpb.KVPredicate_ModRevision{ModRevision: i}
+			}),
+		},
+	}))
+}
+
+func KVPredicate_CreateRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen: gen.Int64().Map(func(i int64) ptarmiganpb.KVPredicate_CreateRevision {
+				return ptarmiganpb.KVPredicate_CreateRevision{CreateRevision: i}
+			}),
+		},
+		{
+			Weight: 90,
+			Gen: ExistingRevision(replicaStore).Map(func(i int64) ptarmiganpb.KVPredicate_CreateRevision {
+				return ptarmiganpb.KVPredicate_CreateRevision{CreateRevision: i}
+			}),
+		},
+	}))
+}
+
+func KVPredicate_Lease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
+		{
+			Weight: 10,
+			Gen: gen.Int64().Map(func(i int64) ptarmiganpb.KVPredicate_Lease {
+				return ptarmiganpb.KVPredicate_Lease{Lease: i}
+			}),
+		},
+		{
+			Weight: 90,
+			Gen: ExistingLease(replicaStore).Map(func(i int64) ptarmiganpb.KVPredicate_Lease {
+				return ptarmiganpb.KVPredicate_Lease{Lease: i}
+			}),
+		},
+	}))
+}
+
+func KVPredicate_Value(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(Value(replicaStore).Map(func(value []byte) ptarmiganpb.KVPredicate_Value {
+		return ptarmiganpb.KVPredicate_Value{Value: value}
+	}))
 }

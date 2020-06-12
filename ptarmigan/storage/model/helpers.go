@@ -67,47 +67,55 @@ func KVMatchesSelection(selection *ptarmiganpb.KVSelection, kv ptarmiganpb.KeyVa
 		return true
 	}
 
-	switch selection.CreateRevisionStart.(type) {
-	case *ptarmiganpb.KVSelection_CreateRevisionGte:
-		if kv.CreateRevision < selection.GetCreateRevisionGte() {
-			return false
-		}
-	case *ptarmiganpb.KVSelection_CreateRevisionGt:
-		if kv.CreateRevision <= selection.GetCreateRevisionGt() {
-			return false
-		}
-	}
-
-	switch selection.CreateRevisionEnd.(type) {
-	case *ptarmiganpb.KVSelection_CreateRevisionLte:
-		if kv.CreateRevision > selection.GetCreateRevisionLte() {
-			return false
-		}
-	case *ptarmiganpb.KVSelection_CreateRevisionLt:
-		if kv.CreateRevision >= selection.GetCreateRevisionLt() {
-			return false
+	if selection.CreateRevisionStart != nil {
+		switch selection.CreateRevisionStart.(type) {
+		case *ptarmiganpb.KVSelection_CreateRevisionGte:
+			if kv.CreateRevision < selection.GetCreateRevisionGte() {
+				return false
+			}
+		case *ptarmiganpb.KVSelection_CreateRevisionGt:
+			if kv.CreateRevision <= selection.GetCreateRevisionGt() {
+				return false
+			}
 		}
 	}
 
-	switch selection.ModRevisionStart.(type) {
-	case *ptarmiganpb.KVSelection_ModRevisionGte:
-		if kv.ModRevision < selection.GetModRevisionGte() {
-			return false
-		}
-	case *ptarmiganpb.KVSelection_ModRevisionGt:
-		if kv.ModRevision <= selection.GetModRevisionGt() {
-			return false
+	if selection.CreateRevisionEnd != nil {
+		switch selection.CreateRevisionEnd.(type) {
+		case *ptarmiganpb.KVSelection_CreateRevisionLte:
+			if kv.CreateRevision > selection.GetCreateRevisionLte() {
+				return false
+			}
+		case *ptarmiganpb.KVSelection_CreateRevisionLt:
+			if kv.CreateRevision >= selection.GetCreateRevisionLt() {
+				return false
+			}
 		}
 	}
 
-	switch selection.ModRevisionEnd.(type) {
-	case *ptarmiganpb.KVSelection_ModRevisionLte:
-		if kv.ModRevision > selection.GetModRevisionLte() {
-			return false
+	if selection.ModRevisionStart != nil {
+		switch selection.ModRevisionStart.(type) {
+		case *ptarmiganpb.KVSelection_ModRevisionGte:
+			if kv.ModRevision < selection.GetModRevisionGte() {
+				return false
+			}
+		case *ptarmiganpb.KVSelection_ModRevisionGt:
+			if kv.ModRevision <= selection.GetModRevisionGt() {
+				return false
+			}
 		}
-	case *ptarmiganpb.KVSelection_ModRevisionLt:
-		if kv.ModRevision >= selection.GetModRevisionLt() {
-			return false
+	}
+
+	if selection.ModRevisionEnd != nil {
+		switch selection.ModRevisionEnd.(type) {
+		case *ptarmiganpb.KVSelection_ModRevisionLte:
+			if kv.ModRevision > selection.GetModRevisionLte() {
+				return false
+			}
+		case *ptarmiganpb.KVSelection_ModRevisionLt:
+			if kv.ModRevision >= selection.GetModRevisionLt() {
+				return false
+			}
 		}
 	}
 
@@ -160,35 +168,35 @@ func KVMatchesPredicate(predicate *ptarmiganpb.KVPredicate, kv ptarmiganpb.KeyVa
 	case *ptarmiganpb.KVPredicate_CreateRevision:
 		// Ignore malformed predicates
 		if predicate.Target != ptarmiganpb.KVPredicate_CREATE {
-			return true
+			return false
 		}
 		numTarget = kv.CreateRevision
 		numCmp = predicate.GetCreateRevision()
 	case *ptarmiganpb.KVPredicate_Lease:
 		// Ignore malformed predicates
 		if predicate.Target != ptarmiganpb.KVPredicate_LEASE {
-			return true
+			return false
 		}
 		numTarget = kv.Lease
 		numCmp = predicate.GetLease()
 	case *ptarmiganpb.KVPredicate_Version:
 		// Ignore malformed predicates
 		if predicate.Target != ptarmiganpb.KVPredicate_VERSION {
-			return true
+			return false
 		}
 		numTarget = kv.Version
 		numCmp = predicate.GetVersion()
 	case *ptarmiganpb.KVPredicate_ModRevision:
 		// Ignore malformed predicates
 		if predicate.Target != ptarmiganpb.KVPredicate_MOD {
-			return true
+			return false
 		}
 		numTarget = kv.ModRevision
 		numCmp = predicate.GetModRevision()
 	case *ptarmiganpb.KVPredicate_Value:
 		// Ignore malformed predicates
 		if predicate.Target != ptarmiganpb.KVPredicate_VALUE {
-			return true
+			return false
 		}
 
 		cmp := bytes.Compare(kv.Value, predicate.GetValue())
@@ -204,7 +212,9 @@ func KVMatchesPredicate(predicate *ptarmiganpb.KVPredicate, kv ptarmiganpb.KeyVa
 			return cmp < 0
 		}
 
-		return true
+		return false
+	default:
+		return false
 	}
 
 	switch predicate.Comparison {
@@ -218,7 +228,7 @@ func KVMatchesPredicate(predicate *ptarmiganpb.KVPredicate, kv ptarmiganpb.KeyVa
 		return numTarget < numCmp
 	}
 
-	return true
+	return false
 }
 
 func compareBytes(a, b interface{}) int {
@@ -285,7 +295,7 @@ func query(request ptarmiganpb.KVQueryRequest, state *ReplicaStoreModel) (ptarmi
 		kvs = reverse(kvs)
 	}
 
-	kvs = After(request.After, kvs, request.SortTarget)
+	kvs = After(request.After, kvs, request.SortTarget, request.SortOrder)
 
 	if request.Limit > 0 && int64(len(kvs)) > request.Limit {
 		kvs = kvs[:request.Limit]
@@ -322,20 +332,16 @@ func Cursor(kv ptarmiganpb.KeyValue, sortTarget ptarmiganpb.KVQueryRequest_SortT
 	case ptarmiganpb.KVQueryRequest_MOD:
 		cursorBytes = make([]byte, 8)
 		binary.BigEndian.PutUint64(cursorBytes, uint64(kv.ModRevision))
-	case ptarmiganpb.KVQueryRequest_KEY:
-		cursorBytes = kv.Key
 	case ptarmiganpb.KVQueryRequest_VALUE:
 		cursorBytes = kv.Value
-	}
-
-	if cursorBytes == nil {
-		return ""
+	default:
+		cursorBytes = kv.Key
 	}
 
 	return base64.StdEncoding.EncodeToString(cursorBytes)
 }
 
-func After(encodedAfter string, kvs kvList, sortTarget ptarmiganpb.KVQueryRequest_SortTarget) kvList {
+func After(encodedAfter string, kvs kvList, sortTarget ptarmiganpb.KVQueryRequest_SortTarget, sortOrder ptarmiganpb.KVQueryRequest_SortOrder) kvList {
 	if encodedAfter == "" {
 		return kvs
 	}
@@ -370,20 +376,38 @@ func After(encodedAfter string, kvs kvList, sortTarget ptarmiganpb.KVQueryReques
 				kvInt = kv.ModRevision
 			}
 
-			if kvInt > afterInt {
-				return kvs[i:]
+			if sortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				if kvInt < afterInt {
+					return kvs[i:]
+				}
+			} else {
+				if kvInt > afterInt {
+					return kvs[i:]
+				}
 			}
 		}
-	case ptarmiganpb.KVQueryRequest_KEY:
+	case ptarmiganpb.KVQueryRequest_VALUE:
 		for i, kv := range kvs {
-			if bytes.Compare(kv.Key, afterBytes) > 0 {
-				return kvs[i:]
+			if sortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				if bytes.Compare(kv.Value, afterBytes) < 0 {
+					return kvs[i:]
+				}
+			} else {
+				if bytes.Compare(kv.Value, afterBytes) > 0 {
+					return kvs[i:]
+				}
 			}
 		}
 	default:
 		for i, kv := range kvs {
-			if bytes.Compare(kv.Value, afterBytes) > 0 {
-				return kvs[i:]
+			if sortOrder == ptarmiganpb.KVQueryRequest_DESC {
+				if bytes.Compare(kv.Key, afterBytes) < 0 {
+					return kvs[i:]
+				}
+			} else {
+				if bytes.Compare(kv.Key, afterBytes) > 0 {
+					return kvs[i:]
+				}
 			}
 		}
 	}
