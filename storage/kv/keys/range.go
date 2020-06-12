@@ -20,36 +20,60 @@ type Range struct {
 
 // Eq confines the range to just key k
 func (r Range) Eq(k []byte) Range {
+	if k == nil {
+		return r
+	}
+
 	return r.Gte(k).Lte(k)
 }
 
 // Gt confines the range to keys that are
 // greater than k
 func (r Range) Gt(k []byte) Range {
+	if k == nil {
+		return r
+	}
+
 	return r.refineMin(Next(k))
 }
 
 // Gte confines the range to keys that are
 // greater than or equal to k
 func (r Range) Gte(k []byte) Range {
+	if k == nil {
+		return r
+	}
+
 	return r.refineMin(k)
 }
 
 // Lt confines the range to keys that are
 // less than k
 func (r Range) Lt(k []byte) Range {
+	if k == nil {
+		return r
+	}
+
 	return r.refineMax(k)
 }
 
 // Lte confines the range to keys that are
 // less than or equal to k
 func (r Range) Lte(k []byte) Range {
+	if k == nil {
+		return r
+	}
+
 	return r.refineMax(Next(k))
 }
 
 // Prefix confines the range to keys that
 // have the prefix k, excluding k itself
 func (r Range) Prefix(k []byte) Range {
+	if k == nil {
+		return r
+	}
+
 	return r.Gt(k).Lt(Inc(k))
 }
 
@@ -57,6 +81,10 @@ func (r Range) Prefix(k []byte) Range {
 // to keys with the prefix ns. Subsequent modifier
 // methods will keep keys within this namespace.
 func (r Range) Namespace(ns []byte) Range {
+	if ns == nil {
+		return r
+	}
+
 	r.Min = prefix(r.Min, ns)
 
 	if r.Max == nil {

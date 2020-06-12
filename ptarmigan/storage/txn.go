@@ -253,6 +253,12 @@ func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View
 func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVDeleteRequest) (ptarmiganpb.KVDeleteResponse, error) {
 	var response ptarmiganpb.KVDeleteResponse
 
+	if r.PrevKv {
+		response.PrevKvs = []*ptarmiganpb.KeyValue{}
+	}
+
+	fmt.Printf("selection range %#v\n", selectionRange(r.Selection))
+
 	iter, err := kvMapReader(revision).Keys(selectionRange(r.Selection), kv.SortOrderAsc)
 
 	if err != nil {
@@ -288,6 +294,10 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPutRequest) (ptarmiganpb.KVPutResponse, error) {
 	var response ptarmiganpb.KVPutResponse
 
+	if r.PrevKv {
+		response.PrevKvs = []*ptarmiganpb.KeyValue{}
+	}
+
 	if len(r.Key) != 0 {
 		// Key overrides selection. Key lets a user create key as opposed to just
 		// updating existing keys
@@ -303,6 +313,8 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 
 		if v != nil {
 			kv = v.(ptarmiganpb.KeyValue)
+			kv.Key = r.Key
+			response.PrevKvs = append(response.PrevKvs, &kv)
 		} else {
 			kv.CreateRevision = revision.Revision()
 		}
@@ -315,7 +327,7 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", kv.Key, err)
 		}
 
-		return ptarmiganpb.KVPutResponse{}, nil
+		return response, nil
 	}
 
 	iter, err := kvMapReader(revision).Keys(selectionRange(r.Selection), kv.SortOrderAsc)

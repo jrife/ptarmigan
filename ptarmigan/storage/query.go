@@ -210,26 +210,40 @@ func selectionRange(selection *ptarmiganpb.KVSelection) keys.Range {
 		return keyRange
 	}
 
+	fmt.Printf("%#v\n", selection)
+
 	// short circuits any range specifier
 	if len(selection.GetKey()) != 0 {
+		fmt.Printf("eq %#v\n", selection.GetKey())
+
 		return keyRange.Eq(selection.GetKey())
 	}
 
 	switch selection.KeyRangeMin.(type) {
 	case *ptarmiganpb.KVSelection_KeyGte:
+		fmt.Printf("gte %#v\n", selection.GetKeyGte())
+
 		keyRange = keyRange.Gte(selection.GetKeyGte())
 	case *ptarmiganpb.KVSelection_KeyGt:
+		fmt.Printf("gt %#v\n", selection.GetKeyGt())
+
 		keyRange = keyRange.Gt(selection.GetKeyGt())
 	}
 
 	switch selection.KeyRangeMax.(type) {
 	case *ptarmiganpb.KVSelection_KeyLte:
+		fmt.Printf("lte %#v\n", selection.GetKeyLte())
+
 		keyRange = keyRange.Lte(selection.GetKeyLte())
 	case *ptarmiganpb.KVSelection_KeyLt:
+		fmt.Printf("lt %#v\n", selection.GetKeyLt())
+
 		keyRange = keyRange.Lt(selection.GetKeyLt())
 	}
 
 	if len(selection.GetKeyStartsWith()) != 0 {
+		fmt.Printf("prefix %#v\n", selection.GetKeyStartsWith())
+
 		keyRange = keyRange.Prefix(selection.GetKeyStartsWith())
 	}
 
@@ -332,7 +346,7 @@ func selection(selection *ptarmiganpb.KVSelection) stream.Processor {
 	}
 
 	return stream.Filter(func(v interface{}) bool {
-		kv := v.(ptarmiganpb.KeyValue)
+		kv := v.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
 
 		switch selection.CreateRevisionStart.(type) {
 		case *ptarmiganpb.KVSelection_CreateRevisionGte:

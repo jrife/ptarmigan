@@ -2,7 +2,6 @@ package model
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -116,6 +115,11 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			commit = true
 
 			var resp ptarmiganpb.KVDeleteResponse
+
+			if op.GetRequestDelete().PrevKv {
+				resp.PrevKvs = []*ptarmiganpb.KeyValue{}
+			}
+
 			kvs := revision.AllKvs().selection(op.GetRequestDelete().Selection)
 
 			for i := range kvs {
@@ -142,7 +146,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 		case *ptarmiganpb.KVRequestOp_RequestPut:
 			commit = true
 
-			if _, ok := replicaStoreModel.leases.Get(op.GetRequestPut().Lease); op.GetRequestPut().Lease != 0 && !ok {
+			if _, ok := replicaStoreModel.leases.Get(op.GetRequestPut().Lease); !op.GetRequestPut().IgnoreLease && op.GetRequestPut().Lease != 0 && !ok {
 				return ptarmiganpb.KVTxnResponse{}, false
 			}
 
@@ -158,6 +162,10 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 
 				if ok {
 					kvs = append(kvs, rawKV.(ptarmiganpb.KeyValue))
+
+					if op.GetRequestPut().PrevKv {
+						resp.PrevKvs = []*ptarmiganpb.KeyValue{&kvs[0]}
+					}
 				} else {
 					kvs = append(kvs, ptarmiganpb.KeyValue{
 						Key:            op.GetRequestPut().Key,
@@ -166,6 +174,12 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 				}
 			} else {
 				kvs = revision.AllKvs().selection(op.GetRequestPut().Selection)
+
+				if op.GetRequestPut().PrevKv {
+					for i := range kvs {
+						resp.PrevKvs = append(resp.PrevKvs, &kvs[i])
+					}
+				}
 			}
 
 			for i := range kvs {
@@ -183,10 +197,6 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 					newKV.Value = []byte{}
 				}
 
-				if op.GetRequestPut().PrevKv {
-					resp.PrevKvs = append(resp.PrevKvs, &kvs[i])
-				}
-
 				newKV.ModRevision = revision.revision
 				newKV.Version++
 
@@ -197,6 +207,10 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 					revision.changes.Put(newKV.Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT, Kv: &newKV, PrevKv: nil})
 				}
 
+				// Weirdness with a byte flipping in the middle of this key
+				// maybe somewhere in the bolt driver? Copy the key here
+				// to prevent this.
+				newKV.Key = append([]byte{}, newKV.Key...)
 				revision.kvs.Put(newKV.Key, newKV)
 			}
 
@@ -352,8 +366,6 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 			changes[i] = change
 		}
 	}
-
-	fmt.Printf("Model changes %#v\n", changes)
 
 	return changes
 }

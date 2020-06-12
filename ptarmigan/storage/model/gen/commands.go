@@ -58,7 +58,6 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 		}
 
 		if diff := cmp.Diff(model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}), kvs); diff != "" {
-			fmt.Printf("expected: %#v\nactual: %#v\n", model.Query(ptarmiganpb.KVQueryRequest{Revision: revision}).Kvs[0], kvs.Kvs[0])
 			return fmt.Sprintf("kvs don't match at revision %d: %s", revision, diff), nil
 		}
 	}
@@ -70,9 +69,6 @@ func replicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 	}
 
 	if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{}, -1), changes); diff != "" {
-		fmt.Printf("model %#v\n", model.Changes(ptarmiganpb.KVWatchRequest{}, -1))
-		fmt.Printf("actual %#v\n", changes)
-
 		return fmt.Sprintf("changes don't match: %s", diff), nil
 	}
 
