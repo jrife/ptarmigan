@@ -107,7 +107,7 @@ func (command txnCommand) PostCondition(state commands.State, result commands.Re
 	diff := cmp.Diff(resp, result)
 
 	if diff != "" {
-		fmt.Printf("%s\n", diff)
+		fmt.Printf("Diff: %s\n", diff)
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 
@@ -115,7 +115,41 @@ func (command txnCommand) PostCondition(state commands.State, result commands.Re
 }
 
 func (command txnCommand) String() string {
-	return fmt.Sprintf("Txn(%#v)", command)
+	str := "Txn("
+
+	if command.Compare != nil {
+		str += "\n  Compare(\n"
+
+		for i, compare := range command.Compare {
+			str += fmt.Sprintf("    %d: %s\n", i, compare.String())
+		}
+
+		str += "  )\n"
+	}
+
+	if command.Success != nil {
+		str += "\n  Success(\n"
+
+		for i, op := range command.Success {
+			str += fmt.Sprintf("    %d: %s\n", i, op.String())
+		}
+
+		str += "  )\n"
+	}
+
+	if command.Failure != nil {
+		str += "\n  Failure(\n"
+
+		for i, op := range command.Failure {
+			str += fmt.Sprintf("    %d: %s\n", i, op.String())
+		}
+
+		str += "  )\n"
+	}
+
+	str += ")"
+
+	return str
 }
 
 type compactCommand int64
@@ -149,13 +183,13 @@ func (command compactCommand) PostCondition(state commands.State, result command
 	diff, err := replicaStoreModelDiff(replicaStore, model)
 
 	if err != nil {
-		fmt.Printf("%#v\n", err)
+		fmt.Printf("Err: %#v\n", err)
 
 		return &gopter.PropResult{Status: gopter.PropFalse, Error: err}
 	}
 
 	if diff != "" {
-		fmt.Printf("%s\n", diff)
+		fmt.Printf("Diff: %s\n", diff)
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 
@@ -186,7 +220,7 @@ func (command queryCommand) PostCondition(state commands.State, result commands.
 	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest(command)), result)
 
 	if diff != "" {
-		fmt.Printf("%s\n", diff)
+		fmt.Printf("Diff: %s\n", diff)
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 
@@ -244,7 +278,7 @@ func (command changesCommand) PostCondition(state commands.State, result command
 	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Changes(command.KVWatchRequest, command.Limit), result)
 
 	if diff != "" {
-		fmt.Printf("%s\n", diff)
+		fmt.Printf("Diff: %s\n", diff)
 		fmt.Printf("expected %#v\n", state.(*model.ReplicaStoreModel).Changes(command.KVWatchRequest, command.Limit))
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}

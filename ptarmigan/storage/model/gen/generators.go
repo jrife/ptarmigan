@@ -205,7 +205,10 @@ func ExistingKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 			return nil
 		}
 
-		return kvs[abs(i)%len(kvs)].Key
+		// Weirdness with a byte flipping in the middle of this key
+		// maybe somewhere in the bolt driver? Copy the key here
+		// to prevent this.
+		return append([]byte{}, kvs[abs(i)%len(kvs)].Key...)
 	})
 }
 

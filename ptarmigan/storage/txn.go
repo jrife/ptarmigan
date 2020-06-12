@@ -314,7 +314,10 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 		if v != nil {
 			kv = v.(ptarmiganpb.KeyValue)
 			kv.Key = r.Key
-			response.PrevKvs = append(response.PrevKvs, &kv)
+
+			if r.PrevKv {
+				response.PrevKvs = append(response.PrevKvs, &kv)
+			}
 		} else {
 			kv.CreateRevision = revision.Revision()
 		}

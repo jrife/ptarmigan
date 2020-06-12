@@ -111,6 +111,36 @@ func KVMatchesSelection(selection *ptarmiganpb.KVSelection, kv ptarmiganpb.KeyVa
 		}
 	}
 
+	if selection.Key != nil && bytes.Compare(kv.Key, selection.Key) != 0 {
+		return false
+	}
+
+	if selection.KeyStartsWith != nil && !bytes.HasPrefix(kv.Key, selection.KeyStartsWith) {
+		return false
+	}
+
+	switch selection.KeyRangeMin.(type) {
+	case *ptarmiganpb.KVSelection_KeyGt:
+		if selection.GetKeyGt() != nil && bytes.Compare(kv.Key, selection.GetKeyGt()) <= 0 {
+			return false
+		}
+	case *ptarmiganpb.KVSelection_KeyGte:
+		if selection.GetKeyGte() != nil && bytes.Compare(kv.Key, selection.GetKeyGte()) < 0 {
+			return false
+		}
+	}
+
+	switch selection.KeyRangeMax.(type) {
+	case *ptarmiganpb.KVSelection_KeyLt:
+		if selection.GetKeyLt() != nil && bytes.Compare(kv.Key, selection.GetKeyLt()) >= 0 {
+			return false
+		}
+	case *ptarmiganpb.KVSelection_KeyLte:
+		if selection.GetKeyLte() != nil && bytes.Compare(kv.Key, selection.GetKeyLte()) > 0 {
+			return false
+		}
+	}
+
 	if selection.GetLease() != 0 && selection.GetLease() != kv.Lease {
 		return false
 	}

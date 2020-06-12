@@ -168,7 +168,10 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 					}
 				} else {
 					kvs = append(kvs, ptarmiganpb.KeyValue{
-						Key:            op.GetRequestPut().Key,
+						// Weirdness with a byte flipping in the middle of this key
+						// maybe somewhere in the bolt driver? Copy the key here
+						// to prevent this.
+						Key:            append([]byte{}, op.GetRequestPut().Key...),
 						CreateRevision: revision.revision,
 					})
 				}
@@ -207,10 +210,6 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 					revision.changes.Put(newKV.Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT, Kv: &newKV, PrevKv: nil})
 				}
 
-				// Weirdness with a byte flipping in the middle of this key
-				// maybe somewhere in the bolt driver? Copy the key here
-				// to prevent this.
-				newKV.Key = append([]byte{}, newKV.Key...)
 				revision.kvs.Put(newKV.Key, newKV)
 			}
 
