@@ -23,8 +23,10 @@ var (
 )
 
 var (
-	leasesNs       = []byte{0}
-	updateIndexNs  = []byte{1}
+	metaNs         = []byte{0}
+	metaLeaseIDKey = []byte{1}
+	leasesNs       = []byte{1}
+	updateIndexNs  = []byte{2}
 	updateIndexKey = []byte{0}
 )
 

@@ -364,10 +364,32 @@ func (update *update) RevokeLease(ctx context.Context, id int64) error {
 
 // CreateLease implements Update.CreateLease
 func (update *update) CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.Lease, error) {
-	var lease ptarmiganpb.Lease = ptarmiganpb.Lease{ID: int64(update.index), GrantedTTL: ttl}
+	var lease ptarmiganpb.Lease = ptarmiganpb.Lease{GrantedTTL: ttl}
 
 	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
-		if err := leasesMap(kv.NamespaceMap(transaction.Flat(), leasesNs)).Put(leasesKey(lease.ID), &lease); err != nil {
+		v, err := kv.NamespaceMap(transaction.Flat(), metaNs).Get(metaLeaseIDKey)
+
+		if err != nil {
+			return fmt.Errorf("could not retrieve lease ID key: %s", err)
+		}
+
+		var id int64
+
+		if v != nil {
+			id = int64(binary.BigEndian.Uint64(v))
+		}
+
+		id++
+		v = make([]byte, 8)
+
+		binary.BigEndian.PutUint64(v, uint64(id))
+		lease.ID = id
+
+		if err := kv.NamespaceMap(transaction.Flat(), metaNs).Put(metaLeaseIDKey, v); err != nil {
+			return fmt.Errorf("could not update lease ID key: %s", err)
+		}
+
+		if err := leasesMap(kv.NamespaceMap(transaction.Flat(), leasesNs)).Put(leasesKey(id), &lease); err != nil {
 			return fmt.Errorf("could not put lease %d: %s", lease.ID, err)
 		}
 

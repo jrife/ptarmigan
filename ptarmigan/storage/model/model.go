@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -309,6 +310,43 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyRevokeLease(index uint64, id in
 	}
 
 	replicaStoreModel.index = index
+
+	_, found := replicaStoreModel.leases.Get(id)
+
+	if !found {
+		return
+	}
+
+	replicaStoreModel.leases.Remove(id)
+	var lastRevision RevisionModel
+
+	if len(replicaStoreModel.revisions) != 0 {
+		lastRevision = replicaStoreModel.revisions[len(replicaStoreModel.revisions)-1]
+	} else {
+		lastRevision.changes = treemap.NewWith(compareBytes)
+		lastRevision.kvs = treemap.NewWith(compareBytes)
+	}
+
+	revision := lastRevision.Next()
+	_, commit := replicaStoreModel.txn(ptarmiganpb.KVTxnRequest{
+		Success: []*ptarmiganpb.KVRequestOp{
+			{
+				Request: &ptarmiganpb.KVRequestOp_RequestDelete{
+					RequestDelete: &ptarmiganpb.KVDeleteRequest{
+						Selection: &ptarmiganpb.KVSelection{
+							Lease: id,
+						},
+					},
+				},
+			},
+		},
+	}, lastRevision, revision)
+
+	if !commit {
+		return
+	}
+
+	replicaStoreModel.revisions = append(replicaStoreModel.revisions, revision)
 }
 
 func (replicaStoreModel *ReplicaStoreModel) Query(request ptarmiganpb.KVQueryRequest) ptarmiganpb.KVQueryResponse {
@@ -375,6 +413,10 @@ func (replicaStoreModel *ReplicaStoreModel) Leases() []ptarmiganpb.Lease {
 	replicaStoreModel.leases.Each(func(key, value interface{}) {
 		leases = append(leases, value.(ptarmiganpb.Lease))
 	})
+
+	if len(leases) != 0 {
+		fmt.Printf("Leases(): %#v\n", leases)
+	}
 
 	return leases
 }

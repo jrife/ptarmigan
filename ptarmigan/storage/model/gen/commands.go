@@ -94,6 +94,7 @@ func (command txnCommand) Run(sut commands.SystemUnderTest) commands.Result {
 }
 
 func (command txnCommand) NextState(state commands.State) commands.State {
+	fmt.Printf("Txn Leases %#v\n", state.(*model.ReplicaStoreModel).Leases())
 	state.(*model.ReplicaStoreModel).ApplyTxn(state.(*model.ReplicaStoreModel).Index()+1, ptarmiganpb.KVTxnRequest(command))
 	return state
 }
@@ -288,4 +289,221 @@ func (command changesCommand) PostCondition(state commands.State, result command
 
 func (command changesCommand) String() string {
 	return fmt.Sprintf("Changes(%#v)", command)
+}
+
+type createLeaseCommand struct {
+	TTL int64
+}
+
+func (command createLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	index, err := replicaStore.Index(context.Background())
+
+	if err != nil {
+		panic(err)
+	}
+
+	res, _ := replicaStore.Apply(index+1).CreateLease(context.Background(), command.TTL)
+	return res
+}
+
+func (command createLeaseCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command createLeaseCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command createLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).ApplyCreateLease(state.(*model.ReplicaStoreModel).Index()+1, command.TTL), result)
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command createLeaseCommand) String() string {
+	return fmt.Sprintf("CreateLease(%#v)", command.TTL)
+}
+
+type revokeLeaseCommand struct {
+	ID int64
+}
+
+func (command revokeLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	index, err := replicaStore.Index(context.Background())
+
+	if err != nil {
+		panic(err)
+	}
+
+	replicaStore.Apply(index+1).RevokeLease(context.Background(), command.ID)
+	return sut
+}
+
+func (command revokeLeaseCommand) NextState(state commands.State) commands.State {
+	state.(*model.ReplicaStoreModel).ApplyRevokeLease(state.(*model.ReplicaStoreModel).Index()+1, command.ID)
+	return state
+}
+
+func (command revokeLeaseCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command revokeLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	model := state.(*model.ReplicaStoreModel)
+	replicaStore := result.(storage.ReplicaStore)
+
+	diff, err := replicaStoreModelDiff(replicaStore, model)
+
+	if err != nil {
+		fmt.Printf("Err: %#v\n", err)
+
+		return &gopter.PropResult{Status: gopter.PropFalse, Error: err}
+	}
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command revokeLeaseCommand) String() string {
+	return fmt.Sprintf("RevokeLease(%#v)", command.ID)
+}
+
+type leasesCommand struct {
+}
+
+func (command leasesCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	res, _ := replicaStore.Leases(context.Background())
+	return res
+}
+
+func (command leasesCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command leasesCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command leasesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Leases(), result)
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command leasesCommand) String() string {
+	return fmt.Sprintf("Leases()")
+}
+
+type getLeaseCommand struct {
+	ID int64
+}
+
+func (command getLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	res, _ := replicaStore.GetLease(context.Background(), command.ID)
+	return res
+}
+
+func (command getLeaseCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command getLeaseCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command getLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).GetLease(command.ID), result)
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command getLeaseCommand) String() string {
+	return fmt.Sprintf("GetLease(%#v)", command.ID)
+}
+
+type newestRevisionCommand struct {
+}
+
+func (command newestRevisionCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	res, _ := replicaStore.NewestRevision()
+	return res
+}
+
+func (command newestRevisionCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command newestRevisionCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command newestRevisionCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).NewestRevision(), result)
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command newestRevisionCommand) String() string {
+	return fmt.Sprintf("NewestRevision()")
+}
+
+type oldestRevisionCommand struct {
+}
+
+func (command oldestRevisionCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	res, _ := replicaStore.OldestRevision()
+	return res
+}
+
+func (command oldestRevisionCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command oldestRevisionCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command oldestRevisionCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).OldestRevision(), result)
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command oldestRevisionCommand) String() string {
+	return fmt.Sprintf("OldestRevision()")
 }

@@ -3,6 +3,7 @@ package gen
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/ptarmigan/storage/model"
@@ -28,6 +29,12 @@ func Commands(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		ChangesCommand(replicaStore),
 		TxnCommand(replicaStore),
 		CompactCommand(replicaStore),
+		CreateLeaseCommand(replicaStore),
+		RevokeLeaseCommand(replicaStore),
+		LeasesCommand(replicaStore),
+		GetLeaseCommand(replicaStore),
+		NewestRevisionCommand(replicaStore),
+		OldestRevisionCommand(replicaStore),
 	)
 }
 
@@ -69,6 +76,36 @@ func CompactCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 
 		return compactCommand(indexFromRange(n, replicaStore.OldestRevision(), replicaStore.NewestRevision()))
 	})
+}
+
+func CreateLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Int64().Map(func(n int64) commands.Command {
+		return createLeaseCommand{TTL: n}
+	})
+}
+
+func RevokeLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return Lease(replicaStore).Map(func(id int64) commands.Command {
+		return revokeLeaseCommand{ID: id}
+	})
+}
+
+func LeasesCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(leasesCommand{})
+}
+
+func GetLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return Lease(replicaStore).Map(func(id int64) commands.Command {
+		return getLeaseCommand{ID: id}
+	})
+}
+
+func NewestRevisionCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(newestRevisionCommand{})
+}
+
+func OldestRevisionCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(oldestRevisionCommand{})
 }
 
 // Compare returns a generator that generates comparisons that are
@@ -321,6 +358,7 @@ func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		gen.Bool(),
 		gen.Bool(),
 	).Map(func(g []interface{}) ptarmiganpb.KVPutRequest {
+		fmt.Printf("Gen\n")
 		var putRequest ptarmiganpb.KVPutRequest
 
 		if g[0] != nil {
@@ -335,6 +373,9 @@ func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 			putRequest.Value = *g[2].(*[]byte)
 		}
 
+		if g[3].(int64) != 0 {
+			fmt.Printf("Lease %d\n", g[3].(int64))
+		}
 		putRequest.Lease = g[3].(int64)
 		putRequest.PrevKv = g[4].(bool)
 		putRequest.IgnoreLease = g[5].(bool)
