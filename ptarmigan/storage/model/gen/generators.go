@@ -784,7 +784,7 @@ func AnyTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 
 func ValidTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return TargetUnion(replicaStore).Map(func(targetUnion interface{}) []interface{} {
-		switch targetUnion.(type) {
+		switch targetUnion.(*gopter.GenResult).Result.(type) {
 		case *ptarmiganpb.KVPredicate_CreateRevision:
 			return []interface{}{ptarmiganpb.KVPredicate_CREATE, targetUnion.(*gopter.GenResult).Result}
 		case *ptarmiganpb.KVPredicate_ModRevision:
