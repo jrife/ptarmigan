@@ -94,7 +94,6 @@ func (command txnCommand) Run(sut commands.SystemUnderTest) commands.Result {
 }
 
 func (command txnCommand) NextState(state commands.State) commands.State {
-	fmt.Printf("Txn Leases %#v\n", state.(*model.ReplicaStoreModel).Leases())
 	state.(*model.ReplicaStoreModel).ApplyTxn(state.(*model.ReplicaStoreModel).Index()+1, ptarmiganpb.KVTxnRequest(command))
 	return state
 }
@@ -308,6 +307,7 @@ func (command createLeaseCommand) Run(sut commands.SystemUnderTest) commands.Res
 }
 
 func (command createLeaseCommand) NextState(state commands.State) commands.State {
+	state.(*model.ReplicaStoreModel).ApplyCreateLease(state.(*model.ReplicaStoreModel).Index()+1, command.TTL)
 	return state
 }
 
@@ -316,7 +316,8 @@ func (command createLeaseCommand) PreCondition(state commands.State) bool {
 }
 
 func (command createLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).ApplyCreateLease(state.(*model.ReplicaStoreModel).Index()+1, command.TTL), result)
+	resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.Lease)
+	diff := cmp.Diff(resp, result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)

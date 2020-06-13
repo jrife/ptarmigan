@@ -58,7 +58,7 @@ func builder(plugin kv.Plugin) tempStoreBuilder {
 			zapcore.Lock(os.Stdout),
 			atom,
 		))
-		atom.SetLevel(zap.InfoLevel)
+		atom.SetLevel(zap.DebugLevel)
 
 		return storage.New(storage.StoreConfig{
 			Store:  mvccStore,
@@ -221,7 +221,6 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 
 	var cbCommands = &commands.ProtoCommands{
 		NewSystemUnderTestFunc: func(initialState commands.State) commands.SystemUnderTest {
-			fmt.Printf("new sut\n")
 			store, cleanup := builder(t)
 			replicaStore := store.ReplicaStore("test")
 
@@ -235,11 +234,9 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 			sut.(*replicaStoreWithCleanup).cleanup()
 		},
 		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) *model.ReplicaStoreModel {
-			fmt.Printf("initial state\n")
 			return model.NewReplicaStoreModel()
 		}),
 		InitialPreConditionFunc: func(state commands.State) bool {
-			fmt.Printf("precond\n")
 			return true
 		},
 		GenCommandFunc: func(state commands.State) gopter.Gen {
@@ -248,9 +245,8 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	parameters := gopter.DefaultTestParametersWithSeed(1234)
-	parameters.MinSuccessfulTests = 1
-	parameters.MaxSize = 50
-	parameters.MinSize = 10
+	parameters.MinSuccessfulTests = 100
+	//parameters.MaxSize = 50
 	properties := gopter.NewProperties(parameters)
 	properties.Property("", commands.Prop(cbCommands))
 	properties.TestingRun(t)

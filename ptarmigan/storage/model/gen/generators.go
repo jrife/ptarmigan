@@ -3,7 +3,6 @@ package gen
 import (
 	"encoding/base64"
 	"encoding/binary"
-	"fmt"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
 	"github.com/jrife/flock/ptarmigan/storage/model"
@@ -358,7 +357,6 @@ func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		gen.Bool(),
 		gen.Bool(),
 	).Map(func(g []interface{}) ptarmiganpb.KVPutRequest {
-		fmt.Printf("Gen\n")
 		var putRequest ptarmiganpb.KVPutRequest
 
 		if g[0] != nil {
@@ -373,9 +371,6 @@ func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 			putRequest.Value = *g[2].(*[]byte)
 		}
 
-		if g[3].(int64) != 0 {
-			fmt.Printf("Lease %d\n", g[3].(int64))
-		}
 		putRequest.Lease = g[3].(int64)
 		putRequest.PrevKv = g[4].(bool)
 		putRequest.IgnoreLease = g[5].(bool)

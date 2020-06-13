@@ -2,7 +2,6 @@ package model
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/emirpasic/gods/maps/treemap"
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -413,10 +412,6 @@ func (replicaStoreModel *ReplicaStoreModel) Leases() []ptarmiganpb.Lease {
 	replicaStoreModel.leases.Each(func(key, value interface{}) {
 		leases = append(leases, value.(ptarmiganpb.Lease))
 	})
-
-	if len(leases) != 0 {
-		fmt.Printf("Leases(): %#v\n", leases)
-	}
 
 	return leases
 }

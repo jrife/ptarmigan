@@ -46,6 +46,9 @@ func (replicaStore *replicaStore) Metadata(ctx context.Context) ([]byte, error) 
 
 // Index implements ReplicaStore.Index
 func (replicaStore *replicaStore) Index(ctx context.Context) (uint64, error) {
+	logger := log.WithContext(ctx, replicaStore.logger).With(zap.String("operation", "Index"))
+	logger.Debug("start")
+
 	var index uint64
 
 	err := replicaStore.read(func(transaction mvcc.Transaction) error {
@@ -57,6 +60,8 @@ func (replicaStore *replicaStore) Index(ctx context.Context) (uint64, error) {
 
 		return err
 	})
+
+	logger.Debug("return", zap.Uint64("index", index), zap.Error(err))
 
 	if err != nil {
 		return 0, err
@@ -174,6 +179,9 @@ func (replicaStore *replicaStore) read(fn func(transaction mvcc.Transaction) err
 
 // Leases implements ReplicaStore.Leases
 func (replicaStore *replicaStore) Leases(ctx context.Context) ([]ptarmiganpb.Lease, error) {
+	logger := log.WithContext(ctx, replicaStore.logger).With(zap.String("operation", "Leases"))
+	logger.Debug("start")
+
 	var result []ptarmiganpb.Lease = []ptarmiganpb.Lease{}
 
 	err := replicaStore.read(func(transaction mvcc.Transaction) error {
@@ -194,6 +202,8 @@ func (replicaStore *replicaStore) Leases(ctx context.Context) ([]ptarmiganpb.Lea
 		return nil
 	})
 
+	logger.Debug("return", zap.Any("leases", result), zap.Error(err))
+
 	if err != nil {
 		return nil, err
 	}
@@ -203,6 +213,9 @@ func (replicaStore *replicaStore) Leases(ctx context.Context) ([]ptarmiganpb.Lea
 
 // GetLease implements ReplicaStore.GetLease
 func (replicaStore *replicaStore) GetLease(ctx context.Context, id int64) (ptarmiganpb.Lease, error) {
+	logger := log.WithContext(ctx, replicaStore.logger).With(zap.String("operation", "GetLease"))
+	logger.Debug("start", zap.Int64("id", id))
+
 	var lease ptarmiganpb.Lease
 
 	err := replicaStore.read(func(transaction mvcc.Transaction) error {
@@ -220,6 +233,8 @@ func (replicaStore *replicaStore) GetLease(ctx context.Context, id int64) (ptarm
 
 		return nil
 	})
+
+	logger.Debug("return", zap.Any("lease", lease), zap.Error(err))
 
 	if err != nil {
 		return ptarmiganpb.Lease{}, err
@@ -353,17 +368,64 @@ type update struct {
 
 // RevokeLease implements Update.RevokeLease
 func (update *update) RevokeLease(ctx context.Context, id int64) error {
-	return update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
+	logger := log.WithContext(ctx, update.logger).With(zap.String("operation", "RevokeLease"))
+	logger.Debug("start", zap.Int64("id", id))
+
+	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
+		v, err := leasesMap(kv.NamespaceMap(transaction.Flat(), leasesNs)).Get(leasesKey(id))
+
+		if err != nil {
+			return fmt.Errorf("could not get lease %d: %s", id, err)
+		}
+
+		if v == nil || (v.(ptarmiganpb.Lease) == ptarmiganpb.Lease{}) {
+			logger.Debug("lease does not exist")
+
+			return nil
+		}
+
 		if err := leasesMap(kv.NamespaceMap(transaction.Flat(), leasesNs)).Delete(leasesKey(id)); err != nil {
 			return fmt.Errorf("could not delete lease %d: %s", id, err)
 		}
 
-		return nil
+		view, err := transaction.View(mvcc.RevisionNewest)
+
+		if err != nil && err != mvcc.ErrNoRevisions {
+			return fmt.Errorf("could not create view of latest revision: %s", err)
+		}
+
+		var revision mvcc.Revision
+		_, revision, err = executeTxnOp(update.logger, transaction, view, nil, ptarmiganpb.KVTxnRequest{
+			Success: []*ptarmiganpb.KVRequestOp{
+				{
+					Request: &ptarmiganpb.KVRequestOp_RequestDelete{
+						RequestDelete: &ptarmiganpb.KVDeleteRequest{
+							Selection: &ptarmiganpb.KVSelection{
+								Lease: id,
+							},
+						},
+					},
+				},
+			},
+		})
+
+		if revision != nil {
+			logger.Debug("new revision created", zap.Int64("revision", revision.Revision()))
+		}
+
+		return err
 	})
+
+	logger.Debug("return", zap.Error(err))
+
+	return err
 }
 
 // CreateLease implements Update.CreateLease
 func (update *update) CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.Lease, error) {
+	logger := log.WithContext(ctx, update.logger).With(zap.String("operation", "CreateLease"))
+	logger.Debug("start", zap.Int64("ttl", ttl))
+
 	var lease ptarmiganpb.Lease = ptarmiganpb.Lease{GrantedTTL: ttl}
 
 	err := update.replicaStore.apply(update.index, func(transaction mvcc.Transaction) error {
@@ -395,6 +457,8 @@ func (update *update) CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.L
 
 		return nil
 	})
+
+	logger.Debug("return", zap.Any("lease", lease), zap.Error(err))
 
 	if err != nil {
 		return ptarmiganpb.Lease{}, err
