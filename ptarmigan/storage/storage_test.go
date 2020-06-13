@@ -58,7 +58,7 @@ func builder(plugin kv.Plugin) tempStoreBuilder {
 			zapcore.Lock(os.Stdout),
 			atom,
 		))
-		atom.SetLevel(zap.InfoLevel)
+		atom.SetLevel(zap.DebugLevel)
 
 		return storage.New(storage.StoreConfig{
 			Store:  mvccStore,

@@ -79,22 +79,19 @@ func indexFromRange(seed int64, min int64, max int64) int64 {
 	return min + seed%(max-min)
 }
 
-type txnCommand ptarmiganpb.KVTxnRequest
+type txnCommand struct {
+	txnRequest ptarmiganpb.KVTxnRequest
+	index      uint64
+}
 
 func (command txnCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
-	index, err := replicaStore.Index(context.Background())
-
-	if err != nil {
-		panic(err)
-	}
-
-	res, _ := replicaStore.Apply(index+1).Txn(context.Background(), ptarmiganpb.KVTxnRequest(command))
+	res, _ := replicaStore.Apply(command.index).Txn(context.Background(), command.txnRequest)
 	return res
 }
 
 func (command txnCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyTxn(state.(*model.ReplicaStoreModel).Index()+1, ptarmiganpb.KVTxnRequest(command))
+	state.(*model.ReplicaStoreModel).ApplyTxn(command.index, command.txnRequest)
 	return state
 }
 
@@ -117,30 +114,30 @@ func (command txnCommand) PostCondition(state commands.State, result commands.Re
 func (command txnCommand) String() string {
 	str := "Txn("
 
-	if command.Compare != nil {
+	if command.txnRequest.Compare != nil {
 		str += "\n  Compare(\n"
 
-		for i, compare := range command.Compare {
+		for i, compare := range command.txnRequest.Compare {
 			str += fmt.Sprintf("    %d: %s\n", i, compare.String())
 		}
 
 		str += "  )\n"
 	}
 
-	if command.Success != nil {
+	if command.txnRequest.Success != nil {
 		str += "\n  Success(\n"
 
-		for i, op := range command.Success {
+		for i, op := range command.txnRequest.Success {
 			str += fmt.Sprintf("    %d: %s\n", i, op.String())
 		}
 
 		str += "  )\n"
 	}
 
-	if command.Failure != nil {
+	if command.txnRequest.Failure != nil {
 		str += "\n  Failure(\n"
 
-		for i, op := range command.Failure {
+		for i, op := range command.txnRequest.Failure {
 			str += fmt.Sprintf("    %d: %s\n", i, op.String())
 		}
 
@@ -152,23 +149,19 @@ func (command txnCommand) String() string {
 	return str
 }
 
-type compactCommand int64
+type compactCommand struct {
+	revision int64
+	index    uint64
+}
 
 func (command compactCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
-	index, err := replicaStore.Index(context.Background())
-
-	if err != nil {
-		panic(err)
-	}
-
-	replicaStore.Apply(index+1).Compact(context.Background(), int64(command))
-
+	replicaStore.Apply(command.index).Compact(context.Background(), command.revision)
 	return sut
 }
 
 func (command compactCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyCompact(state.(*model.ReplicaStoreModel).Index()+1, int64(command))
+	state.(*model.ReplicaStoreModel).ApplyCompact(command.index, command.revision)
 	return state
 }
 
@@ -232,30 +225,13 @@ func (command queryCommand) String() string {
 }
 
 type changesCommand struct {
-	ptarmiganpb.KVWatchRequest
-	Limit int
+	watchRequest ptarmiganpb.KVWatchRequest
+	limit        int
 }
 
 func (command changesCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
-
-	oldestRevision, err := replicaStore.OldestRevision()
-
-	if err != nil && err != mvcc.ErrNoRevisions {
-		panic(err)
-	}
-
-	newestRevision, err := replicaStore.NewestRevision()
-
-	if err != nil && err != mvcc.ErrNoRevisions {
-		panic(err)
-	}
-
-	if command.Start != nil {
-		command.Start = &ptarmiganpb.KVWatchCursor{Revision: indexFromRange(command.Start.Revision, oldestRevision, newestRevision), Key: command.Start.Key}
-	}
-
-	res, _ := replicaStore.Changes(context.Background(), command.KVWatchRequest, command.Limit)
+	res, _ := replicaStore.Changes(context.Background(), command.watchRequest, command.limit)
 	return res
 }
 
@@ -268,18 +244,11 @@ func (command changesCommand) PreCondition(state commands.State) bool {
 }
 
 func (command changesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	oldestRevision := state.(*model.ReplicaStoreModel).OldestRevision()
-	newestRevision := state.(*model.ReplicaStoreModel).NewestRevision()
-
-	if command.Start != nil {
-		command.Start = &ptarmiganpb.KVWatchCursor{Revision: indexFromRange(command.Start.Revision, oldestRevision, newestRevision), Key: command.Start.Key}
-	}
-
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Changes(command.KVWatchRequest, command.Limit), result)
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Changes(command.watchRequest, command.limit), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
-		fmt.Printf("expected %#v\n", state.(*model.ReplicaStoreModel).Changes(command.KVWatchRequest, command.Limit))
+		fmt.Printf("expected %#v\n", state.(*model.ReplicaStoreModel).Changes(command.watchRequest, command.limit))
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 
@@ -291,23 +260,18 @@ func (command changesCommand) String() string {
 }
 
 type createLeaseCommand struct {
-	TTL int64
+	ttl   int64
+	index uint64
 }
 
 func (command createLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
-	index, err := replicaStore.Index(context.Background())
-
-	if err != nil {
-		panic(err)
-	}
-
-	res, _ := replicaStore.Apply(index+1).CreateLease(context.Background(), command.TTL)
+	res, _ := replicaStore.Apply(command.index).CreateLease(context.Background(), command.ttl)
 	return res
 }
 
 func (command createLeaseCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyCreateLease(state.(*model.ReplicaStoreModel).Index()+1, command.TTL)
+	state.(*model.ReplicaStoreModel).ApplyCreateLease(command.index, command.ttl)
 	return state
 }
 
@@ -328,27 +292,22 @@ func (command createLeaseCommand) PostCondition(state commands.State, result com
 }
 
 func (command createLeaseCommand) String() string {
-	return fmt.Sprintf("CreateLease(%#v)", command.TTL)
+	return fmt.Sprintf("CreateLease(%#v)", command.ttl)
 }
 
 type revokeLeaseCommand struct {
-	ID int64
+	id    int64
+	index uint64
 }
 
 func (command revokeLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := sut.(storage.ReplicaStore)
-	index, err := replicaStore.Index(context.Background())
-
-	if err != nil {
-		panic(err)
-	}
-
-	replicaStore.Apply(index+1).RevokeLease(context.Background(), command.ID)
+	replicaStore.Apply(command.index).RevokeLease(context.Background(), command.id)
 	return sut
 }
 
 func (command revokeLeaseCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyRevokeLease(state.(*model.ReplicaStoreModel).Index()+1, command.ID)
+	state.(*model.ReplicaStoreModel).ApplyRevokeLease(command.index, command.id)
 	return state
 }
 
@@ -377,7 +336,7 @@ func (command revokeLeaseCommand) PostCondition(state commands.State, result com
 }
 
 func (command revokeLeaseCommand) String() string {
-	return fmt.Sprintf("RevokeLease(%#v)", command.ID)
+	return fmt.Sprintf("RevokeLease(%#v)", command.id)
 }
 
 type leasesCommand struct {
@@ -507,4 +466,36 @@ func (command oldestRevisionCommand) PostCondition(state commands.State, result 
 
 func (command oldestRevisionCommand) String() string {
 	return fmt.Sprintf("OldestRevision()")
+}
+
+type indexCommand struct {
+}
+
+func (command indexCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	replicaStore := sut.(storage.ReplicaStore)
+	res, _ := replicaStore.Index(context.Background())
+	return res
+}
+
+func (command indexCommand) NextState(state commands.State) commands.State {
+	return state
+}
+
+func (command indexCommand) PreCondition(state commands.State) bool {
+	return true
+}
+
+func (command indexCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Index(), result)
+
+	if diff != "" {
+		fmt.Printf("Diff: %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
+}
+
+func (command indexCommand) String() string {
+	return fmt.Sprintf("Index()")
 }

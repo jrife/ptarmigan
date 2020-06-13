@@ -34,6 +34,7 @@ func Commands(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		GetLeaseCommand(replicaStore),
 		NewestRevisionCommand(replicaStore),
 		OldestRevisionCommand(replicaStore),
+		IndexCommand(replicaStore),
 	)
 }
 
@@ -58,53 +59,91 @@ func ChangesCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 // TxnCommand returns a generator that generates txn commands
 // that are valid for the replica store
 func TxnCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return KVTxnRequest(replicaStore, 0).SuchThat(func(txnRequest *ptarmiganpb.KVTxnRequest) bool {
-		return txnRequest != nil
-	}).Map(func(txnRequest *ptarmiganpb.KVTxnRequest) commands.Command {
-		return txnCommand(*txnRequest)
+	return gopter.CombineGens(
+		KVTxnRequest(replicaStore, 0).SuchThat(func(txnRequest *ptarmiganpb.KVTxnRequest) bool {
+			return txnRequest != nil
+		}),
+		Index(replicaStore),
+	).Map(func(g []interface{}) commands.Command {
+		return txnCommand{
+			txnRequest: *g[0].(*ptarmiganpb.KVTxnRequest),
+			index:      g[1].(uint64),
+		}
 	})
 }
 
 // CompactCommand returns a generator that generates compact commands
 // that are valid for the replica store
 func CompactCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Int64().Map(func(n int64) commands.Command {
-		if replicaStore.OldestRevision() == replicaStore.NewestRevision() {
-			return compactCommand(0)
+	return gopter.CombineGens(
+		Revision(replicaStore),
+		Index(replicaStore),
+	).Map(func(g []interface{}) commands.Command {
+		return compactCommand{
+			revision: g[0].(int64),
+			index:    g[1].(uint64),
 		}
-
-		return compactCommand(indexFromRange(n, replicaStore.OldestRevision(), replicaStore.NewestRevision()))
 	})
 }
 
+// CreateLeaseCommand returns a generator that generates create lease commands
+// that are valid for the replica store
 func CreateLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Int64().Map(func(n int64) commands.Command {
-		return createLeaseCommand{TTL: n}
+	return gopter.CombineGens(
+		gen.Int64(),
+		Index(replicaStore),
+	).Map(func(g []interface{}) commands.Command {
+		return createLeaseCommand{
+			ttl:   g[0].(int64),
+			index: g[1].(uint64),
+		}
 	})
 }
 
+// RevokeLeaseCommand returns a generator that generates revoke lease commands
+// that are valid for the replica store
 func RevokeLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return Lease(replicaStore).Map(func(id int64) commands.Command {
-		return revokeLeaseCommand{ID: id}
+	return gopter.CombineGens(
+		Lease(replicaStore),
+		Index(replicaStore),
+	).Map(func(g []interface{}) commands.Command {
+		return revokeLeaseCommand{
+			id:    g[0].(int64),
+			index: g[1].(uint64),
+		}
 	})
 }
 
+// LeasesCommand returns a generator that generates leases commands
+// that are valid for the replica store
 func LeasesCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Const(leasesCommand{})
 }
 
+// GetLeaseCommand returns a generator that generates get lease commands
+// that are valid for the replica store
 func GetLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return Lease(replicaStore).Map(func(id int64) commands.Command {
 		return getLeaseCommand{ID: id}
 	})
 }
 
+// NewestRevisionCommand returns a generator that generates newest revision commands
+// that are valid for the replica store
 func NewestRevisionCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Const(newestRevisionCommand{})
 }
 
+// OldestRevisionCommand returns a generator that generates oldest revision commands
+// that are valid for the replica store
 func OldestRevisionCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Const(oldestRevisionCommand{})
+}
+
+// IndexCommand returns a generator that generates index commands
+// that are valid for the replica store
+func IndexCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(indexCommand{})
 }
 
 // Compare returns a generator that generates comparisons that are
@@ -174,6 +213,8 @@ func KVRequestOp(replicaStore *model.ReplicaStoreModel, depth int) gopter.Gen {
 	})
 }
 
+// Revision generates a revision number that may be valid for
+// the replica store
 func Revision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -195,6 +236,8 @@ func Revision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// ExistingRevision generates valid revision numbers for the replica store
+// if it has any revisions
 func ExistingRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Int64().Map(func(n int64) int64 {
 		if replicaStore.OldestRevision() == replicaStore.NewestRevision() {
@@ -205,6 +248,7 @@ func ExistingRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// Value generates random values and existing values from the replica store
 func Value(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -222,10 +266,12 @@ func Value(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// AnyValue generates random values
 func AnyValue() gopter.Gen {
 	return gen.AnyString().Map(func(str string) []byte { return []byte(str) })
 }
 
+// ExistingValue generates values that exist in the replica store
 func ExistingValue(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Int().Map(func(i int) []byte {
 		kvs := replicaStore.Query(ptarmiganpb.KVQueryRequest{}).Kvs
@@ -238,6 +284,7 @@ func ExistingValue(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// Key generates keys, some of which already exist in the replica store
 func Key(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -255,10 +302,12 @@ func Key(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// AnyKey generates random keys
 func AnyKey() gopter.Gen {
 	return gen.AnyString().Map(func(str string) []byte { return []byte(str) })
 }
 
+// ExistingKey generates existing keys
 func ExistingKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Int().Map(func(i int) []byte {
 		kvs := replicaStore.Query(ptarmiganpb.KVQueryRequest{}).Kvs
@@ -274,6 +323,8 @@ func ExistingKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// KVQueryRequest generates query requests, some of which
+// should match some keys in the replica store
 func KVQueryRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gopter.CombineGens(
 		KVSelection(replicaStore),
@@ -303,6 +354,7 @@ func KVQueryRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// After generates a page cursor
 func After(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		gen.OneGenOf(
@@ -328,6 +380,7 @@ func After(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// SortOrder generates a sort order for a query
 func SortOrder() gopter.Gen {
 	return gen.OneGenOf(
 		gen.Const(ptarmiganpb.KVQueryRequest_ASC),
@@ -336,6 +389,7 @@ func SortOrder() gopter.Gen {
 	)
 }
 
+// SortTarget generates a sort target for a query
 func SortTarget() gopter.Gen {
 	return gen.OneGenOf(
 		gen.Const(ptarmiganpb.KVQueryRequest_KEY),
@@ -347,6 +401,7 @@ func SortTarget() gopter.Gen {
 	)
 }
 
+// KVPutRequest generates put requests
 func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gopter.CombineGens(
 		KVSelection(replicaStore),
@@ -380,6 +435,7 @@ func KVPutRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// KVDeleteRequest generates delete requests
 func KVDeleteRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gopter.CombineGens(
 		KVSelection(replicaStore),
@@ -397,6 +453,7 @@ func KVDeleteRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// KVTxnRequest generates txn requests
 func KVTxnRequest(replicaStore *model.ReplicaStoreModel, depth int) gopter.Gen {
 	if depth > 1 {
 		return gen.Const(nil)
@@ -500,6 +557,9 @@ func KVSelection(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// SelectionKey generates keys for a selection's key field. It is
+// more weighted toward generating a nil key to prevent selections
+// from being dominated by those matching only a single key.
 func SelectionKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -517,6 +577,7 @@ func SelectionKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// KeyRange generates a key range for a selection.
 func KeyRange(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		KeyRangeMin(replicaStore),
@@ -524,6 +585,7 @@ func KeyRange(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// KeyRangeMin generates a key range's minimum value.
 func KeyRangeMin(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		KeyRangeGt(replicaStore),
@@ -531,6 +593,7 @@ func KeyRangeMin(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// KeyRangeMax generates a key range's maximum value.
 func KeyRangeMax(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		KeyRangeLt(replicaStore),
@@ -538,30 +601,35 @@ func KeyRangeMax(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// KeyRangeGte generates a key range min >= some key
 func KeyRangeGte(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(KeyRangeMarker(replicaStore).Map(func(b []byte) ptarmiganpb.KVSelection_KeyGte {
 		return ptarmiganpb.KVSelection_KeyGte{KeyGte: b}
 	}))
 }
 
+// KeyRangeGt generates a key range max > some key
 func KeyRangeGt(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(KeyRangeMarker(replicaStore).Map(func(b []byte) ptarmiganpb.KVSelection_KeyGt {
 		return ptarmiganpb.KVSelection_KeyGt{KeyGt: b}
 	}))
 }
 
+// KeyRangeLte generates a key range max <= some key
 func KeyRangeLte(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(KeyRangeMarker(replicaStore).Map(func(b []byte) ptarmiganpb.KVSelection_KeyLte {
 		return ptarmiganpb.KVSelection_KeyLte{KeyLte: b}
 	}))
 }
 
+// KeyRangeLt generates a key range max < some key
 func KeyRangeLt(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(KeyRangeMarker(replicaStore).Map(func(b []byte) ptarmiganpb.KVSelection_KeyLt {
 		return ptarmiganpb.KVSelection_KeyLt{KeyLt: b}
 	}))
 }
 
+// KeyRangeMarker generates a key for a key range marker
 func KeyRangeMarker(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -579,6 +647,7 @@ func KeyRangeMarker(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// ModRevisionRange generates a mod revision range for a selection
 func ModRevisionRange(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		ModRevisionMin(replicaStore),
@@ -586,6 +655,7 @@ func ModRevisionRange(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// ModRevisionMin generates a mod revision ranges minimum value
 func ModRevisionMin(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		ModRevisionGt(replicaStore),
@@ -593,6 +663,7 @@ func ModRevisionMin(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// ModRevisionMax generates a mod revision ranges maximum value
 func ModRevisionMax(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		ModRevisionLt(replicaStore),
@@ -600,30 +671,35 @@ func ModRevisionMax(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// ModRevisionGte generates a mod revision range minimum >= some value
 func ModRevisionGte(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_ModRevisionGte {
 		return ptarmiganpb.KVSelection_ModRevisionGte{ModRevisionGte: r}
 	}))
 }
 
+// ModRevisionGt generates a mod revision range minimum > some value
 func ModRevisionGt(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_ModRevisionGt {
 		return ptarmiganpb.KVSelection_ModRevisionGt{ModRevisionGt: r}
 	}))
 }
 
+// ModRevisionLte generates a mod revision range maximum <= some value
 func ModRevisionLte(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_ModRevisionLte {
 		return ptarmiganpb.KVSelection_ModRevisionLte{ModRevisionLte: r}
 	}))
 }
 
+// ModRevisionLt generates a mod revision range maximum < some value
 func ModRevisionLt(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_ModRevisionLt {
 		return ptarmiganpb.KVSelection_ModRevisionLt{ModRevisionLt: r}
 	}))
 }
 
+// CreateRevisionRange generates a create revision range for a selection
 func CreateRevisionRange(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		Revision(replicaStore),
@@ -631,6 +707,7 @@ func CreateRevisionRange(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// CreateRevisionMin generates a create revision ranges minimum value
 func CreateRevisionMin(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		CreateRevisionGt(replicaStore),
@@ -638,6 +715,7 @@ func CreateRevisionMin(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// CreateRevisionMax generates a create revision ranges maximum value
 func CreateRevisionMax(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		CreateRevisionLt(replicaStore),
@@ -645,30 +723,35 @@ func CreateRevisionMax(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// CreateRevisionGte generates a create revision range minimum >= some value
 func CreateRevisionGte(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_CreateRevisionGte {
 		return ptarmiganpb.KVSelection_CreateRevisionGte{CreateRevisionGte: r}
 	}))
 }
 
+// CreateRevisionGt generates a create revision range minimum > some value
 func CreateRevisionGt(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_CreateRevisionGt {
 		return ptarmiganpb.KVSelection_CreateRevisionGt{CreateRevisionGt: r}
 	}))
 }
 
+// CreateRevisionLte generates a create revision range maximum <= some value
 func CreateRevisionLte(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_CreateRevisionLte {
 		return ptarmiganpb.KVSelection_CreateRevisionLte{CreateRevisionLte: r}
 	}))
 }
 
+// CreateRevisionLt generates a create revision range maximum <= some value
 func CreateRevisionLt(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Revision(replicaStore).Map(func(r int64) ptarmiganpb.KVSelection_CreateRevisionLt {
 		return ptarmiganpb.KVSelection_CreateRevisionLt{CreateRevisionLt: r}
 	}))
 }
 
+// KeyStartsWith generates a key prefix for a selection's KeyStartsWith field
 func KeyStartsWith(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -688,6 +771,7 @@ func KeyStartsWith(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// Lease generates a lease and is weighted toward generating an existing lease
 func Lease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -705,6 +789,7 @@ func Lease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// ExistingLease generates an existing lease if one exists, 0 otherwise.
 func ExistingLease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Int().Map(func(i int) int64 {
 		leases := replicaStore.Leases()
@@ -747,6 +832,7 @@ func KVPredicate(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// Comparison generates a KV predicate's comparison field
 func Comparison() gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -760,12 +846,14 @@ func Comparison() gopter.Gen {
 	})
 }
 
+// ValidComparison generates a comparison that has a valid value
 func ValidComparison() gopter.Gen {
 	return gen.Int32Range(int32(ptarmiganpb.KVPredicate_EQUAL), int32(ptarmiganpb.KVPredicate_NOT_EQUAL)).Map(func(i int32) ptarmiganpb.KVPredicate_Comparison {
 		return ptarmiganpb.KVPredicate_Comparison(i)
 	})
 }
 
+// Target generates the target for a comparison in a KV predicate's target and target union fields.
 func Target(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
 		AnyTarget(replicaStore),
@@ -773,6 +861,7 @@ func Target(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// AnyTarget generates a random combination of target and target union
 func AnyTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		gen.Int32Range(int32(ptarmiganpb.KVPredicate_VERSION), int32(ptarmiganpb.KVPredicate_LEASE)).Map(func(i int32) ptarmiganpb.KVPredicate_Target {
@@ -782,6 +871,7 @@ func AnyTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	)
 }
 
+// ValidTarget generates a valid combination of target and target union
 func ValidTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return TargetUnion(replicaStore).Map(func(targetUnion interface{}) []interface{} {
 		switch targetUnion.(*gopter.GenResult).Result.(type) {
@@ -801,6 +891,7 @@ func ValidTarget(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// TargetUnion generates a target union, and sometimes nil
 func TargetUnion(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Weighted([]gen.WeightedGen{
 		{
@@ -820,6 +911,7 @@ func TargetUnion(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// KVPredicate_Version generates a version for the target union field of a predicate
 func KVPredicate_Version(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
 		{
@@ -835,6 +927,8 @@ func KVPredicate_Version(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// ExistingVersion generates a version for the target union field of a predicate
+// that matches an existing key version
 func ExistingVersion(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.Int().Map(func(i int) ptarmiganpb.KVPredicate_Version {
 		kvs := replicaStore.Query(ptarmiganpb.KVQueryRequest{}).Kvs
@@ -847,6 +941,7 @@ func ExistingVersion(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	})
 }
 
+// KVPredicate_ModRevision generates a mod revision for the target union field of a predicate
 func KVPredicate_ModRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
 		{
@@ -864,6 +959,7 @@ func KVPredicate_ModRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// KVPredicate_CreateRevision generates a create revision for the target union field of a predicate
 func KVPredicate_CreateRevision(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
 		{
@@ -881,6 +977,7 @@ func KVPredicate_CreateRevision(replicaStore *model.ReplicaStoreModel) gopter.Ge
 	}))
 }
 
+// KVPredicate_Lease generates a lease for the target union field of a predicate
 func KVPredicate_Lease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(gen.Weighted([]gen.WeightedGen{
 		{
@@ -898,8 +995,24 @@ func KVPredicate_Lease(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	}))
 }
 
+// KVPredicate_Value generates a value for the target union field of a predicate
 func KVPredicate_Value(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.PtrOf(Value(replicaStore).Map(func(value []byte) ptarmiganpb.KVPredicate_Value {
 		return ptarmiganpb.KVPredicate_Value{Value: value}
 	}))
+}
+
+// Index generates indexes for update commands
+func Index(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Int64Range(-1, 40).Map(func(i int64) uint64 {
+		index := replicaStore.Index()
+
+		if i < 0 && index < uint64(i) {
+			return index - uint64(-1*i)
+		} else if i > 0 {
+			return index + uint64(i)
+		}
+
+		return index
+	})
 }

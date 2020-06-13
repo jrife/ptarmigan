@@ -62,6 +62,7 @@ func (events eventList) selection(selection *ptarmiganpb.KVSelection) eventList 
 	return sel
 }
 
+// KVMatchesSelection returns true if the selection matches the kv
 func KVMatchesSelection(selection *ptarmiganpb.KVSelection, kv ptarmiganpb.KeyValue) bool {
 	if selection == nil {
 		return true
@@ -156,6 +157,7 @@ func KVMatchesSelection(selection *ptarmiganpb.KVSelection, kv ptarmiganpb.KeyVa
 	return true
 }
 
+// KVMatchesPredicate returns true if the predicate matches the kv
 func KVMatchesPredicate(predicate *ptarmiganpb.KVPredicate, kv ptarmiganpb.KeyValue) bool {
 	if predicate == nil {
 		return true
@@ -295,7 +297,7 @@ func query(request ptarmiganpb.KVQueryRequest, state *ReplicaStoreModel) (ptarmi
 		kvs = reverse(kvs)
 	}
 
-	kvs = After(request.After, kvs, request.SortTarget, request.SortOrder)
+	kvs = after(request.After, kvs, request.SortTarget, request.SortOrder)
 
 	if request.Limit > 0 && int64(len(kvs)) > request.Limit {
 		kvs = kvs[:request.Limit]
@@ -319,6 +321,7 @@ func query(request ptarmiganpb.KVQueryRequest, state *ReplicaStoreModel) (ptarmi
 	return response, true
 }
 
+// Cursor generates a page cursor based on the kv and sort target
 func Cursor(kv ptarmiganpb.KeyValue, sortTarget ptarmiganpb.KVQueryRequest_SortTarget) string {
 	var cursorBytes []byte
 
@@ -341,7 +344,8 @@ func Cursor(kv ptarmiganpb.KeyValue, sortTarget ptarmiganpb.KVQueryRequest_SortT
 	return base64.StdEncoding.EncodeToString(cursorBytes)
 }
 
-func After(encodedAfter string, kvs kvList, sortTarget ptarmiganpb.KVQueryRequest_SortTarget, sortOrder ptarmiganpb.KVQueryRequest_SortOrder) kvList {
+// after truncates the kv list based on the page cursor and sort parameters
+func after(encodedAfter string, kvs kvList, sortTarget ptarmiganpb.KVQueryRequest_SortTarget, sortOrder ptarmiganpb.KVQueryRequest_SortOrder) kvList {
 	if encodedAfter == "" {
 		return kvs
 	}

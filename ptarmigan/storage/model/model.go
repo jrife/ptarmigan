@@ -8,6 +8,9 @@ import (
 	"github.com/jrife/flock/storage/mvcc"
 )
 
+// ReplicaStoreModel is an in-memory model of a replica store
+// It is used in property-based tests as a reference implementation
+// of how a replica store should work.
 type ReplicaStoreModel struct {
 	revisions []RevisionModel
 	leases    *treemap.Map
@@ -16,6 +19,7 @@ type ReplicaStoreModel struct {
 	response  interface{}
 }
 
+// NewReplicaStoreModel creates an empty replica store model
 func NewReplicaStoreModel() *ReplicaStoreModel {
 	return &ReplicaStoreModel{
 		revisions: []RevisionModel{},
@@ -43,10 +47,13 @@ func (replicaStoreModel ReplicaStoreModel) revision(r int64) (RevisionModel, int
 	return RevisionModel{}, -1
 }
 
+// LastResponse returns the return value of the last command processed by
+// the model
 func (replicaStoreModel *ReplicaStoreModel) LastResponse() interface{} {
 	return replicaStoreModel.response
 }
 
+// ApplyTxn executes an  ApplyTxn command on the model
 func (replicaStoreModel *ReplicaStoreModel) ApplyTxn(index uint64, txn ptarmiganpb.KVTxnRequest) ptarmiganpb.KVTxnResponse {
 	if replicaStoreModel.index >= index {
 		replicaStoreModel.response = ptarmiganpb.KVTxnResponse{}
@@ -249,10 +256,12 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 	return result, commit
 }
 
+// Index executes an Index command on the model
 func (replicaStoreModel *ReplicaStoreModel) Index() uint64 {
 	return replicaStoreModel.index
 }
 
+// ApplyCompact executes an ApplyCompact command on the model
 func (replicaStoreModel *ReplicaStoreModel) ApplyCompact(index uint64, revision int64) {
 	if replicaStoreModel.index >= index {
 		return
@@ -284,6 +293,7 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyCompact(index uint64, revision 
 	}
 }
 
+// ApplyCreateLease executes an ApplyCreateLease command on the model
 func (replicaStoreModel *ReplicaStoreModel) ApplyCreateLease(index uint64, ttl int64) ptarmiganpb.Lease {
 	if replicaStoreModel.index >= index {
 		replicaStoreModel.response = ptarmiganpb.Lease{}
@@ -303,6 +313,7 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyCreateLease(index uint64, ttl i
 	return lease
 }
 
+// ApplyRevokeLease executes an ApplyRevokeLease command on the model
 func (replicaStoreModel *ReplicaStoreModel) ApplyRevokeLease(index uint64, id int64) {
 	if replicaStoreModel.index >= index {
 		return
@@ -348,11 +359,13 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyRevokeLease(index uint64, id in
 	replicaStoreModel.revisions = append(replicaStoreModel.revisions, revision)
 }
 
+// Query executes a Query command on the model
 func (replicaStoreModel *ReplicaStoreModel) Query(request ptarmiganpb.KVQueryRequest) ptarmiganpb.KVQueryResponse {
 	response, _ := query(request, replicaStoreModel)
 	return response
 }
 
+// Changes executes a Changes command on the model
 func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchRequest, limit int) []ptarmiganpb.Event {
 	changes := []ptarmiganpb.Event{}
 
@@ -406,6 +419,7 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 	return changes
 }
 
+// Leases executes a Leases command on the model
 func (replicaStoreModel *ReplicaStoreModel) Leases() []ptarmiganpb.Lease {
 	leases := []ptarmiganpb.Lease{}
 
@@ -416,6 +430,7 @@ func (replicaStoreModel *ReplicaStoreModel) Leases() []ptarmiganpb.Lease {
 	return leases
 }
 
+// GetLease executes a GetLease command on the model
 func (replicaStoreModel *ReplicaStoreModel) GetLease(id int64) ptarmiganpb.Lease {
 	lease, found := replicaStoreModel.leases.Get(id)
 
@@ -426,6 +441,7 @@ func (replicaStoreModel *ReplicaStoreModel) GetLease(id int64) ptarmiganpb.Lease
 	return lease.(ptarmiganpb.Lease)
 }
 
+// NewestRevision executes a NewestRevision command on the model
 func (replicaStoreModel *ReplicaStoreModel) NewestRevision() int64 {
 	if len(replicaStoreModel.revisions) == 0 {
 		return 0
@@ -434,6 +450,7 @@ func (replicaStoreModel *ReplicaStoreModel) NewestRevision() int64 {
 	return replicaStoreModel.revisions[len(replicaStoreModel.revisions)-1].revision
 }
 
+// OldestRevision executes a OldestRevision command on the model
 func (replicaStoreModel *ReplicaStoreModel) OldestRevision() int64 {
 	if len(replicaStoreModel.revisions) == 0 {
 		return 0
@@ -442,12 +459,16 @@ func (replicaStoreModel *ReplicaStoreModel) OldestRevision() int64 {
 	return replicaStoreModel.revisions[0].revision
 }
 
+// RevisionModel is an in-memory model of a replica store revision
 type RevisionModel struct {
 	revision int64
 	changes  *treemap.Map
 	kvs      *treemap.Map
 }
 
+// Next generates a copy of this revision whose revision number is
+// one more than this revision's revision number. The copy's changes
+// will be empty.
 func (revisionModel RevisionModel) Next() RevisionModel {
 	nextRevision := RevisionModel{
 		revision: revisionModel.revision + 1,
@@ -464,6 +485,7 @@ func (revisionModel RevisionModel) Next() RevisionModel {
 	return nextRevision
 }
 
+// AllKvs returns a list of all the KVs in the revision
 func (revisionModel RevisionModel) AllKvs() kvList {
 	var kvs []ptarmiganpb.KeyValue = []ptarmiganpb.KeyValue{}
 
@@ -476,6 +498,7 @@ func (revisionModel RevisionModel) AllKvs() kvList {
 	return kvs
 }
 
+// AllChanges returns a list of all the changes in the revision
 func (revisionModel RevisionModel) AllChanges() eventList {
 	var changes []ptarmiganpb.Event = []ptarmiganpb.Event{}
 
