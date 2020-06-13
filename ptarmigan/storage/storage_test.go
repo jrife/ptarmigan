@@ -197,6 +197,27 @@ func testStoreReplicaStores(builder tempStoreBuilder, t *testing.T) {
 }
 
 func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
+	t.Run("System", func(t *testing.T) { testReplicaStoreSystem(builder, t) })
+	t.Run("SystemSnapshot", func(t *testing.T) { testReplicaStoreSystemSnapshot(builder, t) })
+	t.Run("Create", func(t *testing.T) { testReplicaStoreCreate(builder, t) })
+	t.Run("Delete", func(t *testing.T) { testReplicaStoreDelete(builder, t) })
+	t.Run("Metadata", func(t *testing.T) { testReplicaStoreMetadata(builder, t) })
+	t.Run("Index", func(t *testing.T) { testReplicaStoreIndex(builder, t) })
+	t.Run("ApplyTxn", func(t *testing.T) { testReplicaStoreApplyTxn(builder, t) })
+	t.Run("ApplyCreateLease", func(t *testing.T) { testReplicaStoreApplyCreateLease(builder, t) })
+	t.Run("ApplyRevokeLease", func(t *testing.T) { testReplicaStoreApplyRevokeLease(builder, t) })
+	t.Run("ApplyCompact", func(t *testing.T) { testReplicaStoreApplyCompact(builder, t) })
+	t.Run("Query", func(t *testing.T) { testReplicaStoreQuery(builder, t) })
+	t.Run("Changes", func(t *testing.T) { testReplicaStoreChanges(builder, t) })
+	t.Run("Leases", func(t *testing.T) { testReplicaStoreLeases(builder, t) })
+	t.Run("GetLease", func(t *testing.T) { testReplicaStoreGetLease(builder, t) })
+	t.Run("NewestRevision", func(t *testing.T) { testReplicaStoreNewestRevision(builder, t) })
+	t.Run("OldestRevision", func(t *testing.T) { testReplicaStoreOldestRevision(builder, t) })
+	t.Run("Snapshot", func(t *testing.T) { testReplicaStoreSnapshot(builder, t) })
+	t.Run("ApplySnapshot", func(t *testing.T) { testReplicaStoreApplySnapshot(builder, t) })
+}
+
+func testReplicaStoreSystem(builder tempStoreBuilder, t *testing.T) {
 	type replicaStoreWithCleanup struct {
 		storage.ReplicaStore
 		cleanup func()
@@ -232,4 +253,114 @@ func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	properties := gopter.NewProperties(parameters)
 	properties.Property("", commands.Prop(cbCommands))
 	properties.TestingRun(t)
+}
+
+func testReplicaStoreSystemSnapshot(builder tempStoreBuilder, t *testing.T) {
+	type replicaStoreABWithCleanup struct {
+		A       storage.ReplicaStore
+		B       storage.ReplicaStore
+		cleanup func()
+	}
+
+	type stateWithInitialCommands struct {
+		model           *model.ReplicaStoreModel
+		initialCommands []commands.Command
+	}
+
+	var cbCommands = &commands.ProtoCommands{
+		NewSystemUnderTestFunc: func(initialState commands.State) commands.SystemUnderTest {
+			storeA, cleanupA := builder(t)
+			storeB, cleanupB := builder(t)
+
+			replicaStoreA := storeA.ReplicaStore("test")
+			replicaStoreB := storeB.ReplicaStore("test")
+
+			if err := replicaStoreA.Create(context.Background(), []byte{}); err != nil {
+				panic(err)
+			}
+
+			if err := replicaStoreB.Create(context.Background(), []byte{}); err != nil {
+				panic(err)
+			}
+
+			return &replicaStoreABWithCleanup{
+				A: replicaStoreA,
+				B: replicaStoreB,
+				cleanup: func() {
+					cleanupA()
+					cleanupB()
+				},
+			}
+		},
+		DestroySystemUnderTestFunc: func(sut commands.SystemUnderTest) {
+			sut.(*replicaStoreWithCleanup).cleanup()
+		},
+		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) *model.ReplicaStoreModel {
+			c := []commands.Command{}
+			m := &model.ReplicaStoreModel{}
+			m = c[0].NextState(m).(*model.ReplicaStoreModel)
+
+			return model.NewReplicaStoreModel()
+		}),
+		InitialPreConditionFunc: func(state commands.State) bool {
+			return true
+		},
+		GenCommandFunc: func(state commands.State) gopter.Gen {
+			return command_gen.Commands(state.(*model.ReplicaStoreModel))
+		},
+	}
+
+	parameters := gopter.DefaultTestParametersWithSeed(1234)
+	parameters.MinSuccessfulTests = 100
+	properties := gopter.NewProperties(parameters)
+	properties.Property("", commands.Prop(cbCommands))
+	properties.TestingRun(t)
+}
+
+func testReplicaStoreCreate(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreDelete(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreMetadata(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreIndex(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreApplyTxn(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreApplyCompact(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreApplyCreateLease(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreApplyRevokeLease(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreQuery(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreChanges(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreLeases(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreGetLease(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreNewestRevision(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreOldestRevision(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreApplySnapshot(builder tempStoreBuilder, t *testing.T) {
+}
+
+func testReplicaStoreSnapshot(builder tempStoreBuilder, t *testing.T) {
 }
