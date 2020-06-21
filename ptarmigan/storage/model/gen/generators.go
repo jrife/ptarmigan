@@ -21,44 +21,67 @@ func abs(n int) int {
 }
 
 // Commands returns a generator that generates a range
+// of storage commands that are valid for the set of replica stores
+func Commands(replicaStoreSet []model.ReplicaStoreModel) gopter.Gen {
+	gens := make([]gopter.Gen, len(replicaStoreSet)+1)
+
+	for i := range replicaStoreSet {
+		gens[i] = CommandsOne(i, &replicaStoreSet[i])
+	}
+
+	gens[len(gens)-1] = SnapshotCommand(replicaStoreSet)
+
+	return gen.OneGenOf(gens...)
+}
+
+// CommandsOne returns a generator that generates a range
 // of storage commands that are valid for the replica store
-func Commands(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func CommandsOne(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gen.OneGenOf(
-		QueryCommand(replicaStore),
-		ChangesCommand(replicaStore),
-		TxnCommand(replicaStore),
-		CompactCommand(replicaStore),
-		CreateLeaseCommand(replicaStore),
-		RevokeLeaseCommand(replicaStore),
-		LeasesCommand(replicaStore),
-		GetLeaseCommand(replicaStore),
-		NewestRevisionCommand(replicaStore),
-		OldestRevisionCommand(replicaStore),
-		IndexCommand(replicaStore),
+		QueryCommand(id, replicaStore),
+		ChangesCommand(id, replicaStore),
+		TxnCommand(id, replicaStore),
+		CompactCommand(id, replicaStore),
+		CreateLeaseCommand(id, replicaStore),
+		RevokeLeaseCommand(id, replicaStore),
+		LeasesCommand(id, replicaStore),
+		GetLeaseCommand(id, replicaStore),
+		NewestRevisionCommand(id, replicaStore),
+		OldestRevisionCommand(id, replicaStore),
+		IndexCommand(id, replicaStore),
 	)
 }
 
 // QueryCommand returns a generator that generates query commands
 // that are valid for the replica store
-func QueryCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func QueryCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return KVQueryRequest(replicaStore).SuchThat(func(queryRequest *ptarmiganpb.KVQueryRequest) bool {
 		return queryRequest != nil
 	}).Map(func(queryRequest *ptarmiganpb.KVQueryRequest) commands.Command {
-		return queryCommand(*queryRequest)
+		return queryCommand{
+			queryRequest: *queryRequest,
+			command: command{
+				replicaStore: id,
+			},
+		}
 	})
 }
 
 // ChangesCommand returns a generator that generates changes commands
 // that are valid for the replica store
-func ChangesCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func ChangesCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens().Map(func(g []interface{}) commands.Command {
-		return changesCommand{}
+		return changesCommand{
+			command: command{
+				replicaStore: id,
+			},
+		}
 	})
 }
 
 // TxnCommand returns a generator that generates txn commands
 // that are valid for the replica store
-func TxnCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func TxnCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		KVTxnRequest(replicaStore, 0).SuchThat(func(txnRequest *ptarmiganpb.KVTxnRequest) bool {
 			return txnRequest != nil
@@ -68,13 +91,16 @@ func TxnCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		return txnCommand{
 			txnRequest: *g[0].(*ptarmiganpb.KVTxnRequest),
 			index:      g[1].(uint64),
+			command: command{
+				replicaStore: id,
+			},
 		}
 	})
 }
 
 // CompactCommand returns a generator that generates compact commands
 // that are valid for the replica store
-func CompactCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func CompactCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		Revision(replicaStore),
 		Index(replicaStore),
@@ -82,13 +108,16 @@ func CompactCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		return compactCommand{
 			revision: g[0].(int64),
 			index:    g[1].(uint64),
+			command: command{
+				replicaStore: id,
+			},
 		}
 	})
 }
 
 // CreateLeaseCommand returns a generator that generates create lease commands
 // that are valid for the replica store
-func CreateLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func CreateLeaseCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		gen.Int64(),
 		Index(replicaStore),
@@ -96,13 +125,16 @@ func CreateLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		return createLeaseCommand{
 			ttl:   g[0].(int64),
 			index: g[1].(uint64),
+			command: command{
+				replicaStore: id,
+			},
 		}
 	})
 }
 
 // RevokeLeaseCommand returns a generator that generates revoke lease commands
 // that are valid for the replica store
-func RevokeLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func RevokeLeaseCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return gopter.CombineGens(
 		Lease(replicaStore),
 		Index(replicaStore),
@@ -110,40 +142,79 @@ func RevokeLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		return revokeLeaseCommand{
 			id:    g[0].(int64),
 			index: g[1].(uint64),
+			command: command{
+				replicaStore: id,
+			},
 		}
 	})
 }
 
 // LeasesCommand returns a generator that generates leases commands
 // that are valid for the replica store
-func LeasesCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Const(leasesCommand{})
+func LeasesCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(leasesCommand{
+		command: command{
+			replicaStore: id,
+		},
+	})
 }
 
 // GetLeaseCommand returns a generator that generates get lease commands
 // that are valid for the replica store
-func GetLeaseCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+func GetLeaseCommand(replicaStoreID int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 	return Lease(replicaStore).Map(func(id int64) commands.Command {
-		return getLeaseCommand{ID: id}
+		return getLeaseCommand{
+			id: id,
+			command: command{
+				replicaStore: replicaStoreID,
+			},
+		}
 	})
 }
 
 // NewestRevisionCommand returns a generator that generates newest revision commands
 // that are valid for the replica store
-func NewestRevisionCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Const(newestRevisionCommand{})
+func NewestRevisionCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(newestRevisionCommand{
+		command: command{
+			replicaStore: id,
+		},
+	})
 }
 
 // OldestRevisionCommand returns a generator that generates oldest revision commands
 // that are valid for the replica store
-func OldestRevisionCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Const(oldestRevisionCommand{})
+func OldestRevisionCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(oldestRevisionCommand{
+		command: command{
+			replicaStore: id,
+		},
+	})
 }
 
 // IndexCommand returns a generator that generates index commands
 // that are valid for the replica store
-func IndexCommand(replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gen.Const(indexCommand{})
+func IndexCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.Const(indexCommand{
+		command: command{
+			replicaStore: id,
+		},
+	})
+}
+
+// SnapshotCommand returns a generator that generates snapshot commands
+func SnapshotCommand(replicaStores []model.ReplicaStoreModel) gopter.Gen {
+	return gopter.CombineGens(
+		gen.IntRange(0, len(replicaStores)-1),
+		gen.IntRange(0, len(replicaStores)-1),
+	).SuchThat(func(g []interface{}) bool {
+		return g[0].(int) != g[1].(int)
+	}).Map(func(g []interface{}) commands.Command {
+		return snapshotCommand{
+			source: g[0].(int),
+			dest:   g[1].(int),
+		}
+	})
 }
 
 // Compare returns a generator that generates comparisons that are

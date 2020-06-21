@@ -47,6 +47,25 @@ func (replicaStoreModel ReplicaStoreModel) revision(r int64) (RevisionModel, int
 	return RevisionModel{}, -1
 }
 
+// DeepCopy produces a deep copy of this replica store model
+func (replicaStoreModel *ReplicaStoreModel) DeepCopy() *ReplicaStoreModel {
+	deepCopy := NewReplicaStoreModel()
+
+	deepCopy.index = replicaStoreModel.index
+	deepCopy.lease = replicaStoreModel.lease
+	deepCopy.response = replicaStoreModel.response
+
+	for _, revision := range replicaStoreModel.revisions {
+		deepCopy.revisions = append(deepCopy.revisions, revision.DeepCopy())
+	}
+
+	replicaStoreModel.leases.Each(func(key, value interface{}) {
+		deepCopy.leases.Put(key, value)
+	})
+
+	return deepCopy
+}
+
 // LastResponse returns the return value of the last command processed by
 // the model
 func (replicaStoreModel *ReplicaStoreModel) LastResponse() interface{} {
@@ -464,6 +483,27 @@ type RevisionModel struct {
 	revision int64
 	changes  *treemap.Map
 	kvs      *treemap.Map
+}
+
+// DeepCopy produces a deep copy of this revision model
+func (revisionModel RevisionModel) DeepCopy() RevisionModel {
+	deepCopy := RevisionModel{revision: revisionModel.revision}
+
+	if revisionModel.kvs != nil {
+		deepCopy.kvs = treemap.NewWith(compareBytes)
+		revisionModel.kvs.Each(func(key, value interface{}) {
+			deepCopy.kvs.Put(key, value)
+		})
+	}
+
+	if revisionModel.changes != nil {
+		deepCopy.changes = treemap.NewWith(compareBytes)
+		revisionModel.changes.Each(func(key, value interface{}) {
+			deepCopy.changes.Put(key, value)
+		})
+	}
+
+	return deepCopy
 }
 
 // Next generates a copy of this revision whose revision number is

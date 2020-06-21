@@ -12,19 +12,40 @@ import (
 	"github.com/leanovate/gopter/commands"
 )
 
+type command struct {
+	replicaStore int
+}
+
+func (command command) sut(sut commands.SystemUnderTest) storage.ReplicaStore {
+	if s, ok := sut.(ReplicaStoreSet); ok {
+		return s.Get(command.replicaStore)
+	}
+
+	return sut.(storage.ReplicaStore)
+}
+
+func (command command) state(state commands.State) *model.ReplicaStoreModel {
+	if s, ok := state.([]model.ReplicaStoreModel); ok {
+		return &s[command.replicaStore]
+	}
+
+	return state.(*model.ReplicaStoreModel)
+}
+
 type txnCommand struct {
+	command
 	txnRequest ptarmiganpb.KVTxnRequest
 	index      uint64
 }
 
 func (command txnCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.Apply(command.index).Txn(context.Background(), command.txnRequest)
 	return res
 }
 
 func (command txnCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyTxn(command.index, command.txnRequest)
+	command.state(state).ApplyTxn(command.index, command.txnRequest)
 	return state
 }
 
@@ -33,7 +54,7 @@ func (command txnCommand) PreCondition(state commands.State) bool {
 }
 
 func (command txnCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.KVTxnResponse)
+	resp := command.state(state).LastResponse().(ptarmiganpb.KVTxnResponse)
 	diff := cmp.Diff(resp, result)
 
 	if diff != "" {
@@ -83,18 +104,19 @@ func (command txnCommand) String() string {
 }
 
 type compactCommand struct {
+	command
 	revision int64
 	index    uint64
 }
 
 func (command compactCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	replicaStore.Apply(command.index).Compact(context.Background(), command.revision)
-	return sut
+	return replicaStore
 }
 
 func (command compactCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyCompact(command.index, command.revision)
+	command.state(state).ApplyCompact(command.index, command.revision)
 	return state
 }
 
@@ -103,7 +125,7 @@ func (command compactCommand) PreCondition(state commands.State) bool {
 }
 
 func (command compactCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	model := state.(*model.ReplicaStoreModel)
+	model := command.state(state)
 	replicaStore := result.(storage.ReplicaStore)
 
 	diff, err := ReplicaStoreModelDiff(replicaStore, model)
@@ -126,11 +148,14 @@ func (command compactCommand) String() string {
 	return fmt.Sprintf("Compact(%#v)", command)
 }
 
-type queryCommand ptarmiganpb.KVQueryRequest
+type queryCommand struct {
+	command
+	queryRequest ptarmiganpb.KVQueryRequest
+}
 
 func (command queryCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
-	res, _ := replicaStore.Query(context.Background(), ptarmiganpb.KVQueryRequest(command))
+	replicaStore := command.sut(sut)
+	res, _ := replicaStore.Query(context.Background(), ptarmiganpb.KVQueryRequest(command.queryRequest))
 	return res
 }
 
@@ -143,7 +168,7 @@ func (command queryCommand) PreCondition(state commands.State) bool {
 }
 
 func (command queryCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Query(ptarmiganpb.KVQueryRequest(command)), result)
+	diff := cmp.Diff(command.state(state).Query(ptarmiganpb.KVQueryRequest(command.queryRequest)), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
@@ -158,12 +183,13 @@ func (command queryCommand) String() string {
 }
 
 type changesCommand struct {
+	command
 	watchRequest ptarmiganpb.KVWatchRequest
 	limit        int
 }
 
 func (command changesCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.Changes(context.Background(), command.watchRequest, command.limit)
 	return res
 }
@@ -177,11 +203,10 @@ func (command changesCommand) PreCondition(state commands.State) bool {
 }
 
 func (command changesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Changes(command.watchRequest, command.limit), result)
+	diff := cmp.Diff(command.state(state).Changes(command.watchRequest, command.limit), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
-		fmt.Printf("expected %#v\n", state.(*model.ReplicaStoreModel).Changes(command.watchRequest, command.limit))
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 
@@ -193,18 +218,19 @@ func (command changesCommand) String() string {
 }
 
 type createLeaseCommand struct {
+	command
 	ttl   int64
 	index uint64
 }
 
 func (command createLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.Apply(command.index).CreateLease(context.Background(), command.ttl)
 	return res
 }
 
 func (command createLeaseCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyCreateLease(command.index, command.ttl)
+	command.state(state).ApplyCreateLease(command.index, command.ttl)
 	return state
 }
 
@@ -213,7 +239,7 @@ func (command createLeaseCommand) PreCondition(state commands.State) bool {
 }
 
 func (command createLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	resp := state.(*model.ReplicaStoreModel).LastResponse().(ptarmiganpb.Lease)
+	resp := command.state(state).LastResponse().(ptarmiganpb.Lease)
 	diff := cmp.Diff(resp, result)
 
 	if diff != "" {
@@ -229,18 +255,19 @@ func (command createLeaseCommand) String() string {
 }
 
 type revokeLeaseCommand struct {
+	command
 	id    int64
 	index uint64
 }
 
 func (command revokeLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	replicaStore.Apply(command.index).RevokeLease(context.Background(), command.id)
-	return sut
+	return replicaStore
 }
 
 func (command revokeLeaseCommand) NextState(state commands.State) commands.State {
-	state.(*model.ReplicaStoreModel).ApplyRevokeLease(command.index, command.id)
+	command.state(state).ApplyRevokeLease(command.index, command.id)
 	return state
 }
 
@@ -249,7 +276,7 @@ func (command revokeLeaseCommand) PreCondition(state commands.State) bool {
 }
 
 func (command revokeLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	model := state.(*model.ReplicaStoreModel)
+	model := command.state(state)
 	replicaStore := result.(storage.ReplicaStore)
 
 	diff, err := ReplicaStoreModelDiff(replicaStore, model)
@@ -273,10 +300,11 @@ func (command revokeLeaseCommand) String() string {
 }
 
 type leasesCommand struct {
+	command
 }
 
 func (command leasesCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.Leases(context.Background())
 	return res
 }
@@ -290,7 +318,7 @@ func (command leasesCommand) PreCondition(state commands.State) bool {
 }
 
 func (command leasesCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Leases(), result)
+	diff := cmp.Diff(command.state(state).Leases(), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
@@ -305,12 +333,13 @@ func (command leasesCommand) String() string {
 }
 
 type getLeaseCommand struct {
-	ID int64
+	command
+	id int64
 }
 
 func (command getLeaseCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
-	res, _ := replicaStore.GetLease(context.Background(), command.ID)
+	replicaStore := command.sut(sut)
+	res, _ := replicaStore.GetLease(context.Background(), command.id)
 	return res
 }
 
@@ -323,7 +352,7 @@ func (command getLeaseCommand) PreCondition(state commands.State) bool {
 }
 
 func (command getLeaseCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).GetLease(command.ID), result)
+	diff := cmp.Diff(command.state(state).GetLease(command.id), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
@@ -334,14 +363,15 @@ func (command getLeaseCommand) PostCondition(state commands.State, result comman
 }
 
 func (command getLeaseCommand) String() string {
-	return fmt.Sprintf("GetLease(%#v)", command.ID)
+	return fmt.Sprintf("GetLease(%#v)", command.id)
 }
 
 type newestRevisionCommand struct {
+	command
 }
 
 func (command newestRevisionCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.NewestRevision()
 	return res
 }
@@ -355,7 +385,7 @@ func (command newestRevisionCommand) PreCondition(state commands.State) bool {
 }
 
 func (command newestRevisionCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).NewestRevision(), result)
+	diff := cmp.Diff(command.state(state).NewestRevision(), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
@@ -370,10 +400,11 @@ func (command newestRevisionCommand) String() string {
 }
 
 type oldestRevisionCommand struct {
+	command
 }
 
 func (command oldestRevisionCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.OldestRevision()
 	return res
 }
@@ -387,7 +418,7 @@ func (command oldestRevisionCommand) PreCondition(state commands.State) bool {
 }
 
 func (command oldestRevisionCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).OldestRevision(), result)
+	diff := cmp.Diff(command.state(state).OldestRevision(), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
@@ -402,10 +433,11 @@ func (command oldestRevisionCommand) String() string {
 }
 
 type indexCommand struct {
+	command
 }
 
 func (command indexCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	replicaStore := sut.(storage.ReplicaStore)
+	replicaStore := command.sut(sut)
 	res, _ := replicaStore.Index(context.Background())
 	return res
 }
@@ -419,7 +451,7 @@ func (command indexCommand) PreCondition(state commands.State) bool {
 }
 
 func (command indexCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	diff := cmp.Diff(state.(*model.ReplicaStoreModel).Index(), result)
+	diff := cmp.Diff(command.state(state).Index(), result)
 
 	if diff != "" {
 		fmt.Printf("Diff: %s\n", diff)
@@ -433,27 +465,73 @@ func (command indexCommand) String() string {
 	return fmt.Sprintf("Index()")
 }
 
-type multiCommand struct {
-	i       int
-	command commands.Command
+type snapshotCommand struct {
+	source int
+	dest   int
 }
 
-func (command multiCommand) Run(sut commands.SystemUnderTest) commands.Result {
-	return command.command.Run(sut.([]storage.ReplicaStore)[command.i])
+func (command snapshotCommand) Run(sut commands.SystemUnderTest) commands.Result {
+	source := sut.(ReplicaStoreSet).Get(command.source)
+	dest := sut.(ReplicaStoreSet).Get(command.dest)
+	snap, err := source.Snapshot(context.Background())
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := dest.ApplySnapshot(context.Background(), snap); err != nil {
+		panic(err)
+	}
+
+	return sut
 }
 
-func (command multiCommand) NextState(state commands.State) commands.State {
-	return command.command.NextState(state.([]*model.ReplicaStoreModel)[command.i])
+func (command snapshotCommand) NextState(state commands.State) commands.State {
+	source := state.([]model.ReplicaStoreModel)[command.source]
+
+	state.([]model.ReplicaStoreModel)[command.dest] = *source.DeepCopy()
+
+	return state
 }
 
-func (command multiCommand) PreCondition(state commands.State) bool {
-	return command.command.PreCondition(state.([]*model.ReplicaStoreModel)[command.i])
+func (command snapshotCommand) PreCondition(state commands.State) bool {
+	return true
 }
 
-func (command multiCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
-	return command.command.PostCondition(state, result)
+func (command snapshotCommand) PostCondition(state commands.State, result commands.Result) *gopter.PropResult {
+	sourceModel := state.([]model.ReplicaStoreModel)[command.source]
+	sourceSut := result.(ReplicaStoreSet).Get(command.source)
+	destSut := result.(ReplicaStoreSet).Get(command.source)
+
+	diff, err := ReplicaStoreModelDiff(sourceSut, &sourceModel)
+
+	if err != nil {
+		fmt.Printf("Err: %#v\n", err)
+
+		return &gopter.PropResult{Status: gopter.PropFalse, Error: err}
+	}
+
+	if diff != "" {
+		fmt.Printf("Diff (source model vs source sut): %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	diff, err = ReplicaStoreModelDiff(destSut, &sourceModel)
+
+	if err != nil {
+		fmt.Printf("Err: %#v\n", err)
+
+		return &gopter.PropResult{Status: gopter.PropFalse, Error: err}
+	}
+
+	if diff != "" {
+		fmt.Printf("Diff (source model vs dest sut): %s\n", diff)
+		return &gopter.PropResult{Status: gopter.PropFalse}
+	}
+
+	return &gopter.PropResult{Status: gopter.PropTrue}
 }
 
-func (command multiCommand) String() string {
-	return fmt.Sprintf("%d: %s", command.i, command.command.String())
+func (command snapshotCommand) String() string {
+	return fmt.Sprintf("Snapshot(%d -> %d)", command.source, command.dest)
 }

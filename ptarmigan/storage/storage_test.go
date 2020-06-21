@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"os"
@@ -20,6 +21,12 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+func randomBytes() []byte {
+	r := make([]byte, 100)
+	rand.Read(r)
+	return r
+}
 
 type tempStoreBuilder func(t testing.TB) (storage.Store, func())
 
@@ -199,6 +206,7 @@ func testStoreReplicaStores(builder tempStoreBuilder, t *testing.T) {
 func testReplicaStore(builder tempStoreBuilder, t *testing.T) {
 	t.Run("System", func(t *testing.T) { testReplicaStoreSystem(builder, t) })
 	t.Run("SystemSnapshot", func(t *testing.T) { testReplicaStoreSystemSnapshot(builder, t) })
+	t.Run("LargeSnapshot", func(t *testing.T) { testReplicaStoreLargeSnapshot(builder, t) })
 	t.Run("Create", func(t *testing.T) { testReplicaStoreCreate(builder, t) })
 	t.Run("Delete", func(t *testing.T) { testReplicaStoreDelete(builder, t) })
 	t.Run("Metadata", func(t *testing.T) { testReplicaStoreMetadata(builder, t) })
@@ -244,7 +252,7 @@ func testReplicaStoreSystem(builder tempStoreBuilder, t *testing.T) {
 			return true
 		},
 		GenCommandFunc: func(state commands.State) gopter.Gen {
-			return command_gen.Commands(state.(*model.ReplicaStoreModel))
+			return command_gen.CommandsOne(0, state.(*model.ReplicaStoreModel))
 		},
 	}
 
@@ -255,18 +263,16 @@ func testReplicaStoreSystem(builder tempStoreBuilder, t *testing.T) {
 	properties.TestingRun(t)
 }
 
+type replicaStoreSetWithCleanup struct {
+	replicaStores []storage.ReplicaStore
+	cleanup       func()
+}
+
+func (replicaStoreSet replicaStoreSetWithCleanup) Get(i int) storage.ReplicaStore {
+	return replicaStoreSet.replicaStores[i]
+}
+
 func testReplicaStoreSystemSnapshot(builder tempStoreBuilder, t *testing.T) {
-	type replicaStoreABWithCleanup struct {
-		A       storage.ReplicaStore
-		B       storage.ReplicaStore
-		cleanup func()
-	}
-
-	type stateWithInitialCommands struct {
-		model           *model.ReplicaStoreModel
-		initialCommands []commands.Command
-	}
-
 	var cbCommands = &commands.ProtoCommands{
 		NewSystemUnderTestFunc: func(initialState commands.State) commands.SystemUnderTest {
 			storeA, cleanupA := builder(t)
@@ -283,9 +289,8 @@ func testReplicaStoreSystemSnapshot(builder tempStoreBuilder, t *testing.T) {
 				panic(err)
 			}
 
-			return &replicaStoreABWithCleanup{
-				A: replicaStoreA,
-				B: replicaStoreB,
+			return replicaStoreSetWithCleanup{
+				replicaStores: []storage.ReplicaStore{replicaStoreA, replicaStoreB},
 				cleanup: func() {
 					cleanupA()
 					cleanupB()
@@ -293,20 +298,16 @@ func testReplicaStoreSystemSnapshot(builder tempStoreBuilder, t *testing.T) {
 			}
 		},
 		DestroySystemUnderTestFunc: func(sut commands.SystemUnderTest) {
-			sut.(*replicaStoreWithCleanup).cleanup()
+			sut.(replicaStoreSetWithCleanup).cleanup()
 		},
-		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) *model.ReplicaStoreModel {
-			c := []commands.Command{}
-			m := &model.ReplicaStoreModel{}
-			m = c[0].NextState(m).(*model.ReplicaStoreModel)
-
-			return model.NewReplicaStoreModel()
+		InitialStateGen: gopter.CombineGens().Map(func([]interface{}) []model.ReplicaStoreModel {
+			return []model.ReplicaStoreModel{*model.NewReplicaStoreModel(), *model.NewReplicaStoreModel()}
 		}),
 		InitialPreConditionFunc: func(state commands.State) bool {
 			return true
 		},
 		GenCommandFunc: func(state commands.State) gopter.Gen {
-			return command_gen.Commands(state.(*model.ReplicaStoreModel))
+			return command_gen.Commands(state.([]model.ReplicaStoreModel))
 		},
 	}
 
@@ -315,6 +316,73 @@ func testReplicaStoreSystemSnapshot(builder tempStoreBuilder, t *testing.T) {
 	properties := gopter.NewProperties(parameters)
 	properties.Property("", commands.Prop(cbCommands))
 	properties.TestingRun(t)
+}
+
+func testReplicaStoreLargeSnapshot(builder tempStoreBuilder, t *testing.T) {
+	storeA, cleanupA := builder(t)
+	storeB, cleanupB := builder(t)
+	replicaStoreA := storeA.ReplicaStore("test")
+	replicaStoreB := storeB.ReplicaStore("test")
+	replicaStoreModelA := model.NewReplicaStoreModel()
+
+	defer cleanupA()
+	defer cleanupB()
+
+	if err := replicaStoreA.Create(context.Background(), []byte{}); err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if err := replicaStoreB.Create(context.Background(), []byte{}); err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	// write 1k keys in batches of 10
+	for i := 0; i < 100; i++ {
+		txnRequest := ptarmiganpb.KVTxnRequest{
+			Success: []*ptarmiganpb.KVRequestOp{},
+		}
+
+		for j := 0; j < 10; j++ {
+			txnRequest.Success = append(txnRequest.Success, &ptarmiganpb.KVRequestOp{
+				Request: &ptarmiganpb.KVRequestOp_RequestPut{
+					RequestPut: &ptarmiganpb.KVPutRequest{
+						Key:   randomBytes(),
+						Value: randomBytes(),
+					},
+				},
+			})
+		}
+
+		replicaStoreModelA.ApplyTxn(replicaStoreModelA.Index()+1, txnRequest)
+		_, err := replicaStoreA.Apply(replicaStoreModelA.Index()).Txn(context.Background(), txnRequest)
+
+		if err != nil {
+			t.Fatalf("expected err to be nil, got %#v", err)
+		}
+	}
+
+	// apply snapshot and make sure replica store B looks the same as A
+	snap, err := replicaStoreA.Snapshot(context.Background())
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	err = replicaStoreB.ApplySnapshot(context.Background(), snap)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	diff, err := command_gen.ReplicaStoreModelDiff(replicaStoreB, replicaStoreModelA)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got %#v", err)
+	}
+
+	if diff != "" {
+		t.Fatalf(diff)
+	}
 }
 
 func testReplicaStoreCreate(builder tempStoreBuilder, t *testing.T) {
