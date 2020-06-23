@@ -28,6 +28,10 @@ func leasesMap(m kv.Map) *kv_marshaled.Map {
 }
 
 func unmarshalLease(b []byte) (interface{}, error) {
+	if b == nil {
+		return nil, nil
+	}
+
 	var lease ptarmiganpb.Lease
 
 	if err := lease.Unmarshal(b); err != nil {

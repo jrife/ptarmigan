@@ -30,13 +30,13 @@ func ReplicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 		return fmt.Sprintf("leases don't match: %s", diff), nil
 	}
 
-	oldestRevision, err := replicaStore.OldestRevision()
+	oldestRevision, err := replicaStore.OldestRevision(context.Background())
 
 	if err != nil && err != mvcc.ErrNoRevisions {
 		return "", fmt.Errorf("could not retrieve oldest revision from replica store: %s", err)
 	}
 
-	newestRevision, err := replicaStore.NewestRevision()
+	newestRevision, err := replicaStore.NewestRevision(context.Background())
 
 	if err != nil && err != mvcc.ErrNoRevisions {
 		return "", fmt.Errorf("could not retrieve newest revision from replica store: %s", err)

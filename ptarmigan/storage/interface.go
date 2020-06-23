@@ -122,13 +122,13 @@ type ReplicaStore interface {
 	// Returns ErrClosed if it is called after the store is closed
 	// Returns ErrNoSuchReplicaStore if the replica store does not exist
 	// Returns mvcc.ErrNoRevisions if there are no revisions
-	NewestRevision() (int64, error)
+	NewestRevision(ctx context.Context) (int64, error)
 	// OldestRevision returns the oldest revision number
 	//
 	// Returns ErrClosed if it is called after the store is closed
 	// Returns ErrNoSuchReplicaStore if the replica store does not exist
 	// Returns mvcc.ErrNoRevisions if there are no revisions
-	OldestRevision() (int64, error)
+	OldestRevision(ctx context.Context) (int64, error)
 	// ApplySnapshot completely replaces the contents of this replica
 	// store with those in this snapshot. If the replica store does not
 	// exist it will be created.
@@ -154,12 +154,12 @@ type Update interface {
 	//
 	// Returns ErrClosed if it is called after the store is closed
 	// Returns ErrNoSuchReplicaStore if the replica store does not exist
-	// Returns ErrNoSuchLease if a put in the transaction tries to set the lease of a key to a non-existent lease
 	// Returns ErrIndexNotMonotonic if the update index is not greater than the last update index
-	// Returns mvcc.ErrRevisionTooHigh if the revision specified in a query doesn't exist
-	// Returns mvcc.ErrCompacted if the revision specified in a query has been compacted
+	// Returns ErrNoSuchLease if a put operation tries to set a key's lease to one that does not exist
 	Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, error)
-	// Compact compacts the history up to this revision.
+	// Compact compacts the history up to this revision. If it returns
+	// an mvcc error the client can safely assume the update index
+	// was still applied, the compact operation just had no effect.
 	//
 	// Returns ErrClosed if it is called after the store is closed
 	// Returns ErrNoSuchReplicaStore if the replica store does not exist
@@ -176,7 +176,8 @@ type Update interface {
 	CreateLease(ctx context.Context, ttl int64) (ptarmiganpb.Lease, error)
 	// RevokeLease deletes the lease with this ID from the replica store
 	// and deletes any keys associated with this lease. It creates a new
-	// revision whose changeset includes the deleted keys.
+	// revision whose changeset includes the deleted keys. If the lease
+	// with this ID doesn't exist it results in a no-op and returns nil.
 	//
 	// Returns ErrClosed if it is called after the store is closed.
 	// Returns ErrNoSuchReplicaStore if the replica store does not exist.

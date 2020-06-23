@@ -104,52 +104,47 @@ message ResponseHeader {
   int64 revision = 2;
 }
 
-// KVSelection is a set of constraints
-// that must all be met for a kv to be
-// included in a query result.
 message KVSelection {
-  // Key must be > or >= this value
-  oneof key_range_min {
-    bytes key_gt = 1;
-    bytes key_gte = 2;
+  repeated KVPredicate predicates = 1;
+}
+
+message KVPredicate {
+  // [FIELD] [COMPARISON] [VALUE]
+  enum Operator {
+    // =
+    EQUAL = 0;
+    // !=
+    NOT_EQUAL = 1;
+    // >
+    GT = 2;
+    // >=
+    GTE = 3;
+    // <
+    LT = 4;
+    // <=
+    LTE = 5;
+    STARTS_WITH = 6;
   }
 
-  // Key must be < or <= this value
-  oneof key_range_max {
-    bytes key_lt = 3;
-    bytes key_lte = 4;
+  enum Field {
+    VERSION = 0;
+    CREATE = 1;
+    MOD = 2;
+    VALUE = 3;
+    LEASE = 4;
+    KEY = 5;
   }
 
-  // KV mod revision must be > or >= this value
-  oneof mod_revision_start {
-    int64 mod_revision_gt = 5;
-    int64 mod_revision_gte = 6;
+  // operator is the logical comparison operation for this comparison.
+  Operator operator = 1;
+  // field is the key-value field to inspect for the comparison.
+  Field field = 2;
+  oneof value {
+    // int64 should be set for "int64" field comparisons
+    int64 int64 = 3;
+    // bytes should be set for "bytes" field comparisons
+    bytes bytes = 4;
   }
-
-  // KV mod revision must be < or <= this value
-  oneof mod_revision_end {
-    int64 mod_revision_lt = 7;
-    int64 mod_revision_lte = 8;
-  }
-
-  // KV create revision must be > or >= this value
-  oneof create_revision_start {
-    int64 create_revision_gt = 9;
-    int64 create_revision_gte = 10;
-  }
-
-  // KV create revision must be < or <= this value
-  oneof create_revision_end {
-    int64 create_revision_lt = 11;
-    int64 create_revision_lte = 12;
-  }
-
-  // Key must be prefixed with this value
-  bytes key_starts_with = 64;
-  // Key must equal this value
-  bytes key = 65;
-  // Must belong to this lease
-  int64 lease = 66;
 }
 
 message KVQueryRequest {
@@ -281,44 +276,25 @@ message KVResponseOp {
   }
 }
 
-message KVPredicate {
-  enum Comparison {
-    EQUAL = 0;
-    GREATER = 1;
-    LESS = 2;
-    NOT_EQUAL = 3;
-  }
-  enum Target {
-    VERSION = 0;
-    CREATE = 1;
-    MOD = 2;
-    VALUE = 3;
-    LEASE = 4;
+// Condition can be used to describe some existential
+// or universal quantifier for range of keys.
+message Condition {
+  enum Quantifier {
+    EXISTS = 0;
+    FOR_ALL = 1;
   }
 
-  // result is logical comparison operation for this comparison.
-  Comparison comparison = 1;
-  // target is the key-value field to inspect for the comparison.
-  Target target = 2;
-  oneof target_union {
-    // version is the version of the given key
-    int64 version = 3;
-    // create_revision is the creation revision of the given key
-    int64 create_revision = 4;
-    // mod_revision is the last modified revision of the given key.
-    int64 mod_revision = 5;
-    // value is the value of the given key, in bytes.
-    bytes value = 6;
-    // lease is the lease id of the given key.
-    int64 lease = 7;
-  }
-}
-
-message Compare {
-  // Selection of keys to test
-  KVSelection selection = 1;
-  // Condition to test
+  // domain describes the set of keys which form the range
+  // of quantification.
+  KVSelection domain = 1;
+  // predicate describes a condition which must hold for some
+  // number of keys in the domain.
   KVPredicate predicate = 2;
+  // quantifier adjusts how many keys in the domain must match
+  // the predicate. 
+  // quantifier < 0 means "for all": for all keys in the domain the predicate must hold
+  // quantifier = 0 means "there does not exist"
+  Quantifier quantifier = 3;
 }
 
 // From google paxosdb paper:
@@ -338,12 +314,12 @@ message Compare {
 // 3. A list of database operations called f op. Like t op, but executed if guard evaluates to false.
 message KVTxnRequest {
   PartitionRequestHeader header = 1;
-  // compare is a list of predicates representing a conjunction of terms.
-  // If the comparisons succeed, then the success requests will be processed in order,
+  // conditions is a list of predicates representing a conjunction of terms.
+  // If all conditions are true, then the success requests will be processed in order,
   // and the response will contain their respective responses in order.
-  // If the comparisons fail, then the failure requests will be processed in order,
+  // If one or more conditions are false, then the failure requests will be processed in order,
   // and the response will contain their respective responses in order.
-  repeated Compare compare = 2;
+  repeated Condition conditions = 2;
   // success is a list of requests which will be applied when compare evaluates to true.
   repeated KVRequestOp success = 3;
   // failure is a list of requests which will be applied when compare evaluates to false.
@@ -380,12 +356,31 @@ message KVWatchCursor {
   bytes key = 2;
 }
 
+message KeyRange {
+  // Key must be > or >= this value
+  oneof key_range_min {
+    bytes key_gt = 1;
+    bytes key_gte = 2;
+  }
+
+  // Key must be < or <= this value
+  oneof key_range_max {
+    bytes key_lt = 3;
+    bytes key_lte = 4;
+  }
+
+  // Key must be prefixed with this value
+  bytes key_starts_with = 64;
+  // Key must equal this value
+  bytes key = 65;
+}
+
 message KVWatchRequest {
   PartitionRequestHeader header = 1;
-  // Selection of keys to watch
-  KVSelection selection = 2;
   // start is an optional cursor to watch from (exclusive). No start is "now".
-  KVWatchCursor start = 3;
+  KVWatchCursor start = 2;
+  // Selection of keys to watch
+  KeyRange keys = 3;
   // progress_notify is set so that the ptarmigan server will periodically send a WatchResponse with
   // no events to the new watcher if there are no recent events. It is useful when clients
   // wish to recover a disconnected watcher starting from a recent known revision.

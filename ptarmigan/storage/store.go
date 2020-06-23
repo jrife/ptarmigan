@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jrife/flock/storage/kv/keys"
 	"github.com/jrife/flock/storage/mvcc"
@@ -48,7 +47,7 @@ func (store *store) ReplicaStores(ctx context.Context, start string, limit int) 
 	partitions, err := store.store.Partitions(keys.All().Gt([]byte(start)), limit)
 
 	if err != nil {
-		err = fmt.Errorf("could not list partitions from mvcc store: %s", err)
+		err = wrapError("could not list partitions from mvcc store", err)
 
 		logger.Debug("error", zap.Error(err))
 

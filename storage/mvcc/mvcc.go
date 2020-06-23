@@ -627,12 +627,15 @@ func (revision *revision) Delete(key []byte) error {
 	if lastValue == nil {
 		// If this key was not present in the last revision then nothing will have changed
 		// if it is "deleted" in this revision. Delete any trace of it in this revision.
+		fmt.Printf("discard delete event\n")
 		if err := revision.partition.revisionsNamespace(revision.txn).Delete(composite_keys.Key(newRevisionsKey(revision.revision, key))); err != nil {
 			return err
 		}
 
 		return revision.partition.keysNamespace(revision.txn).Delete(composite_keys.Key(newKeysKey(key, revision.revision)))
 	}
+
+	fmt.Printf("record delete event\n")
 
 	if err := revision.partition.revisionsNamespace(revision.txn).Put(composite_keys.Key(newRevisionsKey(revision.revision, key)), newRevisionsValue(nil)); err != nil {
 		return err
@@ -706,6 +709,7 @@ func (v *view) Keys(keys keys.Range, order kv.SortOrder) (kv.Iterator, error) {
 
 // Changes implements View.Changes
 func (v *view) Changes(keys keys.Range) (DiffIterator, error) {
+	fmt.Printf("%d: Changes(%#v)\n", v.revision, keys)
 	iter, err := newViewRevisionDiffsIterator(v.partition.revisionsNamespace(v.txn), keys.Min, keys.Max, v.revision)
 
 	if err != nil {

@@ -435,6 +435,10 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 		}
 	}
 
+	if limit > 0 && limit < len(changes) {
+		changes = changes[:limit]
+	}
+
 	return changes
 }
 

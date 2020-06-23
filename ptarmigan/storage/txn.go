@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"fmt"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -29,7 +30,7 @@ func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (pt
 		}
 
 		var revision mvcc.Revision
-		response, revision, err = executeTxnOp(logger, transaction, view, nil, txn)
+		response, revision, err = update.executeTxnOp(logger, transaction, view, nil, txn)
 
 		if revision != nil {
 			logger.Debug("new revision created", zap.Int64("revision", revision.Revision()))
@@ -43,7 +44,7 @@ func (update *update) Txn(ctx context.Context, txn ptarmiganpb.KVTxnRequest) (pt
 	return response, err
 }
 
-func executeTxnOp(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, mvcc.Revision, error) {
+func (update *update) executeTxnOp(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, r ptarmiganpb.KVTxnRequest) (ptarmiganpb.KVTxnResponse, mvcc.Revision, error) {
 	var response ptarmiganpb.KVTxnResponse
 
 	success := true
@@ -76,10 +77,10 @@ func executeTxnOp(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.Vi
 	}
 
 	logger.Debug("ops", zap.Any("ops", ops))
-	responseOps, revision, err := executeOps(logger, transaction, view, revision, ops)
+	responseOps, revision, err := update.executeOps(logger, transaction, view, revision, ops)
 
 	if err != nil {
-		return ptarmiganpb.KVTxnResponse{}, nil, fmt.Errorf("could not execute ops: %s", err)
+		return ptarmiganpb.KVTxnResponse{}, nil, wrapError("could not execute ops", err)
 	}
 
 	response.Responses = responseOps
@@ -175,7 +176,7 @@ func checkIntPredicate(a, b int64, comparison ptarmiganpb.KVPredicate_Comparison
 	return false
 }
 
-func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, mvcc.Revision, error) {
+func (update *update) executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, mvcc.Revision, error) {
 	responses := make([]*ptarmiganpb.KVResponseOp, len(ops))
 
 	for i, op := range ops {
@@ -220,7 +221,18 @@ func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View
 				logger.Debug("new revision")
 			}
 
-			r, err := executePutOp(logger, revision, *op.GetRequestPut())
+			putRequest := *op.GetRequestPut()
+
+			if !putRequest.IgnoreLease && putRequest.Lease != 0 {
+				// If it doesn't exist getLease returns ErrNoSuchLease
+				_, err := update.replicaStore.getLease(logger, transaction, putRequest.Lease)
+
+				if err != nil {
+					return nil, nil, err
+				}
+			}
+
+			r, err := executePutOp(logger, revision, putRequest)
 
 			if err != nil {
 				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
@@ -264,7 +276,7 @@ func executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View
 				ResponseQuery: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestTxn:
-			r, rev, err := executeTxnOp(logger, transaction, view, revision, *op.GetRequestTxn())
+			r, rev, err := update.executeTxnOp(logger, transaction, view, revision, *op.GetRequestTxn())
 
 			if err != nil {
 				return nil, nil, fmt.Errorf("could not execute op %d: %s", i, err)
@@ -316,6 +328,8 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 
 		logger.Debug("delete KV", zap.Binary("key", key), zap.Any("old", kv))
 
+		fmt.Printf("%d: Delete %x %#v\n", revision.Revision(), md5.Sum(key), key)
+
 		if err := revision.Delete(key); err != nil {
 			return ptarmiganpb.KVDeleteResponse{}, fmt.Errorf("could not delete key %#v: %s", kv.Key, err)
 		}
@@ -363,6 +377,7 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 
 		logger.Debug("new KV", zap.Any("value", newKV))
 
+		fmt.Printf("%d: Put %x %#v\n", revision.Revision(), md5.Sum(r.Key), r.Key)
 		if err := kvMap(revision).Put(r.Key, &newKV); err != nil {
 			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", kv.Key, err)
 		}
@@ -389,6 +404,7 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 		}
 
 		logger.Debug("update KV", zap.Binary("key", key), zap.Any("new", newKV), zap.Any("old", kv))
+		fmt.Printf("%d: Put %x %#v\n", revision.Revision(), md5.Sum(key), key)
 
 		if err := kvMap(revision).Put(key, &newKV); err != nil {
 			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", key, err)

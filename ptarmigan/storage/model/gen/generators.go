@@ -70,12 +70,23 @@ func QueryCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
 // ChangesCommand returns a generator that generates changes commands
 // that are valid for the replica store
 func ChangesCommand(id int, replicaStore *model.ReplicaStoreModel) gopter.Gen {
-	return gopter.CombineGens().Map(func(g []interface{}) commands.Command {
-		return changesCommand{
+	return gopter.CombineGens(
+		KVWatchRequest(replicaStore),
+		gen.IntRange(-1, 100),
+	).Map(func(g []interface{}) commands.Command {
+		result := changesCommand{
 			command: command{
 				replicaStore: id,
 			},
+			limit:        g[1].(int),
+			watchRequest: ptarmiganpb.KVWatchRequest{},
 		}
+
+		if g[0] != nil {
+			result.watchRequest = *g[0].(*ptarmiganpb.KVWatchRequest)
+		}
+
+		return result
 	})
 }
 
@@ -392,6 +403,52 @@ func ExistingKey(replicaStore *model.ReplicaStoreModel) gopter.Gen {
 		// to prevent this.
 		return append([]byte{}, kvs[abs(i)%len(kvs)].Key...)
 	})
+}
+
+// KVWatchRequest generates watch requests, some of which
+// should match some keys in the replica store
+func KVWatchRequest(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(gopter.CombineGens(
+		KVSelection(replicaStore),
+		KVWatchCursor(replicaStore),
+		gen.Bool(),
+		gen.Bool(),
+		gen.Bool(),
+	).Map(func(g []interface{}) ptarmiganpb.KVWatchRequest {
+		var watchRequest ptarmiganpb.KVWatchRequest
+
+		if g[0] != nil {
+			watchRequest.Selection = g[0].(*ptarmiganpb.KVSelection)
+		}
+
+		if g[1] != nil {
+			watchRequest.Start = g[1].(*ptarmiganpb.KVWatchCursor)
+		}
+
+		watchRequest.NoDelete = g[2].(bool)
+		watchRequest.NoPut = g[3].(bool)
+		watchRequest.PrevKv = g[4].(bool)
+
+		return watchRequest
+	}))
+}
+
+// KVWatchCursor generates a watch cursor
+func KVWatchCursor(replicaStore *model.ReplicaStoreModel) gopter.Gen {
+	return gen.PtrOf(gopter.CombineGens(
+		Revision(replicaStore),
+		Key(replicaStore),
+	).Map(func(g []interface{}) ptarmiganpb.KVWatchCursor {
+		var watchCursor ptarmiganpb.KVWatchCursor
+
+		watchCursor.Revision = g[0].(int64)
+
+		if g[1] != nil {
+			watchCursor.Key = g[1].([]byte)
+		}
+
+		return watchCursor
+	}))
 }
 
 // KVQueryRequest generates query requests, some of which

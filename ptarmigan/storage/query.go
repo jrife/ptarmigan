@@ -130,8 +130,9 @@ func cursor(kv ptarmiganpb.KeyValue, sortTarget ptarmiganpb.KVQueryRequest_SortT
 }
 
 // Changes implements View.Changes
-func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int, includePrev bool) ([]ptarmiganpb.Event, error) {
-	diffsIter, err := view.Changes(keys.All().Gt(start))
+func changes(events []ptarmiganpb.Event, view mvcc.View, watchRequest ptarmiganpb.KVWatchRequest, limit int) ([]ptarmiganpb.Event, error) {
+	kr := keyRangeWatch(watchRequest)
+	diffsIter, err := view.Changes(kr)
 
 	if err != nil {
 		return nil, fmt.Errorf("could not list changes: %s", err)
@@ -143,17 +144,22 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 		return nil, fmt.Errorf("could not retrieve view for previous revision: %s", err)
 	}
 
+	fmt.Printf("Limit %d\n", limit)
 	for diffsIter.Next() && (limit <= 0 || len(events) < limit) {
 		event := ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT}
 
 		if diffsIter.IsDelete() {
+			if watchRequest.NoDelete {
+				continue
+			}
+
 			event.Type = ptarmiganpb.Event_DELETE
 			event.Kv = &ptarmiganpb.KeyValue{
 				Key:         copy(diffsIter.Key()),
 				ModRevision: view.Revision(),
 			}
 
-			if prev != nil && includePrev {
+			if prev != nil && watchRequest.PrevKv {
 				rawKV, err := kvMapReader(prev).Get(diffsIter.Key())
 
 				if err != nil {
@@ -169,6 +175,10 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 				event.PrevKv = &prevKV
 			}
 		} else if diffsIter.IsPut() {
+			if watchRequest.NoPut {
+				continue
+			}
+
 			kv, err := unmarshalKV(diffsIter.Value())
 
 			if err != nil {
@@ -176,10 +186,15 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 			}
 
 			k := kv.(ptarmiganpb.KeyValue)
+
+			if !kvMatchesSelection(k, watchRequest.Selection) {
+				continue
+			}
+
 			k.Key = copy(diffsIter.Key())
 			event.Kv = &k
 
-			if prev != nil && includePrev {
+			if prev != nil && watchRequest.PrevKv {
 				rawKV, err := kvMapReader(prev).Get(diffsIter.Key())
 
 				if err != nil {
@@ -200,6 +215,8 @@ func changes(events []ptarmiganpb.Event, view mvcc.View, start []byte, limit int
 	if diffsIter.Error() != nil {
 		return nil, fmt.Errorf("iteration error: %s", diffsIter.Error())
 	}
+
+	fmt.Printf("Changes: %#v\n", events)
 
 	return events, nil
 }
@@ -230,6 +247,16 @@ func sortOrder(order ptarmiganpb.KVQueryRequest_SortOrder) kv.SortOrder {
 
 func keyRange(query ptarmiganpb.KVQueryRequest) keys.Range {
 	return refineRange(selectionRange(query.Selection), query)
+}
+
+func keyRangeWatch(watch ptarmiganpb.KVWatchRequest) keys.Range {
+	keyRange := selectionRange(watch.Selection)
+
+	if watch.Start != nil && watch.Start.Key != nil {
+		keyRange = keyRange.Gt(watch.Start.Key)
+	}
+
+	return keyRange
 }
 
 // return the minimum required key range required to retrieve all keys matching the selection
@@ -407,58 +434,64 @@ func selection(selection *ptarmiganpb.KVSelection) stream.Processor {
 	}
 
 	return stream.Filter(func(v interface{}) bool {
-		kv := v.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue)
+		return kvMatchesSelection(v.(kv_marshaled.KV).Value().(ptarmiganpb.KeyValue), selection)
+	})
+}
 
-		switch selection.CreateRevisionStart.(type) {
-		case *ptarmiganpb.KVSelection_CreateRevisionGte:
-			if kv.CreateRevision < selection.GetCreateRevisionGte() {
-				return false
-			}
-		case *ptarmiganpb.KVSelection_CreateRevisionGt:
-			if kv.CreateRevision <= selection.GetCreateRevisionGt() {
-				return false
-			}
-		}
+func kvMatchesSelection(kv ptarmiganpb.KeyValue, selection *ptarmiganpb.KVSelection) bool {
+	if selection == nil {
+		return true
+	}
 
-		switch selection.CreateRevisionEnd.(type) {
-		case *ptarmiganpb.KVSelection_CreateRevisionLte:
-			if kv.CreateRevision > selection.GetCreateRevisionLte() {
-				return false
-			}
-		case *ptarmiganpb.KVSelection_CreateRevisionLt:
-			if kv.CreateRevision >= selection.GetCreateRevisionLt() {
-				return false
-			}
-		}
-
-		switch selection.ModRevisionStart.(type) {
-		case *ptarmiganpb.KVSelection_ModRevisionGte:
-			if kv.ModRevision < selection.GetModRevisionGte() {
-				return false
-			}
-		case *ptarmiganpb.KVSelection_ModRevisionGt:
-			if kv.ModRevision <= selection.GetModRevisionGt() {
-				return false
-			}
-		}
-
-		switch selection.ModRevisionEnd.(type) {
-		case *ptarmiganpb.KVSelection_ModRevisionLte:
-			if kv.ModRevision > selection.GetModRevisionLte() {
-				return false
-			}
-		case *ptarmiganpb.KVSelection_ModRevisionLt:
-			if kv.ModRevision >= selection.GetModRevisionLt() {
-				return false
-			}
-		}
-
-		if selection.GetLease() != 0 && selection.GetLease() != kv.Lease {
+	switch selection.CreateRevisionStart.(type) {
+	case *ptarmiganpb.KVSelection_CreateRevisionGte:
+		if kv.CreateRevision < selection.GetCreateRevisionGte() {
 			return false
 		}
+	case *ptarmiganpb.KVSelection_CreateRevisionGt:
+		if kv.CreateRevision <= selection.GetCreateRevisionGt() {
+			return false
+		}
+	}
 
-		return true
-	})
+	switch selection.CreateRevisionEnd.(type) {
+	case *ptarmiganpb.KVSelection_CreateRevisionLte:
+		if kv.CreateRevision > selection.GetCreateRevisionLte() {
+			return false
+		}
+	case *ptarmiganpb.KVSelection_CreateRevisionLt:
+		if kv.CreateRevision >= selection.GetCreateRevisionLt() {
+			return false
+		}
+	}
+
+	switch selection.ModRevisionStart.(type) {
+	case *ptarmiganpb.KVSelection_ModRevisionGte:
+		if kv.ModRevision < selection.GetModRevisionGte() {
+			return false
+		}
+	case *ptarmiganpb.KVSelection_ModRevisionGt:
+		if kv.ModRevision <= selection.GetModRevisionGt() {
+			return false
+		}
+	}
+
+	switch selection.ModRevisionEnd.(type) {
+	case *ptarmiganpb.KVSelection_ModRevisionLte:
+		if kv.ModRevision > selection.GetModRevisionLte() {
+			return false
+		}
+	case *ptarmiganpb.KVSelection_ModRevisionLt:
+		if kv.ModRevision >= selection.GetModRevisionLt() {
+			return false
+		}
+	}
+
+	if selection.GetLease() != 0 && selection.GetLease() != kv.Lease {
+		return false
+	}
+
+	return true
 }
 
 func sort(query ptarmiganpb.KVQueryRequest, limit int) stream.Processor {

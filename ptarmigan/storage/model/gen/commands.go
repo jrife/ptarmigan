@@ -206,7 +206,7 @@ func (command changesCommand) PostCondition(state commands.State, result command
 	diff := cmp.Diff(command.state(state).Changes(command.watchRequest, command.limit), result)
 
 	if diff != "" {
-		fmt.Printf("Diff: %s\n", diff)
+		fmt.Printf("Diff (%#v): %s\n", command.watchRequest, diff)
 		return &gopter.PropResult{Status: gopter.PropFalse}
 	}
 
@@ -372,7 +372,7 @@ type newestRevisionCommand struct {
 
 func (command newestRevisionCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := command.sut(sut)
-	res, _ := replicaStore.NewestRevision()
+	res, _ := replicaStore.NewestRevision(context.Background())
 	return res
 }
 
@@ -405,7 +405,7 @@ type oldestRevisionCommand struct {
 
 func (command oldestRevisionCommand) Run(sut commands.SystemUnderTest) commands.Result {
 	replicaStore := command.sut(sut)
-	res, _ := replicaStore.OldestRevision()
+	res, _ := replicaStore.OldestRevision(context.Background())
 	return res
 }
 
