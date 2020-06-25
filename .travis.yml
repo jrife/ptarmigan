@@ -7,4 +7,4 @@ dist: bionic
 sudo: false
 install: true
 script:
-- go test ./...
+- go test ./... --tags=integration

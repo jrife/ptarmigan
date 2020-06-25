@@ -396,7 +396,7 @@ func newViewRevisionDiffsIterator(txn composite.Transaction, min []byte, max []b
 	}
 
 	// Skip to the start key
-	for hasMore := iter.next(); hasMore && bytes.Compare(iter.key(), min) < 0; hasMore = !iter.next() {
+	for hasMore := iter.next(); hasMore && bytes.Compare(iter.key(), min) < 0; hasMore = iter.next() {
 	}
 
 	if iter.error() != nil {

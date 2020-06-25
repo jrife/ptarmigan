@@ -19,7 +19,7 @@ func (stream *kvStream) Next() bool {
 }
 
 func (stream *kvStream) Value() interface{} {
-	return nil //KV{stream.iter.Key(), stream.iter.Value()}
+	return KV{stream.iter.Key(), stream.iter.Value()}
 }
 
 func (stream *kvStream) Error() error {

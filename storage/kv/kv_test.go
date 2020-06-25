@@ -2,6 +2,7 @@ package kv_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -199,6 +200,7 @@ func testPartition(builder tempStoreBuilder, t *testing.T) {
 
 func testTransaction(builder tempStoreBuilder, t *testing.T) {
 	t.Run("Read-Write", func(t *testing.T) { testTransactionReadWrite(builder, t) })
+	t.Run("Modify-While-Iterating", func(t *testing.T) { testTransactionModifyWhileIterating(builder, t) })
 	t.Run("Keys", func(t *testing.T) { testTransactionKeys(builder, t) })
 	t.Run("Namespace", func(t *testing.T) { testTransactionNamespace(builder, t) })
 }
@@ -1588,7 +1590,7 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 			rootStore := builder(t, testCase.initialState)
 			defer rootStore.Delete()
 
-			snap, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot()
+			snap, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(context.Background())
 
 			if testCase.err == errAny {
 				if err == nil {
@@ -1608,7 +1610,7 @@ func testPartitionSnapshot(builder tempStoreBuilder, t *testing.T) {
 				t.Fatalf("expected err to be nil, got %#v", err)
 			}
 
-			if _, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(); err != kv.ErrClosed {
+			if _, err := rootStore.Store(testCase.store).Partition(testCase.name).Snapshot(context.Background()); err != kv.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
@@ -1898,7 +1900,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 			defer rootStoreSource.Delete()
 			defer rootStoreDest.Delete()
 
-			snap, err := rootStoreSource.Store(testCase.sourceStore).Partition(testCase.sourcePartition).Snapshot()
+			snap, err := rootStoreSource.Store(testCase.sourceStore).Partition(testCase.sourcePartition).Snapshot(context.Background())
 
 			if err != nil {
 				t.Fatalf("expected err to be nil, got %#v", err)
@@ -1906,7 +1908,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 
 			defer snap.Close()
 
-			err = rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap)
+			err = rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(context.Background(), snap)
 
 			if testCase.err == errAny {
 				if err == nil {
@@ -1932,7 +1934,7 @@ func testPartitionApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 				t.Fatalf("expected err to be nil, got %#v", err)
 			}
 
-			if err := rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(snap); err != kv.ErrClosed {
+			if err := rootStoreDest.Store(testCase.destStore).Partition(testCase.destPartition).ApplySnapshot(context.Background(), snap); err != kv.ErrClosed {
 				t.Fatalf("expected err to be #%v, got %#v", kv.ErrClosed, err)
 			}
 		})
@@ -2062,6 +2064,79 @@ func testTransactionReadWrite(builder tempStoreBuilder, t *testing.T) {
 
 	if diff != "" {
 		t.Fatalf(diff)
+	}
+}
+
+func testTransactionModifyWhileIterating(builder tempStoreBuilder, t *testing.T) {
+	initialState := rootStoreModel{
+		"store1": {
+			"p1": {},
+		},
+	}
+
+	rootStore := builder(t, initialState)
+	defer rootStore.Delete()
+
+	for j := 0; j < 10; j++ {
+		rw, err := rootStore.Store([]byte("store1")).Partition([]byte("p1")).Begin(true)
+
+		if err != nil {
+			t.Fatalf("expected err to be nil, got #%v", err)
+		}
+
+		for i := 1; i <= 100000; i++ {
+			if err := rw.Put([]byte(fmt.Sprintf("key-%7d", j*100000+i)), []byte(fmt.Sprintf("value-%7d", j*100000+i))); err != nil {
+				rw.Rollback()
+
+				t.Fatalf("expected err to be nil, got %#v", err)
+			}
+		}
+
+		if err := rw.Commit(); err != nil {
+			rw.Rollback()
+
+			t.Fatalf("expected err to be nil, got %#v", err)
+		}
+	}
+
+	rw, err := rootStore.Store([]byte("store1")).Partition([]byte("p1")).Begin(true)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got #%v", err)
+	}
+
+	defer rw.Rollback()
+
+	all, err := rw.Keys(keys.All(), kv.SortOrderAsc)
+
+	if err != nil {
+		t.Fatalf("expected err to be nil, got #%v", err)
+	}
+
+	for i := 1; i <= 1000000; i++ {
+		if !all.Next() {
+			t.Fatalf("expected there to be a key after call %d to next", i)
+		}
+
+		if bytes.Compare(all.Key(), []byte(fmt.Sprintf("key-%7d", i))) != 0 {
+			t.Fatalf("expected key %d to equal key-%7d, got %#v", i, i, all.Key())
+		}
+
+		if bytes.Compare(all.Value(), []byte(fmt.Sprintf("value-%7d", i))) != 0 {
+			t.Fatalf("expected key %d to equal key-%7d, got %#v", i, i, all.Value())
+		}
+
+		if i%2 == 0 {
+			// Delete the next one and skip it
+			if err := rw.Delete([]byte(fmt.Sprintf("key-%7d", i+1))); err != nil {
+				t.Fatalf("expected err to be nil, got #%v", err)
+			}
+			i++
+		}
+	}
+
+	if all.Error() != nil {
+		t.Fatalf("expected err to be nil, got #%v", all.Error())
 	}
 }
 

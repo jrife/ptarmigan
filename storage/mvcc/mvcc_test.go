@@ -144,16 +144,16 @@ func (revision compactOp) applyToTransaction(t mvcc.Transaction) error {
 	return t.Compact(int64(revision))
 }
 
-type revisionOp map[string][]byte
+type revisionOp map[string][][]byte
 
 func (r revisionOp) put(k, v []byte) revisionOp {
-	r[string(k)] = v
+	r[string(k)] = append(r[string(k)], v)
 
 	return r
 }
 
 func (r revisionOp) delete(k []byte) revisionOp {
-	r[string(k)] = nil
+	r[string(k)] = append(r[string(k)], nil)
 
 	return r
 }
@@ -173,18 +173,25 @@ func (r revisionOp) apply(p partition) partition {
 	}
 
 	// Modify the copy
-	for key, value := range r {
-		if value == nil {
-			if _, ok := newRevision.Kvs[key]; ok {
-				delete(newRevision.Kvs, key)
-				newRevision.Changes[key] = nil
+	for key, values := range r {
+		for _, value := range values {
+			if value == nil {
+				if _, ok := newRevision.Kvs[key]; ok {
+					delete(newRevision.Kvs, key)
+
+					if _, ok := rev.Kvs[string(key)]; ok {
+						newRevision.Changes[key] = nil
+					} else {
+						delete(newRevision.Changes, string(key))
+					}
+				}
+
+				continue
 			}
 
-			continue
+			newRevision.Kvs[key] = value
+			newRevision.Changes[key] = value
 		}
-
-		newRevision.Kvs[key] = value
-		newRevision.Changes[key] = value
 	}
 
 	p.Revisions = append(p.Revisions, newRevision)
@@ -203,17 +210,19 @@ func (r revisionOp) applyToTransaction(t mvcc.Transaction) error {
 }
 
 func (r revisionOp) applyToRevision(rev mvcc.Revision) error {
-	for key, value := range r {
-		var err error
+	for key, values := range r {
+		for _, value := range values {
+			var err error
 
-		if value == nil {
-			err = rev.Delete([]byte(key))
-		} else {
-			err = rev.Put([]byte(key), value)
-		}
+			if value == nil {
+				err = rev.Delete([]byte(key))
+			} else {
+				err = rev.Put([]byte(key), value)
+			}
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -389,7 +398,7 @@ func getAllKVs(t testing.TB, revision mvcc.View) map[string][]byte {
 func getAllChanges(t testing.TB, revision mvcc.View) map[string][]byte {
 	result := map[string][]byte{}
 
-	diffs, err := revision.Changes(keys.All(), false)
+	diffs, err := revision.Changes(keys.All())
 
 	if err != nil {
 		t.Fatalf("error while trying to read changes from revision %d: %s", revision.Revision(), err)

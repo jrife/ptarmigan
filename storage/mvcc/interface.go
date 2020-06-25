@@ -102,9 +102,14 @@ type Transaction interface {
 	// higher than the newest committed revision this
 	// must return ErrRevisionTooHigh. If revision is
 	// lower than the oldest revision it must return
-	// ErrCompacted.  If this is a read-only transaction it must
+	// ErrCompacted. If this is a read-only transaction it must
 	// return ErrReadOnly
 	Compact(revision int64) error
+	// Flat returns a handle to a flat kv.Map associated
+	// with this mvcc partition. This provides a way to
+	// read and write non-versioned keys within a transaction.
+	// Keys in the flat map do not overlap with versioned keys.
+	Flat() kv.Map
 	// Commit commits the changes made in this transaction.
 	// If this is a read-only transaction it must
 	// return ErrReadOnly
@@ -124,12 +129,22 @@ type Revision interface {
 // at a certain revision.
 type View interface {
 	kv.MapReader
+	// Next returns a view for the revision after
+	// this one.
+	//
+	// Returns ErrRevisionTooHigh if the current view is for the newest revision.
+	Next() (View, error)
+	// Next returns a view for the revision before
+	// this one.
+	//
+	// Returns ErrCompacted if the current view is for the oldest revision.
+	Prev() (View, error)
 	// Changes returns up to limit keys changed in this revision
 	// lexocographically increasing order from the specified range.
 	// If includePrev is true the returned diffs will include the
 	// previous state for each key. Otherwise only the state as of
 	// this revision will be set.
-	Changes(keys keys.Range, includePrev bool) (DiffIterator, error)
+	Changes(keys keys.Range) (DiffIterator, error)
 	// Return the revision for this view.
 	Revision() int64
 }
@@ -140,25 +155,4 @@ type DiffIterator interface {
 	kv.Iterator
 	IsPut() bool
 	IsDelete() bool
-	Prev() []byte
-}
-
-// NamespaceView returns a view that will prefix
-// all keys with ns
-func NamespaceView(view View, ns []byte) View {
-	if len(ns) == 0 {
-		return view
-	}
-
-	return nil
-}
-
-// NamespaceRevision returns a revision that will
-// prefix all keys with ns
-func NamespaceRevision(revision Revision, ns []byte) Revision {
-	if len(ns) == 0 {
-		return revision
-	}
-
-	return nil
 }

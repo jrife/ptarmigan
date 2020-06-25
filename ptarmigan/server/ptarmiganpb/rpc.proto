@@ -1,0 +1,480 @@
+syntax = "proto3";
+package ptarmiganpb;
+
+import "gogoproto/gogo.proto";
+
+// for grpc-gateway
+import "google/api/annotations.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+service KV {
+  // Query retrieves kvs from a partition
+  rpc Query(KVQueryRequest) returns (KVQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/stores/{header.store}/partitions/{header.partition}/kvs"
+    };
+  }
+
+  // Txn processes multiple requests in a single transaction.
+  // A txn request increments the revision of the key-value store
+  // and generates events with the same revision for every completed request.
+  rpc Txn(KVTxnRequest) returns (KVTxnResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores/{header.store}/partitions/{header.partition}/transactions"
+      body: "*"
+    };
+  }
+
+  // Compact compacts the event history in the key-value store. The key-value
+  // store should be periodically compacted or the event history will continue to grow
+  // indefinitely.
+  rpc Compact(KVCompactionRequest) returns (KVCompactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores/{header.store}/partitions/{header.partition}/compactions"
+      body: "*"
+    };
+  }
+
+  // Watch creates a watcher to watch for events happening or that have happened.
+  // The entire event history can be watched starting from the last compaction revision.
+  rpc Watch(KVWatchRequest) returns (stream KVWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores/{header.store}/partitions/{header.partition}/watchers"
+      body: "*"
+    };
+  }
+}
+
+service Leases {
+  // Grant creates a lease which expires if the server does not receive a renewal
+  // within a given time to live period. All keys attached to the lease will be expired and
+  // deleted if the lease expires. Each expired key generates a delete event in the event history.
+  rpc Grant(LeaseGrantRequest) returns (LeaseGrantResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores/{header.store}/partitions/{header.partition}/leases"
+      body: "*"
+    };
+  }
+
+  rpc Query(LeaseQueryRequest) returns (LeaseQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/stores/{header.store}/partitions/{header.partition}/leases"
+    };
+  }
+
+  // Get retrieves information on a lease.
+  rpc Get(LeaseGetRequest) returns (LeaseGetResponse) {
+    option (google.api.http) = {
+      get: "/v1/stores/{header.store}/partitions/{header.partition}/leases/{ID}"
+    };
+  }
+
+  // Revoke revokes a lease. All keys attached to the lease will expire and be deleted.
+  rpc Revoke(LeaseRevokeRequest) returns (LeaseRevokeResponse) {
+    option (google.api.http) = {
+      delete: "/v1/stores/{header.store}/partitions/{header.partition}/leases/{ID}"
+    };
+  }
+
+  // Renew renews the lease so that it does not expire
+  rpc Renew(LeaseRenewRequest) returns (LeaseRenewResponse) {
+      option (google.api.http) = {
+        post: "/v1/stores/{header.store}/partitions/{header.partition}/lease-renewals"
+        body: "*"
+    };
+  }
+}
+
+message PartitionRequestHeader {
+  string store = 1;
+  string partition = 2;
+  string replica = 3;
+}
+
+message ResponseHeader {
+  // member_id is the ID of the member which sent the response.
+  uint64 member_id = 1;
+}
+
+enum Field {
+  VERSION = 0;
+  CREATE = 1;
+  MOD = 2;
+  VALUE = 3;
+  LEASE = 4;
+  KEY = 5;
+}
+
+message KVPredicate {
+  // [FIELD] [COMPARISON] [VALUE]
+  enum Operator {
+    // =
+    EQUAL = 0;
+    // !=
+    NOT_EQUAL = 1;
+    // >
+    GT = 2;
+    // >=
+    GTE = 3;
+    // <
+    LT = 4;
+    // <=
+    LTE = 5;
+    STARTS_WITH = 6;
+  }
+
+  // operator is the logical comparison operation for this comparison.
+  Operator operator = 1;
+  // field is the key-value field to inspect for the comparison.
+  Field field = 2;
+  oneof value {
+    // int64 should be set for "int64" field comparisons
+    int64 int64 = 3;
+    // bytes should be set for "bytes" field comparisons
+    bytes bytes = 4;
+  }
+}
+
+message KVQueryRequest {
+  enum SortOrder {
+    NONE = 0;  // default, no sorting
+    ASC = 1; // lowest target value first
+    DESC = 2; // highest target value first
+  }
+
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // Only keys matching the predicates in the selection will be included in the result
+  repeated KVPredicate selection = 2 [(gogoproto.nullable) = false];
+  // Use after to get the next page of results by inserting the after cursor from the
+  // previous page.
+  string after = 3;
+  // limit is the limit on the number of keys returned in the result.
+  // If limit is set to 0 the default limit is used.
+  int64 limit = 4;
+  // revision is the revision of the store to use for the query.
+  // If revision is less or equal to zero, the range is over the newest key-value store.
+  // If the revision has been compacted, ErrCompacted is returned as a response.
+  int64 revision = 5;
+  // sort_order is the order for returned sorted results.
+  SortOrder sort_order = 6;
+  // sort_target is the key-value field to use for sorting.
+  Field sort_target = 7;
+  // serializable sets the range request to use serializable member-local reads.
+  // Range requests are linearizable by default; linearizable requests have higher
+  // latency and lower throughput than serializable requests but reflect the current
+  // consensus of the cluster. For better performance, in exchange for possible stale reads,
+  // a serializable range request is served locally without needing to reach consensus
+  // with other nodes in the cluster.
+  bool serializable = 8;
+  // exclude_values when set excludes values from the resulting kvs
+  bool exclude_values = 9;
+  // include_count when set includes the total count of keys matching
+  // the query constraints in the result
+  bool include_count = 10;
+}
+
+message KVQueryResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  // kvs is the list of key-value pairs matched by the query.
+  repeated KeyValue kvs = 2 [(gogoproto.nullable) = false];
+  // more indicates if there are more keys matching the query.
+  bool more = 3;
+  // after is a cursor that can be used in to get the next page
+  // of results after this one.
+  string after = 4;
+  // count is set to the total number of keys matching the query.
+  int64 count = 5;
+}
+
+message KVPutRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // Only keys matching the predicates in the selection will be updated
+  repeated KVPredicate selection = 2 [(gogoproto.nullable) = false];
+  // key is the key, in bytes, to create or update. Selection is ignored
+  // if key is specified
+  bytes key = 3;
+  // value is the value, in bytes, to associate with the key in the key-value store.
+  bytes value = 4;
+  // lease is the lease ID to associate with the key in the key-value store. A lease
+  // value of 0 indicates no lease.
+  int64 lease = 5;
+  // If prev_kv is set, ptarmigan gets the previous key-value pair before changing it.
+  // The previous key-value pair will be returned in the put response.
+  bool prev_kv = 6;
+  // If ignore_value is set, ptarmigan updates the key using its current value.
+  // Returns an error if the key does not exist.
+  bool ignore_value = 7;
+  // If ignore_lease is set, ptarmigan updates the key using its current lease.
+  // Returns an error if the key does not exist.
+  bool ignore_lease = 8;
+}
+
+message KVPutResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  // if prev_kv is set in the request, the previous key-value pairs will be returned.
+  repeated KeyValue prev_kvs = 2 [(gogoproto.nullable) = false];
+}
+
+message KVDeleteRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // Only keys matching the predicates in the selection will be deleted
+  repeated KVPredicate selection = 2 [(gogoproto.nullable) = false];
+  // If prev_kv is set, ptarmigan gets the previous key-value pairs before deleting it.
+  // The previous key-value pairs will be returned in the delete response.
+  bool prev_kv = 3;
+}
+
+message KVDeleteResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  // deleted is the number of keys deleted by the delete range request.
+  int64 deleted = 2;
+  // if prev_kv is set in the request, the previous key-value pairs will be returned.
+  repeated KeyValue prev_kvs = 3 [(gogoproto.nullable) = false];
+}
+
+message KVRequestOp {
+  // request is a union of request types accepted by a transaction.
+  oneof request {
+    KVQueryRequest request_query = 1;
+    KVPutRequest request_put = 2;
+    KVDeleteRequest request_delete = 3;
+    KVTxnRequest request_txn = 4;
+  }
+}
+
+message KVResponseOp {
+  // response is a union of response types returned by a transaction.
+  oneof response {
+    KVQueryResponse response_query = 1;
+    KVPutResponse response_put = 2;
+    KVDeleteResponse response_delete = 3;
+    KVTxnResponse response_txn = 4;
+  }
+}
+
+// Condition can be used to describe some existential
+// or universal quantifier for range of keys.
+message Condition {
+  enum Quantifier {
+    FOR_ALL = 0;
+    EXISTS = 1;
+  }
+
+  // domain describes the set of keys which form the range
+  // of quantification.
+  repeated KVPredicate domain = 1 [(gogoproto.nullable) = false];
+  // predicate describes a condition which must hold for some
+  // number of keys in the domain.
+  KVPredicate predicate = 2 [(gogoproto.nullable) = false];
+  // quantifier adjusts how many keys in the domain must match
+  // the predicate. 
+  // quantifier < 0 means "for all": for all keys in the domain the predicate must hold
+  // quantifier = 0 means "there does not exist"
+  Quantifier quantifier = 3;
+}
+
+message KVTxnRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // conditions is a list of predicates representing a conjunction of terms.
+  // If all conditions are true, then the success requests will be processed in order,
+  // and the response will contain their respective responses in order.
+  // If one or more conditions are false, then the failure requests will be processed in order,
+  // and the response will contain their respective responses in order.
+  repeated Condition conditions = 2 [(gogoproto.nullable) = false];
+  // success is a list of requests which will be applied when compare evaluates to true.
+  repeated KVRequestOp success = 3 [(gogoproto.nullable) = false];
+  // failure is a list of requests which will be applied when compare evaluates to false.
+  repeated KVRequestOp failure = 4 [(gogoproto.nullable) = false];
+}
+
+message KVTxnResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  // succeeded is set to true if the compare evaluated to true or false otherwise.
+  bool succeeded = 2;
+  // responses is a list of responses corresponding to the results from applying
+  // success if succeeded is true or failure if succeeded is false.
+  repeated KVResponseOp responses = 3 [(gogoproto.nullable) = false];
+}
+
+// CompactionRequest compacts the key-value store up to a given revision. All superseded keys
+// with a revision less than the compaction revision will be removed.
+message KVCompactionRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // revision is the key-value store revision for the compaction operation.
+  int64 revision = 2;
+}
+
+message KVCompactionResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+}
+
+message KVWatchCursor {
+  int64 revision = 1;
+  bytes key = 2;
+}
+
+message KeyRange {
+  // Key must be > or >= this value
+  oneof key_range_min {
+    bytes key_gt = 1;
+    bytes key_gte = 2;
+  }
+
+  // Key must be < or <= this value
+  oneof key_range_max {
+    bytes key_lt = 3;
+    bytes key_lte = 4;
+  }
+
+  // Key must be prefixed with this value
+  bytes key_starts_with = 64;
+  // Key must equal this value
+  bytes key = 65;
+}
+
+message KVWatchRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // start is an optional cursor to watch from (exclusive). No start is "now".
+  KVWatchCursor start = 2 [(gogoproto.nullable) = false];
+  // Selection of keys to watch
+  KeyRange keys = 3 [(gogoproto.nullable) = false];
+  // progress_notify is set so that the ptarmigan server will periodically send a WatchResponse with
+  // no events to the new watcher if there are no recent events. It is useful when clients
+  // wish to recover a disconnected watcher starting from a recent known revision.
+  // The ptarmigan server may decide how often it will send notifications based on current load.
+  bool progress_notify = 4;
+  // filter out put events.
+  bool no_put = 5;
+  // filter out delete event.
+  bool no_delete = 6;
+  // If prev_kv is set, created watcher gets the previous KV before the event happens.
+  // If the previous KV is already compacted, nothing will be returned.
+  bool prev_kv = 7;
+}
+
+message KVWatchResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  // Indicates that the watch request tried watching from a
+  // compacted revision. The client should treat the watcher
+  // as canceled and should not try to create any watcher with
+  // the same start again.
+  bool compacted = 2;
+  // cancel_reason indicates the reason for canceling the watcher.
+  string cancel_reason = 3;
+  // Watchers should keep track of the latest after cursor
+  // so that they can resume where they left off with a
+  // subsequent watch request. If the last watch request
+  // was canceled due to compaction this cursor is not valid
+  // Use of an after cursor from a compacted revision will
+  // result in another canceled watch request.
+  KVWatchCursor after = 4 [(gogoproto.nullable) = false];
+  // Events contains a list of events ordered by
+  // by [revision,key]. There may be events from several different
+  // revisions in the events list, but events from older revisions
+  // will appear first.
+  repeated Event events = 11 [(gogoproto.nullable) = false];
+}
+
+message LeaseGrantRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // TTL is the advisory time-to-live in seconds. Expired lease will return -1.
+  int64 TTL = 2;
+}
+
+message LeaseGrantResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  Lease lease = 2 [(gogoproto.nullable) = false];
+}
+
+message LeaseRevokeRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
+  int64 ID = 2;
+}
+
+message LeaseRevokeResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+}
+
+message LeaseRenewRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // ID is the lease ID for the lease to keep alive.
+  int64 ID = 2;
+}
+
+message LeaseRenewResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  Lease lease = 2 [(gogoproto.nullable) = false];
+}
+
+message LeaseGetRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+  // ID is the lease ID for the lease.
+  int64 ID = 2;
+}
+
+message LeaseGetResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  Lease lease = 2 [(gogoproto.nullable) = false];
+}
+
+message LeaseQueryRequest {
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
+}
+
+message LeaseQueryResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  repeated Lease leases = 2 [(gogoproto.nullable) = false];
+}
+
+message KeyValue {
+  // key is the key in bytes. An empty key is not allowed.
+  bytes key = 1;
+  // create_revision is the revision of last creation on this key.
+  int64 create_revision = 2;
+  // mod_revision is the revision of last modification on this key.
+  int64 mod_revision = 3;
+  // version is the version of the key. A deletion resets
+  // the version to zero and any modification of the key
+  // increases its version.
+  int64 version = 4;
+  // value is the value held by the key, in bytes.
+  bytes value = 5;
+  // lease is the ID of the lease that attached to key.
+  // When the attached lease expires, the key will be deleted.
+  // If lease is 0, then no lease is attached to the key.
+  int64 lease = 6;
+}
+
+message Event {
+  enum EventType {
+    PUT = 0;
+    DELETE = 1;
+  }
+  // type is the kind of event. If type is a PUT, it indicates
+  // new data has been stored to the key. If type is a DELETE,
+  // it indicates the key was deleted.
+  EventType type = 1;
+  // kv holds the KeyValue for the event.
+  // A PUT event contains current kv pair.
+  // A PUT event with kv.Version=1 indicates the creation of a key.
+  // A DELETE/EXPIRE event contains the deleted key with
+  // its modification revision set to the revision of deletion.
+  KeyValue kv = 2 [(gogoproto.nullable) = false];
+  // prev_kv holds the key-value pair before the event happens.
+  KeyValue prev_kv = 3;
+}
+
+message Lease {
+  // ID is the lease ID
+  int64 ID = 2;
+  // TTL is the remaining TTL in seconds for the lease; the lease will expire in under TTL+1 seconds.
+  int64 TTL = 3;
+  // GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
+  int64 grantedTTL = 4;
+}

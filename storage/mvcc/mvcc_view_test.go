@@ -6,7 +6,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jrife/flock/storage/kv"
 	"github.com/jrife/flock/storage/kv/keys"
-	"github.com/jrife/flock/storage/mvcc"
 )
 
 func testView(builder tempStoreBuilder, t *testing.T) {
@@ -363,7 +362,8 @@ func testViewChanges(builder tempStoreBuilder, t *testing.T) {
 						put([]byte("g"), []byte("h")).
 						put([]byte("i"), []byte("j")).
 						delete([]byte("k")).
-						delete([]byte("z")),
+						delete([]byte("z")).
+						delete([]byte("i")),
 				).commit(),
 				transaction{}.newRevision(
 					revisionOp{}.
@@ -384,22 +384,19 @@ func testViewChanges(builder tempStoreBuilder, t *testing.T) {
 		partition    []byte
 		revision     int64
 		keys         keys.Range
-		includePrev  bool
-		diffs        []mvcc.Diff
+		diffs        []kv.KV
 	}{
 		"all-keys-asc-no-prev": {
 			initialState: initialState,
 			partition:    []byte("a"),
 			revision:     2,
 			keys:         keys.All(),
-			includePrev:  false,
-			diffs: []mvcc.Diff{
-				{[]byte("a"), []byte("b"), nil},
-				{[]byte("c"), []byte("d"), nil},
-				{[]byte("e"), []byte("f"), nil},
-				{[]byte("g"), []byte("h"), nil},
-				{[]byte("i"), []byte("j"), nil},
-				{[]byte("k"), nil, nil},
+			diffs: []kv.KV{
+				{[]byte("a"), []byte("b")},
+				{[]byte("c"), []byte("d")},
+				{[]byte("e"), []byte("f")},
+				{[]byte("g"), []byte("h")},
+				{[]byte("k"), nil},
 			},
 		},
 	}
@@ -422,13 +419,13 @@ func testViewChanges(builder tempStoreBuilder, t *testing.T) {
 				t.Fatalf("expected error to be nil, got #%v", err)
 			}
 
-			diffsIter, err := view.Changes(testCase.keys, testCase.includePrev)
+			diffsIter, err := view.Changes(testCase.keys)
 
 			if err != nil {
 				t.Fatalf("expected error to be nil, got #%v", err)
 			}
 
-			diffs, err := mvcc.Diffs(diffsIter, -1)
+			diffs, err := kv.Keys(diffsIter, -1)
 
 			if err != nil {
 				t.Fatalf("expected error to be nil, got #%v", err)
