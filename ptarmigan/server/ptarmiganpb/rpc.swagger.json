@@ -94,114 +94,6 @@
             "type": "string"
           },
           {
-            "name": "selection.key_gt",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "selection.key_gte",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "selection.key_lt",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "selection.key_lte",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "selection.mod_revision_gt",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.mod_revision_gte",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.mod_revision_lt",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.mod_revision_lte",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.create_revision_gt",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.create_revision_gte",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.create_revision_lt",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.create_revision_lte",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "selection.key_starts_with",
-            "description": "Key must be prefixed with this value.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "selection.key",
-            "description": "Key must equal this value.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "selection.lease",
-            "description": "Must belong to this lease.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
             "name": "after",
             "description": "Use after to get the next page of results by inserting the after cursor from the\nprevious page.",
             "in": "query",
@@ -244,13 +136,14 @@
             "required": false,
             "type": "string",
             "enum": [
-              "KEY",
               "VERSION",
               "CREATE",
               "MOD",
-              "VALUE"
+              "VALUE",
+              "LEASE",
+              "KEY"
             ],
-            "default": "KEY"
+            "default": "VERSION"
           },
           {
             "name": "serializable",
@@ -514,7 +407,7 @@
     },
     "/v1/stores/{header.store}/partitions/{header.partition}/transactions": {
       "post": {
-        "summary": "Txn processes multiple requests in a single transaction.\nA txn request increments the revision of the key-value store\nand generates events with the same revision for every completed request.\nIt is not allowed to modify the same key several times within one txn.",
+        "summary": "Txn processes multiple requests in a single transaction.\nA txn request increments the revision of the key-value store\nand generates events with the same revision for every completed request.",
         "operationId": "KV_Txn",
         "responses": {
           "200": {
@@ -613,6 +506,14 @@
     }
   },
   "definitions": {
+    "ConditionQuantifier": {
+      "type": "string",
+      "enum": [
+        "FOR_ALL",
+        "EXISTS"
+      ],
+      "default": "FOR_ALL"
+    },
     "EventEventType": {
       "type": "string",
       "enum": [
@@ -621,26 +522,20 @@
       ],
       "default": "PUT"
     },
-    "KVPredicateComparison": {
+    "KVPredicateOperator": {
       "type": "string",
       "enum": [
         "EQUAL",
-        "GREATER",
-        "LESS",
-        "NOT_EQUAL"
+        "NOT_EQUAL",
+        "GT",
+        "GTE",
+        "LT",
+        "LTE",
+        "STARTS_WITH"
       ],
-      "default": "EQUAL"
-    },
-    "KVPredicateTarget": {
-      "type": "string",
-      "enum": [
-        "VERSION",
-        "CREATE",
-        "MOD",
-        "VALUE",
-        "LEASE"
-      ],
-      "default": "VERSION"
+      "default": "EQUAL",
+      "description": "- EQUAL: =\n - NOT_EQUAL: !=\n - GT: \u003e\n - GTE: \u003e=\n - LT: \u003c\n - LTE: \u003c=",
+      "title": "[FIELD] [COMPARISON] [VALUE]"
     },
     "KVQueryRequestSortOrder": {
       "type": "string",
@@ -650,17 +545,6 @@
         "DESC"
       ],
       "default": "NONE"
-    },
-    "KVQueryRequestSortTarget": {
-      "type": "string",
-      "enum": [
-        "KEY",
-        "VERSION",
-        "CREATE",
-        "MOD",
-        "VALUE"
-      ],
-      "default": "KEY"
     },
     "protobufAny": {
       "type": "object",
@@ -674,18 +558,26 @@
         }
       }
     },
-    "ptarmiganpbCompare": {
+    "ptarmiganpbCondition": {
       "type": "object",
       "properties": {
-        "selection": {
-          "$ref": "#/definitions/ptarmiganpbKVSelection",
-          "title": "Selection of keys to test"
+        "domain": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ptarmiganpbKVPredicate"
+          },
+          "description": "domain describes the set of keys which form the range\nof quantification."
         },
         "predicate": {
           "$ref": "#/definitions/ptarmiganpbKVPredicate",
-          "title": "Condition to test"
+          "description": "predicate describes a condition which must hold for some\nnumber of keys in the domain."
+        },
+        "quantifier": {
+          "$ref": "#/definitions/ConditionQuantifier",
+          "title": "quantifier adjusts how many keys in the domain must match\nthe predicate. \nquantifier \u003c 0 means \"for all\": for all keys in the domain the predicate must hold\nquantifier = 0 means \"there does not exist\""
         }
-      }
+      },
+      "description": "Condition can be used to describe some existential\nor universal quantifier for range of keys."
     },
     "ptarmiganpbEvent": {
       "type": "object",
@@ -704,6 +596,18 @@
         }
       }
     },
+    "ptarmiganpbField": {
+      "type": "string",
+      "enum": [
+        "VERSION",
+        "CREATE",
+        "MOD",
+        "VALUE",
+        "LEASE",
+        "KEY"
+      ],
+      "default": "VERSION"
+    },
     "ptarmiganpbKVCompactionRequest": {
       "type": "object",
       "properties": {
@@ -714,11 +618,6 @@
           "type": "string",
           "format": "int64",
           "description": "revision is the key-value store revision for the compaction operation."
-        },
-        "physical": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "physical is set so the RPC will wait until the compaction is physically\napplied to the local database such that compacted entries are totally\nremoved from the backend database."
         }
       },
       "description": "CompactionRequest compacts the key-value store up to a given revision. All superseded keys\nwith a revision less than the compaction revision will be removed."
@@ -738,7 +637,10 @@
           "$ref": "#/definitions/ptarmiganpbPartitionRequestHeader"
         },
         "selection": {
-          "$ref": "#/definitions/ptarmiganpbKVSelection",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ptarmiganpbKVPredicate"
+          },
           "title": "Only keys matching the predicates in the selection will be deleted"
         },
         "prev_kv": {
@@ -771,38 +673,23 @@
     "ptarmiganpbKVPredicate": {
       "type": "object",
       "properties": {
-        "comparison": {
-          "$ref": "#/definitions/KVPredicateComparison",
-          "description": "result is logical comparison operation for this comparison."
+        "operator": {
+          "$ref": "#/definitions/KVPredicateOperator",
+          "description": "operator is the logical comparison operation for this comparison."
         },
-        "target": {
-          "$ref": "#/definitions/KVPredicateTarget",
-          "description": "target is the key-value field to inspect for the comparison."
+        "field": {
+          "$ref": "#/definitions/ptarmiganpbField",
+          "description": "field is the key-value field to inspect for the comparison."
         },
-        "version": {
+        "int64": {
           "type": "string",
           "format": "int64",
-          "title": "version is the version of the given key"
+          "title": "int64 should be set for \"int64\" field comparisons"
         },
-        "create_revision": {
-          "type": "string",
-          "format": "int64",
-          "title": "create_revision is the creation revision of the given key"
-        },
-        "mod_revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "mod_revision is the last modified revision of the given key."
-        },
-        "value": {
+        "bytes": {
           "type": "string",
           "format": "byte",
-          "description": "value is the value of the given key, in bytes."
-        },
-        "lease": {
-          "type": "string",
-          "format": "int64",
-          "description": "lease is the lease id of the given key."
+          "title": "bytes should be set for \"bytes\" field comparisons"
         }
       }
     },
@@ -813,7 +700,10 @@
           "$ref": "#/definitions/ptarmiganpbPartitionRequestHeader"
         },
         "selection": {
-          "$ref": "#/definitions/ptarmiganpbKVSelection",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ptarmiganpbKVPredicate"
+          },
           "title": "Only keys matching the predicates in the selection will be updated"
         },
         "key": {
@@ -870,7 +760,10 @@
           "$ref": "#/definitions/ptarmiganpbPartitionRequestHeader"
         },
         "selection": {
-          "$ref": "#/definitions/ptarmiganpbKVSelection",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ptarmiganpbKVPredicate"
+          },
           "title": "Only keys matching the predicates in the selection will be included in the result"
         },
         "after": {
@@ -892,7 +785,7 @@
           "description": "sort_order is the order for returned sorted results."
         },
         "sort_target": {
-          "$ref": "#/definitions/KVQueryRequestSortTarget",
+          "$ref": "#/definitions/ptarmiganpbField",
           "description": "sort_target is the key-value field to use for sorting."
         },
         "serializable": {
@@ -975,87 +868,18 @@
         }
       }
     },
-    "ptarmiganpbKVSelection": {
-      "type": "object",
-      "properties": {
-        "key_gt": {
-          "type": "string",
-          "format": "byte"
-        },
-        "key_gte": {
-          "type": "string",
-          "format": "byte"
-        },
-        "key_lt": {
-          "type": "string",
-          "format": "byte"
-        },
-        "key_lte": {
-          "type": "string",
-          "format": "byte"
-        },
-        "mod_revision_gt": {
-          "type": "string",
-          "format": "int64"
-        },
-        "mod_revision_gte": {
-          "type": "string",
-          "format": "int64"
-        },
-        "mod_revision_lt": {
-          "type": "string",
-          "format": "int64"
-        },
-        "mod_revision_lte": {
-          "type": "string",
-          "format": "int64"
-        },
-        "create_revision_gt": {
-          "type": "string",
-          "format": "int64"
-        },
-        "create_revision_gte": {
-          "type": "string",
-          "format": "int64"
-        },
-        "create_revision_lt": {
-          "type": "string",
-          "format": "int64"
-        },
-        "create_revision_lte": {
-          "type": "string",
-          "format": "int64"
-        },
-        "key_starts_with": {
-          "type": "string",
-          "format": "byte",
-          "title": "Key must be prefixed with this value"
-        },
-        "key": {
-          "type": "string",
-          "format": "byte",
-          "title": "Key must equal this value"
-        },
-        "lease": {
-          "type": "string",
-          "format": "int64",
-          "title": "Must belong to this lease"
-        }
-      },
-      "description": "KVSelection is a set of constraints\nthat must all be met for a kv to be\nincluded in a query result."
-    },
     "ptarmiganpbKVTxnRequest": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/ptarmiganpbPartitionRequestHeader"
         },
-        "compare": {
+        "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ptarmiganpbCompare"
+            "$ref": "#/definitions/ptarmiganpbCondition"
           },
-          "description": "compare is a list of predicates representing a conjunction of terms.\nIf the comparisons succeed, then the success requests will be processed in order,\nand the response will contain their respective responses in order.\nIf the comparisons fail, then the failure requests will be processed in order,\nand the response will contain their respective responses in order."
+          "description": "conditions is a list of predicates representing a conjunction of terms.\nIf all conditions are true, then the success requests will be processed in order,\nand the response will contain their respective responses in order.\nIf one or more conditions are false, then the failure requests will be processed in order,\nand the response will contain their respective responses in order."
         },
         "success": {
           "type": "array",
@@ -1071,8 +895,7 @@
           },
           "description": "failure is a list of requests which will be applied when compare evaluates to false."
         }
-      },
-      "description": "From google paxosdb paper:\nOur implementation hinges around a powerful primitive which we call MultiOp. All other database\noperations except for iteration are implemented as a single call to MultiOp. A MultiOp is applied atomically\nand consists of three components:\n1. A list of tests called guard. Each test in guard checks a single entry in the database. It may check\nfor the absence or presence of a value, or compare with a given value. Two different tests in the guard\nmay apply to the same or different entries in the database. All tests in the guard are applied and\nMultiOp returns the results. If all tests are true, MultiOp executes t op (see item 2 below), otherwise\nit executes f op (see item 3 below).\n2. A list of database operations called t op. Each operation in the list is either an insert, delete, or\nlookup operation, and applies to a single database entry. Two different operations in the list may apply\nto the same or different entries in the database. These operations are executed\nif guard evaluates to\ntrue.\n3. A list of database operations called f op. Like t op, but executed if guard evaluates to false."
+      }
     },
     "ptarmiganpbKVTxnResponse": {
       "type": "object",
@@ -1113,13 +936,13 @@
         "header": {
           "$ref": "#/definitions/ptarmiganpbPartitionRequestHeader"
         },
-        "selection": {
-          "$ref": "#/definitions/ptarmiganpbKVSelection",
-          "title": "Selection of keys to watch"
-        },
         "start": {
           "$ref": "#/definitions/ptarmiganpbKVWatchCursor",
           "description": "start is an optional cursor to watch from (exclusive). No start is \"now\"."
+        },
+        "keys": {
+          "$ref": "#/definitions/ptarmiganpbKeyRange",
+          "title": "Selection of keys to watch"
         },
         "progress_notify": {
           "type": "boolean",
@@ -1168,6 +991,37 @@
             "$ref": "#/definitions/ptarmiganpbEvent"
           },
           "description": "Events contains a list of events ordered by\nby [revision,key]. There may be events from several different\nrevisions in the events list, but events from older revisions\nwill appear first."
+        }
+      }
+    },
+    "ptarmiganpbKeyRange": {
+      "type": "object",
+      "properties": {
+        "key_gt": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_gte": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_lt": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_lte": {
+          "type": "string",
+          "format": "byte"
+        },
+        "key_starts_with": {
+          "type": "string",
+          "format": "byte",
+          "title": "Key must be prefixed with this value"
+        },
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "title": "Key must equal this value"
         }
       }
     },
@@ -1328,11 +1182,6 @@
           "type": "string",
           "format": "uint64",
           "description": "member_id is the ID of the member which sent the response."
-        },
-        "revision": {
-          "type": "string",
-          "format": "int64",
-          "description": "revision is the key-value store revision when the request was applied.\nFor watch progress responses, the header.revision indicates progress. All future events\nrecieved in this stream are guaranteed to have a higher revision number than the\nheader.revision number."
         }
       }
     },

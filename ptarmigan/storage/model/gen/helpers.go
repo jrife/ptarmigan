@@ -62,13 +62,13 @@ func ReplicaStoreModelDiff(replicaStore storage.ReplicaStore, model *model.Repli
 		}
 	}
 
-	changes, err := replicaStore.Changes(context.Background(), ptarmiganpb.KVWatchRequest{}, -1)
+	changes, err := replicaStore.Changes(context.Background(), ptarmiganpb.KVWatchRequest{Start: ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}}, -1)
 
 	if err != nil {
 		return "", fmt.Errorf("could not retrieve changes from replica store: %s", err)
 	}
 
-	if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{}, -1), changes); diff != "" {
+	if diff := cmp.Diff(model.Changes(ptarmiganpb.KVWatchRequest{Start: ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}}, -1), changes); diff != "" {
 		return fmt.Sprintf("changes don't match: %s", diff), nil
 	}
 

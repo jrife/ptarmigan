@@ -457,7 +457,7 @@ func testReplicaStoreApplyTxn(builder tempStoreBuilder, t *testing.T) {
 			createLeases:       true,
 			index:              3,
 			txn: ptarmiganpb.KVTxnRequest{
-				Success: []*ptarmiganpb.KVRequestOp{
+				Success: []ptarmiganpb.KVRequestOp{
 					{
 						Request: &ptarmiganpb.KVRequestOp_RequestPut{
 							RequestPut: &ptarmiganpb.KVPutRequest{
@@ -583,7 +583,7 @@ func testReplicaStoreApplyCompact(builder tempStoreBuilder, t *testing.T) {
 
 				if testCase.createRevisions {
 					_, err := ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(1).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -600,7 +600,7 @@ func testReplicaStoreApplyCompact(builder tempStoreBuilder, t *testing.T) {
 					}
 
 					_, err = ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(2).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -819,7 +819,7 @@ func testReplicaStoreQuery(builder tempStoreBuilder, t *testing.T) {
 
 				if testCase.createRevisions {
 					_, err := ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(1).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -836,7 +836,7 @@ func testReplicaStoreQuery(builder tempStoreBuilder, t *testing.T) {
 					}
 
 					_, err = ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(2).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -900,7 +900,7 @@ func testReplicaStoreChanges(builder tempStoreBuilder, t *testing.T) {
 			replicaStore:       "abc",
 			createReplicaStore: true,
 			createRevisions:    true,
-			query:              ptarmiganpb.KVWatchRequest{Start: &ptarmiganpb.KVWatchCursor{Revision: 3}},
+			query:              ptarmiganpb.KVWatchRequest{Start: ptarmiganpb.KVWatchCursor{Revision: 3}},
 			err:                mvcc.ErrRevisionTooHigh,
 		},
 		"compacted": {
@@ -908,7 +908,7 @@ func testReplicaStoreChanges(builder tempStoreBuilder, t *testing.T) {
 			createReplicaStore: true,
 			createRevisions:    true,
 			compactRevisions:   true,
-			query:              ptarmiganpb.KVWatchRequest{Start: &ptarmiganpb.KVWatchCursor{Revision: 1}},
+			query:              ptarmiganpb.KVWatchRequest{Start: ptarmiganpb.KVWatchCursor{Revision: 1}},
 			err:                mvcc.ErrCompacted,
 		},
 	}
@@ -927,7 +927,7 @@ func testReplicaStoreChanges(builder tempStoreBuilder, t *testing.T) {
 
 				if testCase.createRevisions {
 					_, err := ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(1).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -944,7 +944,7 @@ func testReplicaStoreChanges(builder tempStoreBuilder, t *testing.T) {
 					}
 
 					_, err = ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(2).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -1152,7 +1152,7 @@ func testReplicaStoreNewestRevision(builder tempStoreBuilder, t *testing.T) {
 
 				if testCase.createRevisions {
 					_, err := ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(1).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -1169,7 +1169,7 @@ func testReplicaStoreNewestRevision(builder tempStoreBuilder, t *testing.T) {
 					}
 
 					_, err = ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(2).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -1256,7 +1256,7 @@ func testReplicaStoreOldestRevision(builder tempStoreBuilder, t *testing.T) {
 
 				if testCase.createRevisions {
 					_, err := ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(1).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -1273,7 +1273,7 @@ func testReplicaStoreOldestRevision(builder tempStoreBuilder, t *testing.T) {
 					}
 
 					_, err = ptarmiganStore.ReplicaStore(testCase.replicaStore).Apply(2).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-						Success: []*ptarmiganpb.KVRequestOp{
+						Success: []ptarmiganpb.KVRequestOp{
 							{
 								Request: &ptarmiganpb.KVRequestOp_RequestPut{
 									RequestPut: &ptarmiganpb.KVPutRequest{
@@ -1397,7 +1397,7 @@ func testReplicaStoreApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 			}
 
 			_, err = sourceStore.ReplicaStore(testCase.replicaStore).Apply(1).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-				Success: []*ptarmiganpb.KVRequestOp{
+				Success: []ptarmiganpb.KVRequestOp{
 					{
 						Request: &ptarmiganpb.KVRequestOp_RequestPut{
 							RequestPut: &ptarmiganpb.KVPutRequest{
@@ -1414,7 +1414,7 @@ func testReplicaStoreApplySnapshot(builder tempStoreBuilder, t *testing.T) {
 			}
 
 			_, err = sourceStore.ReplicaStore(testCase.replicaStore).Apply(2).Txn(context.Background(), ptarmiganpb.KVTxnRequest{
-				Success: []*ptarmiganpb.KVRequestOp{
+				Success: []ptarmiganpb.KVRequestOp{
 					{
 						Request: &ptarmiganpb.KVRequestOp_RequestPut{
 							RequestPut: &ptarmiganpb.KVPutRequest{

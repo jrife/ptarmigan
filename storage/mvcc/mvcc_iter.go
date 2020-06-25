@@ -2,7 +2,6 @@ package mvcc
 
 import (
 	"bytes"
-	"crypto/md5"
 	"fmt"
 
 	"github.com/jrife/flock/storage/kv"
@@ -418,8 +417,6 @@ func (iter *viewRevisionDiffsIterator) Next() bool {
 
 	iter.currentKey = iter.k
 	iter.currentValue = iter.v
-
-	fmt.Printf("next change %x\n", md5.Sum(iter.currentKey))
 
 	iter.next()
 

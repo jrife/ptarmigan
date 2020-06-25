@@ -108,24 +108,29 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 	var commit bool
 
 	result.Succeeded = true
-	result.Responses = []*ptarmiganpb.KVResponseOp{}
+	result.Responses = []ptarmiganpb.KVResponseOp{}
 	kvs := revision.AllKvs()
 
-	for _, compare := range txn.Compare {
-		if compare == nil {
-			continue
-		}
+	for _, condition := range txn.Conditions {
+		selection := kvs.selection(condition.Domain)
+		filtered := selection.filter(condition.Predicate)
 
-		selection := kvs.selection(compare.Selection)
-		// are there any kvs in the selection that don't match the predicate?
-		if len(selection) != len(selection.filter(compare.Predicate)) {
-			result.Succeeded = false
+		if condition.Quantifier == ptarmiganpb.EXISTS {
+			if len(filtered) == 0 {
+				result.Succeeded = false
 
-			break
+				break
+			}
+		} else {
+			if len(filtered) != len(selection) {
+				result.Succeeded = false
+
+				break
+			}
 		}
 	}
 
-	var ops []*ptarmiganpb.KVRequestOp
+	var ops []ptarmiganpb.KVRequestOp
 
 	if result.Succeeded {
 		ops = txn.Success
@@ -143,7 +148,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			var resp ptarmiganpb.KVDeleteResponse
 
 			if op.GetRequestDelete().PrevKv {
-				resp.PrevKvs = []*ptarmiganpb.KeyValue{}
+				resp.PrevKvs = []ptarmiganpb.KeyValue{}
 			}
 
 			kvs := revision.AllKvs().selection(op.GetRequestDelete().Selection)
@@ -152,7 +157,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 				if lastKVRaw, found := lastRevision.kvs.Get(kvs[i].Key); found {
 					// This key existed before this transaction. Need a DELETE event
 					lastKV := lastKVRaw.(ptarmiganpb.KeyValue)
-					revision.changes.Put(kvs[i].Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_DELETE, Kv: &ptarmiganpb.KeyValue{Key: kvs[i].Key, ModRevision: revision.revision}, PrevKv: &lastKV})
+					revision.changes.Put(kvs[i].Key, ptarmiganpb.Event{Type: ptarmiganpb.DELETE, Kv: ptarmiganpb.KeyValue{Key: kvs[i].Key, ModRevision: revision.revision}, PrevKv: &lastKV})
 				} else {
 					// This key was entirely created within this transaction. No need for a DELETE event
 					revision.changes.Remove(kvs[i].Key)
@@ -162,7 +167,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 				resp.Deleted++
 
 				if op.GetRequestDelete().PrevKv {
-					resp.PrevKvs = append(resp.PrevKvs, &kvs[i])
+					resp.PrevKvs = append(resp.PrevKvs, kvs[i])
 				}
 			}
 
@@ -180,7 +185,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			var kvs []ptarmiganpb.KeyValue
 
 			if op.GetRequestPut().PrevKv {
-				resp.PrevKvs = []*ptarmiganpb.KeyValue{}
+				resp.PrevKvs = []ptarmiganpb.KeyValue{}
 			}
 
 			if len(op.GetRequestPut().Key) != 0 {
@@ -190,7 +195,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 					kvs = append(kvs, rawKV.(ptarmiganpb.KeyValue))
 
 					if op.GetRequestPut().PrevKv {
-						resp.PrevKvs = []*ptarmiganpb.KeyValue{&kvs[0]}
+						resp.PrevKvs = []ptarmiganpb.KeyValue{kvs[0]}
 					}
 				} else {
 					kvs = append(kvs, ptarmiganpb.KeyValue{
@@ -206,7 +211,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 
 				if op.GetRequestPut().PrevKv {
 					for i := range kvs {
-						resp.PrevKvs = append(resp.PrevKvs, &kvs[i])
+						resp.PrevKvs = append(resp.PrevKvs, kvs[i])
 					}
 				}
 			}
@@ -231,9 +236,9 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 
 				if lastKVRaw, found := lastRevision.kvs.Get(newKV.Key); found {
 					lastKV := lastKVRaw.(ptarmiganpb.KeyValue)
-					revision.changes.Put(newKV.Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT, Kv: &newKV, PrevKv: &lastKV})
+					revision.changes.Put(newKV.Key, ptarmiganpb.Event{Type: ptarmiganpb.PUT, Kv: newKV, PrevKv: &lastKV})
 				} else {
-					revision.changes.Put(newKV.Key, ptarmiganpb.Event{Type: ptarmiganpb.Event_PUT, Kv: &newKV, PrevKv: nil})
+					revision.changes.Put(newKV.Key, ptarmiganpb.Event{Type: ptarmiganpb.PUT, Kv: newKV, PrevKv: nil})
 				}
 
 				revision.kvs.Put(newKV.Key, newKV)
@@ -251,7 +256,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			resp, ok := query(*op.GetRequestQuery(), &replicaStoreModelCopy)
 
 			if !ok {
-				resp.Kvs = []*ptarmiganpb.KeyValue{}
+				resp.Kvs = []ptarmiganpb.KeyValue{}
 			}
 
 			responseOp.Response = &ptarmiganpb.KVResponseOp_ResponseQuery{
@@ -269,7 +274,7 @@ func (replicaStoreModel *ReplicaStoreModel) txn(txn ptarmiganpb.KVTxnRequest, la
 			}
 		}
 
-		result.Responses = append(result.Responses, &responseOp)
+		result.Responses = append(result.Responses, responseOp)
 	}
 
 	return result, commit
@@ -358,12 +363,16 @@ func (replicaStoreModel *ReplicaStoreModel) ApplyRevokeLease(index uint64, id in
 
 	revision := lastRevision.Next()
 	_, commit := replicaStoreModel.txn(ptarmiganpb.KVTxnRequest{
-		Success: []*ptarmiganpb.KVRequestOp{
+		Success: []ptarmiganpb.KVRequestOp{
 			{
 				Request: &ptarmiganpb.KVRequestOp_RequestDelete{
 					RequestDelete: &ptarmiganpb.KVDeleteRequest{
-						Selection: &ptarmiganpb.KVSelection{
-							Lease: id,
+						Selection: []ptarmiganpb.KVPredicate{
+							{
+								Operator: ptarmiganpb.EQUAL,
+								Field:    ptarmiganpb.LEASE,
+								Value:    &ptarmiganpb.KVPredicate_Int64{Int64: id},
+							},
 						},
 					},
 				},
@@ -388,26 +397,22 @@ func (replicaStoreModel *ReplicaStoreModel) Query(request ptarmiganpb.KVQueryReq
 func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchRequest, limit int) []ptarmiganpb.Event {
 	changes := []ptarmiganpb.Event{}
 
-	if watch.Start == nil {
-		watch.Start = &ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}
-	}
-
 	startRevision, index := replicaStoreModel.revision(watch.Start.Revision)
 
 	if index == -1 {
 		return changes
 	}
 
-	for _, change := range startRevision.AllChanges().selection(watch.Selection) {
-		if watch.Start != nil && bytes.Compare(change.Kv.Key, watch.Start.Key) <= 0 {
+	for _, change := range startRevision.AllChanges().filter(watch.Keys) {
+		if watch.Start.Key != nil && bytes.Compare(change.Kv.Key, watch.Start.Key) <= 0 {
 			continue
 		}
 
-		if watch.NoDelete && change.Type == ptarmiganpb.Event_DELETE {
+		if watch.NoDelete && change.Type == ptarmiganpb.DELETE {
 			continue
 		}
 
-		if watch.NoPut && change.Type == ptarmiganpb.Event_PUT {
+		if watch.NoPut && change.Type == ptarmiganpb.PUT {
 			continue
 		}
 
@@ -415,12 +420,12 @@ func (replicaStoreModel *ReplicaStoreModel) Changes(watch ptarmiganpb.KVWatchReq
 	}
 
 	for i := index + 1; i < len(replicaStoreModel.revisions); i++ {
-		for _, change := range replicaStoreModel.revisions[i].AllChanges().selection(watch.Selection) {
-			if watch.NoDelete && change.Type == ptarmiganpb.Event_DELETE {
+		for _, change := range replicaStoreModel.revisions[i].AllChanges().filter(watch.Keys) {
+			if watch.NoDelete && change.Type == ptarmiganpb.DELETE {
 				continue
 			}
 
-			if watch.NoPut && change.Type == ptarmiganpb.Event_PUT {
+			if watch.NoPut && change.Type == ptarmiganpb.PUT {
 				continue
 			}
 

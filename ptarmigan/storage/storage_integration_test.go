@@ -74,7 +74,8 @@ func testReplicaStoreSystem(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	parameters := gopter.DefaultTestParametersWithSeed(1234)
-	parameters.MinSuccessfulTests = 100
+	parameters.MinSuccessfulTests = 1000
+	parameters.MaxSize = 30
 	properties := gopter.NewProperties(parameters)
 	properties.Property("", commands.Prop(cbCommands))
 	properties.TestingRun(t)
@@ -129,7 +130,8 @@ func testReplicaStoreSystemSnapshot(builder tempStoreBuilder, t *testing.T) {
 	}
 
 	parameters := gopter.DefaultTestParametersWithSeed(1234)
-	parameters.MinSuccessfulTests = 100
+	parameters.MinSuccessfulTests = 1000
+	parameters.MaxSize = 30
 	properties := gopter.NewProperties(parameters)
 	properties.Property("", commands.Prop(cbCommands))
 	properties.TestingRun(t)
@@ -156,11 +158,11 @@ func testReplicaStoreLargeSnapshot(builder tempStoreBuilder, t *testing.T) {
 	// write 1k keys in batches of 10
 	for i := 0; i < 100; i++ {
 		txnRequest := ptarmiganpb.KVTxnRequest{
-			Success: []*ptarmiganpb.KVRequestOp{},
+			Success: []ptarmiganpb.KVRequestOp{},
 		}
 
 		for j := 0; j < 10; j++ {
-			txnRequest.Success = append(txnRequest.Success, &ptarmiganpb.KVRequestOp{
+			txnRequest.Success = append(txnRequest.Success, ptarmiganpb.KVRequestOp{
 				Request: &ptarmiganpb.KVRequestOp_RequestPut{
 					RequestPut: &ptarmiganpb.KVPutRequest{
 						Key:   randomBytes(),

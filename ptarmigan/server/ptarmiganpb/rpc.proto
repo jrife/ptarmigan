@@ -7,7 +7,10 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 
 option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
 
 service KV {
   // Query retrieves kvs from a partition
@@ -20,7 +23,6 @@ service KV {
   // Txn processes multiple requests in a single transaction.
   // A txn request increments the revision of the key-value store
   // and generates events with the same revision for every completed request.
-  // It is not allowed to modify the same key several times within one txn.
   rpc Txn(KVTxnRequest) returns (KVTxnResponse) {
     option (google.api.http) = {
       post: "/v1/stores/{header.store}/partitions/{header.partition}/transactions"
@@ -97,15 +99,15 @@ message PartitionRequestHeader {
 message ResponseHeader {
   // member_id is the ID of the member which sent the response.
   uint64 member_id = 1;
-  // revision is the key-value store revision when the request was applied.
-  // For watch progress responses, the header.revision indicates progress. All future events
-  // recieved in this stream are guaranteed to have a higher revision number than the
-  // header.revision number.
-  int64 revision = 2;
 }
 
-message KVSelection {
-  repeated KVPredicate predicates = 1;
+enum Field {
+  VERSION = 0;
+  CREATE = 1;
+  MOD = 2;
+  VALUE = 3;
+  LEASE = 4;
+  KEY = 5;
 }
 
 message KVPredicate {
@@ -124,15 +126,6 @@ message KVPredicate {
     // <=
     LTE = 5;
     STARTS_WITH = 6;
-  }
-
-  enum Field {
-    VERSION = 0;
-    CREATE = 1;
-    MOD = 2;
-    VALUE = 3;
-    LEASE = 4;
-    KEY = 5;
   }
 
   // operator is the logical comparison operation for this comparison.
@@ -154,17 +147,9 @@ message KVQueryRequest {
     DESC = 2; // highest target value first
   }
 
-  enum SortTarget {
-    KEY = 0;
-    VERSION = 1;
-    CREATE = 2;
-    MOD = 3;
-    VALUE = 4;
-  }
-
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // Only keys matching the predicates in the selection will be included in the result
-  KVSelection selection = 2;
+  repeated KVPredicate selection = 2 [(gogoproto.nullable) = false];
   // Use after to get the next page of results by inserting the after cursor from the
   // previous page.
   string after = 3;
@@ -178,7 +163,7 @@ message KVQueryRequest {
   // sort_order is the order for returned sorted results.
   SortOrder sort_order = 6;
   // sort_target is the key-value field to use for sorting.
-  SortTarget sort_target = 7;
+  Field sort_target = 7;
   // serializable sets the range request to use serializable member-local reads.
   // Range requests are linearizable by default; linearizable requests have higher
   // latency and lower throughput than serializable requests but reflect the current
@@ -193,14 +178,10 @@ message KVQueryRequest {
   bool include_count = 10;
 }
 
-message KVQueryCursor {
-
-}
-
 message KVQueryResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
   // kvs is the list of key-value pairs matched by the query.
-  repeated KeyValue kvs = 2;
+  repeated KeyValue kvs = 2 [(gogoproto.nullable) = false];
   // more indicates if there are more keys matching the query.
   bool more = 3;
   // after is a cursor that can be used in to get the next page
@@ -211,9 +192,9 @@ message KVQueryResponse {
 }
 
 message KVPutRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // Only keys matching the predicates in the selection will be updated
-  KVSelection selection = 2;
+  repeated KVPredicate selection = 2 [(gogoproto.nullable) = false];
   // key is the key, in bytes, to create or update. Selection is ignored
   // if key is specified
   bytes key = 3;
@@ -234,26 +215,26 @@ message KVPutRequest {
 }
 
 message KVPutResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
   // if prev_kv is set in the request, the previous key-value pairs will be returned.
-  repeated KeyValue prev_kvs = 2;
+  repeated KeyValue prev_kvs = 2 [(gogoproto.nullable) = false];
 }
 
 message KVDeleteRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // Only keys matching the predicates in the selection will be deleted
-  KVSelection selection = 2;
+  repeated KVPredicate selection = 2 [(gogoproto.nullable) = false];
   // If prev_kv is set, ptarmigan gets the previous key-value pairs before deleting it.
   // The previous key-value pairs will be returned in the delete response.
   bool prev_kv = 3;
 }
 
 message KVDeleteResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
   // deleted is the number of keys deleted by the delete range request.
   int64 deleted = 2;
   // if prev_kv is set in the request, the previous key-value pairs will be returned.
-  repeated KeyValue prev_kvs = 3;
+  repeated KeyValue prev_kvs = 3 [(gogoproto.nullable) = false];
 }
 
 message KVRequestOp {
@@ -280,16 +261,16 @@ message KVResponseOp {
 // or universal quantifier for range of keys.
 message Condition {
   enum Quantifier {
-    EXISTS = 0;
-    FOR_ALL = 1;
+    FOR_ALL = 0;
+    EXISTS = 1;
   }
 
   // domain describes the set of keys which form the range
   // of quantification.
-  KVSelection domain = 1;
+  repeated KVPredicate domain = 1 [(gogoproto.nullable) = false];
   // predicate describes a condition which must hold for some
   // number of keys in the domain.
-  KVPredicate predicate = 2;
+  KVPredicate predicate = 2 [(gogoproto.nullable) = false];
   // quantifier adjusts how many keys in the domain must match
   // the predicate. 
   // quantifier < 0 means "for all": for all keys in the domain the predicate must hold
@@ -297,58 +278,39 @@ message Condition {
   Quantifier quantifier = 3;
 }
 
-// From google paxosdb paper:
-// Our implementation hinges around a powerful primitive which we call MultiOp. All other database
-// operations except for iteration are implemented as a single call to MultiOp. A MultiOp is applied atomically
-// and consists of three components:
-// 1. A list of tests called guard. Each test in guard checks a single entry in the database. It may check
-// for the absence or presence of a value, or compare with a given value. Two different tests in the guard
-// may apply to the same or different entries in the database. All tests in the guard are applied and
-// MultiOp returns the results. If all tests are true, MultiOp executes t op (see item 2 below), otherwise
-// it executes f op (see item 3 below).
-// 2. A list of database operations called t op. Each operation in the list is either an insert, delete, or
-// lookup operation, and applies to a single database entry. Two different operations in the list may apply
-// to the same or different entries in the database. These operations are executed
-// if guard evaluates to
-// true.
-// 3. A list of database operations called f op. Like t op, but executed if guard evaluates to false.
 message KVTxnRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // conditions is a list of predicates representing a conjunction of terms.
   // If all conditions are true, then the success requests will be processed in order,
   // and the response will contain their respective responses in order.
   // If one or more conditions are false, then the failure requests will be processed in order,
   // and the response will contain their respective responses in order.
-  repeated Condition conditions = 2;
+  repeated Condition conditions = 2 [(gogoproto.nullable) = false];
   // success is a list of requests which will be applied when compare evaluates to true.
-  repeated KVRequestOp success = 3;
+  repeated KVRequestOp success = 3 [(gogoproto.nullable) = false];
   // failure is a list of requests which will be applied when compare evaluates to false.
-  repeated KVRequestOp failure = 4;
+  repeated KVRequestOp failure = 4 [(gogoproto.nullable) = false];
 }
 
 message KVTxnResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
   // succeeded is set to true if the compare evaluated to true or false otherwise.
   bool succeeded = 2;
   // responses is a list of responses corresponding to the results from applying
   // success if succeeded is true or failure if succeeded is false.
-  repeated KVResponseOp responses = 3;
+  repeated KVResponseOp responses = 3 [(gogoproto.nullable) = false];
 }
 
 // CompactionRequest compacts the key-value store up to a given revision. All superseded keys
 // with a revision less than the compaction revision will be removed.
 message KVCompactionRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // revision is the key-value store revision for the compaction operation.
   int64 revision = 2;
-  // physical is set so the RPC will wait until the compaction is physically
-  // applied to the local database such that compacted entries are totally
-  // removed from the backend database.
-  bool physical = 3;
 }
 
 message KVCompactionResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
 }
 
 message KVWatchCursor {
@@ -376,11 +338,11 @@ message KeyRange {
 }
 
 message KVWatchRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // start is an optional cursor to watch from (exclusive). No start is "now".
-  KVWatchCursor start = 2;
+  KVWatchCursor start = 2 [(gogoproto.nullable) = false];
   // Selection of keys to watch
-  KeyRange keys = 3;
+  KeyRange keys = 3 [(gogoproto.nullable) = false];
   // progress_notify is set so that the ptarmigan server will periodically send a WatchResponse with
   // no events to the new watcher if there are no recent events. It is useful when clients
   // wish to recover a disconnected watcher starting from a recent known revision.
@@ -396,7 +358,7 @@ message KVWatchRequest {
 }
 
 message KVWatchResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
   // Indicates that the watch request tried watching from a
   // compacted revision. The client should treat the watcher
   // as canceled and should not try to create any watcher with
@@ -410,64 +372,64 @@ message KVWatchResponse {
   // was canceled due to compaction this cursor is not valid
   // Use of an after cursor from a compacted revision will
   // result in another canceled watch request.
-  KVWatchCursor after = 4;
+  KVWatchCursor after = 4 [(gogoproto.nullable) = false];
   // Events contains a list of events ordered by
   // by [revision,key]. There may be events from several different
   // revisions in the events list, but events from older revisions
   // will appear first.
-  repeated Event events = 11;
+  repeated Event events = 11 [(gogoproto.nullable) = false];
 }
 
 message LeaseGrantRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // TTL is the advisory time-to-live in seconds. Expired lease will return -1.
   int64 TTL = 2;
 }
 
 message LeaseGrantResponse {
-  ResponseHeader header = 1;
-  Lease lease = 2;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  Lease lease = 2 [(gogoproto.nullable) = false];
 }
 
 message LeaseRevokeRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
   int64 ID = 2;
 }
 
 message LeaseRevokeResponse {
-  ResponseHeader header = 1;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
 }
 
 message LeaseRenewRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // ID is the lease ID for the lease to keep alive.
   int64 ID = 2;
 }
 
 message LeaseRenewResponse {
-  ResponseHeader header = 1;
-  Lease lease = 2;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  Lease lease = 2 [(gogoproto.nullable) = false];
 }
 
 message LeaseGetRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
   // ID is the lease ID for the lease.
   int64 ID = 2;
 }
 
 message LeaseGetResponse {
-  ResponseHeader header = 1;
-  Lease lease = 2;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  Lease lease = 2 [(gogoproto.nullable) = false];
 }
 
 message LeaseQueryRequest {
-  PartitionRequestHeader header = 1;
+  PartitionRequestHeader header = 1 [(gogoproto.nullable) = false];
 }
 
 message LeaseQueryResponse {
-  ResponseHeader header = 1;
-  repeated Lease leases = 2;
+  ResponseHeader header = 1 [(gogoproto.nullable) = false];
+  repeated Lease leases = 2 [(gogoproto.nullable) = false];
 }
 
 message KeyValue {
@@ -503,7 +465,7 @@ message Event {
   // A PUT event with kv.Version=1 indicates the creation of a key.
   // A DELETE/EXPIRE event contains the deleted key with
   // its modification revision set to the revision of deletion.
-  KeyValue kv = 2;
+  KeyValue kv = 2 [(gogoproto.nullable) = false];
   // prev_kv holds the key-value pair before the event happens.
   KeyValue prev_kv = 3;
 }
@@ -515,9 +477,4 @@ message Lease {
   int64 TTL = 3;
   // GrantedTTL is the initial granted time in seconds upon lease creation/renewal.
   int64 grantedTTL = 4;
-}
-
-message RaftStatus {
-  uint64 raft_term = 1;
-  uint64 raft_index = 2;
 }

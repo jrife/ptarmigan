@@ -283,7 +283,7 @@ func (replicaStore *replicaStore) Query(ctx context.Context, q ptarmiganpb.KVQue
 	})
 
 	if err == mvcc.ErrNoRevisions && q.Revision == mvcc.RevisionNewest {
-		response = ptarmiganpb.KVQueryResponse{Kvs: []*ptarmiganpb.KeyValue{}}
+		response = ptarmiganpb.KVQueryResponse{Kvs: []ptarmiganpb.KeyValue{}}
 		err = nil
 	}
 
@@ -298,10 +298,6 @@ func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb
 	logger.Debug("start", zap.Any("watch", watch))
 
 	var response []ptarmiganpb.Event = []ptarmiganpb.Event{}
-
-	if watch.Start == nil {
-		watch.Start = &ptarmiganpb.KVWatchCursor{Revision: mvcc.RevisionOldest}
-	}
 
 	err := replicaStore.read(func(transaction mvcc.Transaction) error {
 		view, err := transaction.View(watch.Start.Revision)
@@ -322,7 +318,7 @@ func (replicaStore *replicaStore) Changes(ctx context.Context, watch ptarmiganpb
 			}
 
 			// clear after the first revision since now we just advance one by one
-			watch.Start = nil
+			watch.Start.Key = nil
 			view, err = transaction.View(view.Revision() + 1)
 
 			if err != nil {
@@ -426,12 +422,16 @@ func (update *update) RevokeLease(ctx context.Context, id int64) error {
 
 		var revision mvcc.Revision
 		_, revision, err = update.executeTxnOp(update.logger, transaction, view, nil, ptarmiganpb.KVTxnRequest{
-			Success: []*ptarmiganpb.KVRequestOp{
+			Success: []ptarmiganpb.KVRequestOp{
 				{
 					Request: &ptarmiganpb.KVRequestOp_RequestDelete{
 						RequestDelete: &ptarmiganpb.KVDeleteRequest{
-							Selection: &ptarmiganpb.KVSelection{
-								Lease: id,
+							Selection: []ptarmiganpb.KVPredicate{
+								{
+									Operator: ptarmiganpb.EQUAL,
+									Field:    ptarmiganpb.LEASE,
+									Value:    &ptarmiganpb.KVPredicate_Int64{Int64: id},
+								},
 							},
 						},
 					},

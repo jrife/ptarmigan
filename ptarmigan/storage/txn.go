@@ -1,9 +1,7 @@
 package storage
 
 import (
-	"bytes"
 	"context"
-	"crypto/md5"
 	"fmt"
 
 	"github.com/jrife/flock/ptarmigan/server/ptarmiganpb"
@@ -49,8 +47,8 @@ func (update *update) executeTxnOp(logger *zap.Logger, transaction mvcc.Transact
 
 	success := true
 
-	for i, compare := range r.Compare {
-		ok, err := checkCondition(logger, view, compare)
+	for i, condition := range r.Conditions {
+		ok, err := checkCondition(logger, view, condition)
 
 		logger.Debug("compared condition", zap.Int("i", i), zap.Bool("ok", ok), zap.Error(err))
 
@@ -66,7 +64,7 @@ func (update *update) executeTxnOp(logger *zap.Logger, transaction mvcc.Transact
 
 	response.Succeeded = success
 
-	var ops []*ptarmiganpb.KVRequestOp
+	var ops []ptarmiganpb.KVRequestOp
 
 	logger.Debug("compare result", zap.Bool("success", success))
 
@@ -88,18 +86,22 @@ func (update *update) executeTxnOp(logger *zap.Logger, transaction mvcc.Transact
 	return response, revision, nil
 }
 
-func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Compare) (bool, error) {
-	if compare == nil || view == nil {
-		return true, nil
+func checkCondition(logger *zap.Logger, view mvcc.View, condition ptarmiganpb.Condition) (bool, error) {
+	if view == nil {
+		return condition.Quantifier != ptarmiganpb.EXISTS, nil
 	}
 
-	iter, err := kvMapReader(view).Keys(selectionRange(compare.Selection), kv.SortOrderAsc)
+	kr := selectionRange(condition.Domain)
+
+	logger.Debug("check condition", zap.Any("condition", condition), zap.Any("key range", kr))
+
+	iter, err := kvMapReader(view).Keys(kr, kv.SortOrderAsc)
 
 	if err != nil {
 		return false, fmt.Errorf("could not create keys iterator: %s", err)
 	}
 
-	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(compare.Selection))
+	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(condition.Domain))
 
 	for selection.Next() {
 		key := selection.Value().(kv_marshaled.KV).Key()
@@ -108,8 +110,14 @@ func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Com
 
 		logger.Debug("next KeyValue", zap.Any("value", kv))
 
-		if !checkPredicate(kv, compare.Predicate) {
-			return false, nil
+		if condition.Quantifier == ptarmiganpb.EXISTS {
+			if kvMatchesPredicate(kv, condition.Predicate, false) {
+				return true, nil
+			}
+		} else {
+			if !kvMatchesPredicate(kv, condition.Predicate, false) {
+				return false, nil
+			}
 		}
 	}
 
@@ -117,67 +125,11 @@ func checkCondition(logger *zap.Logger, view mvcc.View, compare *ptarmiganpb.Com
 		return false, fmt.Errorf("iteration error: %s", err)
 	}
 
-	return true, nil
+	return condition.Quantifier != ptarmiganpb.EXISTS, nil
 }
 
-func checkPredicate(kv ptarmiganpb.KeyValue, predicate *ptarmiganpb.KVPredicate) bool {
-	if predicate == nil {
-		return true
-	}
-
-	switch predicate.Target {
-	case ptarmiganpb.KVPredicate_CREATE:
-		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_CreateRevision); !ok {
-			return false
-		}
-
-		return checkIntPredicate(kv.CreateRevision, predicate.GetCreateRevision(), predicate.Comparison)
-	case ptarmiganpb.KVPredicate_VERSION:
-		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_Version); !ok {
-			return false
-		}
-
-		return checkIntPredicate(kv.Version, predicate.GetVersion(), predicate.Comparison)
-	case ptarmiganpb.KVPredicate_MOD:
-		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_ModRevision); !ok {
-			return false
-		}
-
-		return checkIntPredicate(kv.ModRevision, predicate.GetModRevision(), predicate.Comparison)
-	case ptarmiganpb.KVPredicate_LEASE:
-		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_Lease); !ok {
-			return false
-		}
-
-		return checkIntPredicate(kv.Lease, predicate.GetLease(), predicate.Comparison)
-	case ptarmiganpb.KVPredicate_VALUE:
-		if _, ok := predicate.TargetUnion.(*ptarmiganpb.KVPredicate_Value); !ok {
-			return false
-		}
-
-		return checkIntPredicate(int64(bytes.Compare(kv.Value, predicate.GetValue())), 0, predicate.Comparison)
-	}
-
-	return false
-}
-
-func checkIntPredicate(a, b int64, comparison ptarmiganpb.KVPredicate_Comparison) bool {
-	switch comparison {
-	case ptarmiganpb.KVPredicate_EQUAL:
-		return a == b
-	case ptarmiganpb.KVPredicate_NOT_EQUAL:
-		return a != b
-	case ptarmiganpb.KVPredicate_GREATER:
-		return a > b
-	case ptarmiganpb.KVPredicate_LESS:
-		return a < b
-	}
-
-	return false
-}
-
-func (update *update) executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, ops []*ptarmiganpb.KVRequestOp) ([]*ptarmiganpb.KVResponseOp, mvcc.Revision, error) {
-	responses := make([]*ptarmiganpb.KVResponseOp, len(ops))
+func (update *update) executeOps(logger *zap.Logger, transaction mvcc.Transaction, view mvcc.View, revision mvcc.Revision, ops []ptarmiganpb.KVRequestOp) ([]ptarmiganpb.KVResponseOp, mvcc.Revision, error) {
+	responses := make([]ptarmiganpb.KVResponseOp, len(ops))
 
 	for i, op := range ops {
 		var responseOp ptarmiganpb.KVResponseOp
@@ -242,7 +194,7 @@ func (update *update) executeOps(logger *zap.Logger, transaction mvcc.Transactio
 				ResponsePut: &r,
 			}
 		case *ptarmiganpb.KVRequestOp_RequestQuery:
-			var r ptarmiganpb.KVQueryResponse = ptarmiganpb.KVQueryResponse{Kvs: []*ptarmiganpb.KeyValue{}}
+			var r ptarmiganpb.KVQueryResponse = ptarmiganpb.KVQueryResponse{Kvs: []ptarmiganpb.KeyValue{}}
 			var queryView mvcc.View
 			var err error
 
@@ -295,7 +247,7 @@ func (update *update) executeOps(logger *zap.Logger, transaction mvcc.Transactio
 			logger.Debug("unrecognized transaction op type", zap.Int("i", i))
 		}
 
-		responses[i] = &responseOp
+		responses[i] = responseOp
 	}
 
 	return responses, revision, nil
@@ -305,16 +257,20 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 	var response ptarmiganpb.KVDeleteResponse
 
 	if r.PrevKv {
-		response.PrevKvs = []*ptarmiganpb.KeyValue{}
+		response.PrevKvs = []ptarmiganpb.KeyValue{}
 	}
 
-	iter, err := kvMapReader(revision).Keys(selectionRange(r.Selection), kv.SortOrderAsc)
+	kr := selectionRange(r.Selection)
+
+	logger.Debug("delete", zap.Any("key range", kr))
+
+	iter, err := kvMapReader(revision).Keys(kr, kv.SortOrderAsc)
 
 	if err != nil {
 		return ptarmiganpb.KVDeleteResponse{}, fmt.Errorf("could not create keys iterator: %s", err)
 	}
 
-	selection := stream.Pipeline(kv_marshaled.Stream(iter), selection(r.Selection))
+	selection := stream.Pipeline(kv_marshaled.Stream(iter), stream.Log(logger), selection(r.Selection))
 
 	for selection.Next() {
 		key := selection.Value().(kv_marshaled.KV).Key()
@@ -323,12 +279,10 @@ func executeDeleteOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.K
 
 		if r.PrevKv {
 			kv.Key = copy(key)
-			response.PrevKvs = append(response.PrevKvs, &kv)
+			response.PrevKvs = append(response.PrevKvs, kv)
 		}
 
 		logger.Debug("delete KV", zap.Binary("key", key), zap.Any("old", kv))
-
-		fmt.Printf("%d: Delete %x %#v\n", revision.Revision(), md5.Sum(key), key)
 
 		if err := revision.Delete(key); err != nil {
 			return ptarmiganpb.KVDeleteResponse{}, fmt.Errorf("could not delete key %#v: %s", kv.Key, err)
@@ -346,7 +300,7 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 	var response ptarmiganpb.KVPutResponse
 
 	if r.PrevKv {
-		response.PrevKvs = []*ptarmiganpb.KeyValue{}
+		response.PrevKvs = []ptarmiganpb.KeyValue{}
 	}
 
 	if len(r.Key) != 0 {
@@ -357,7 +311,7 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 		v, err := kvMapReader(revision).Get(r.Key)
 
 		if err != nil {
-			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not get key %#v: %s", r.Selection.Key, err)
+			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not get key %#v: %s", r.Key, err)
 		}
 
 		var kv ptarmiganpb.KeyValue
@@ -367,7 +321,7 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 			kv.Key = r.Key
 
 			if r.PrevKv {
-				response.PrevKvs = append(response.PrevKvs, &kv)
+				response.PrevKvs = append(response.PrevKvs, kv)
 			}
 		} else {
 			kv.CreateRevision = revision.Revision()
@@ -377,7 +331,6 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 
 		logger.Debug("new KV", zap.Any("value", newKV))
 
-		fmt.Printf("%d: Put %x %#v\n", revision.Revision(), md5.Sum(r.Key), r.Key)
 		if err := kvMap(revision).Put(r.Key, &newKV); err != nil {
 			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", kv.Key, err)
 		}
@@ -400,11 +353,10 @@ func executePutOp(logger *zap.Logger, revision mvcc.Revision, r ptarmiganpb.KVPu
 
 		if r.PrevKv {
 			kv.Key = copy(key)
-			response.PrevKvs = append(response.PrevKvs, &kv)
+			response.PrevKvs = append(response.PrevKvs, kv)
 		}
 
 		logger.Debug("update KV", zap.Binary("key", key), zap.Any("new", newKV), zap.Any("old", kv))
-		fmt.Printf("%d: Put %x %#v\n", revision.Revision(), md5.Sum(key), key)
 
 		if err := kvMap(revision).Put(key, &newKV); err != nil {
 			return ptarmiganpb.KVPutResponse{}, fmt.Errorf("could not update key %#v: %s", key, err)

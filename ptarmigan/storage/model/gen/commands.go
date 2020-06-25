@@ -68,10 +68,10 @@ func (command txnCommand) PostCondition(state commands.State, result commands.Re
 func (command txnCommand) String() string {
 	str := "Txn("
 
-	if command.txnRequest.Compare != nil {
-		str += "\n  Compare(\n"
+	if command.txnRequest.Conditions != nil {
+		str += "\n  Conditions(\n"
 
-		for i, compare := range command.txnRequest.Compare {
+		for i, compare := range command.txnRequest.Conditions {
 			str += fmt.Sprintf("    %d: %s\n", i, compare.String())
 		}
 

@@ -1,7 +1,6 @@
 package mvcc_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -350,12 +349,6 @@ func testTransactionView(builder tempStoreBuilder, t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			defer func() {
-				if r := recover(); r != nil {
-					fmt.Printf("recovered %#v\n", r)
-				}
-			}()
-
 			store := builder(t, testCase.initialState)
 
 			txn, err := store.Partition(testCase.name).Begin(false)
