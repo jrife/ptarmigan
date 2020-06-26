@@ -1,0 +1,422 @@
+syntax = "proto3";
+package flockpb;
+option go_package = "github.com/jrife/flock/transport/flockpb";
+
+// Model definitions only here (to be used by other transports)
+import "github.com/coreos/etcd/raft/raftpb/raft.proto";
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+// Controller Logic:
+// 1) Create lease and peridically renew. (30 second TTL)
+// 2) Try to create leader key with your lease ID.
+// 3) If leader key has a different lease ID step down and stop control loop until another election when we might become leader
+// 4) Each transaction has a guard ensuring that you're still the leader (check if leader key's lease field = your lease ID)
+//    If the current leader doesn't know it has been replaced this guard ensures it cant effect change.
+// Multiple controllers may attempt to become leader but only one will win
+// Mapping this to a REST API:
+// 
+
+service StorageClasses {
+  // Query queries the collection of storage classes
+  rpc Query(StorageClassesQueryRequest) returns (StorageClassesQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/storage-classes"
+    };
+  }
+
+  // Create registers a storage class
+  rpc Create(StorageClassesCreateRequest) returns (StorageClassesCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/storage-classes"
+      body: "*"
+    };
+  }
+
+  // Update updates a storage class
+  rpc Update(StorageClassesUpdateRequest) returns (StorageClassesUpdateResponse) {
+    option (google.api.http) = {
+      put: "/v1/storage-classes/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete deregisters a storage class
+  rpc Delete(StorageClassesDeleteRequest) returns (StorageClassesDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/storage-classes/{id}"
+      body: "*"
+    };
+  }
+
+  // Watch watches the collection of storage classes for changes
+  rpc Watch(StorageClassesWatchRequest) returns (stream StorageClassesWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/storage-classes-watchers"
+      body: "*"
+    };
+  }
+}
+
+service StorageHosts {
+  // Query queries the collection of storage hosts
+  rpc Query(StorageHostsQueryRequest) returns (StorageHostsQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/storage-hosts"
+    };
+  }
+
+  // Create adds a storage host
+  rpc Create(StorageHostsCreateRequest) returns (StorageHostsCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/storage-hosts"
+      body: "*"
+    };
+  }
+
+  // Update updates a storage host
+  rpc Update(StorageHostsUpdateRequest) returns (StorageHostsUpdateResponse) {
+    option (google.api.http) = {
+      put: "/v1/storage-hosts/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete removes a storage host
+  rpc Delete(StorageHostsDeleteRequest) returns (StorageHostsDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/storage-hosts/{id}"
+      body: "*"
+    };
+  }
+
+  // Watch watches the collection of storage hosts for changes
+  rpc Watch(StorageHostsWatchRequest) returns (stream StorageHostsWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/storage-hosts-watchers"
+      body: "*"
+    };
+  }
+}
+
+service Stores {
+  // Query queries the collection of stores
+  rpc Query(StoresQueryRequest) returns (StoresQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/stores"
+    };
+  }
+
+  // Create creates a store
+  rpc Create(StoresCreateRequest) returns (StoresCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores"
+      body: "*"
+    };
+  }
+
+  // Update updates a store
+  rpc Update(StoresUpdateRequest) returns (StoresUpdateResponse) {
+    option (google.api.http) = {
+      put: "/v1/stores/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete deletes a store
+  rpc Delete(StoresDeleteRequest) returns (StoresDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores/{id}"
+      body: "*"
+    };
+  }
+
+  // Watch watches the collection of stores for changes
+  rpc Watch(StoresWatchRequest) returns (stream StoresWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/stores-watchers"
+      body: "*"
+    };
+  }
+}
+
+service Partitions {
+  // Query queries the collection of partitions
+  rpc Query(PartitionsQueryRequest) returns (PartitionsQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/partitions"
+    };
+  }
+
+  // Create creates a partition
+  rpc Create(PartitionsCreateRequest) returns (PartitionsCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/partitions"
+      body: "*"
+    };
+  }
+
+  // Update updates a partition
+  rpc Update(PartitionsUpdateRequest) returns (PartitionsUpdateResponse) {
+    option (google.api.http) = {
+      put: "/v1/partitions/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete deletes a partition
+  rpc Delete(PartitionsDeleteRequest) returns (PartitionsDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/partitions/{id}"
+      body: "*"
+    };
+  }
+
+  // Watch watches the collection of partitions for changes
+  rpc Watch(PartitionsWatchRequest) returns (stream PartitionsWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/partitions-watchers"
+      body: "*"
+    };
+  }
+}
+
+service Replicas {
+  // Query queries the collection of replicas
+  rpc Query(ReplicasQueryRequest) returns (ReplicasQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/replicas"
+    };
+  }
+
+  // Create creates a replica
+  rpc Create(ReplicasCreateRequest) returns (ReplicasCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/replicas"
+      body: "*"
+    };
+  }
+
+  // Update updates a replica
+  rpc Update(ReplicasUpdateRequest) returns (ReplicasUpdateResponse) {
+    option (google.api.http) = {
+      put: "/v1/replicas/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete deletes a replica
+  rpc Delete(ReplicasDeleteRequest) returns (ReplicasDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/replicas/{id}"
+      body: "*"
+    };
+  }
+
+  // Watch watches the collection of replicas for changes
+  rpc Watch(ReplicasWatchRequest) returns (stream ReplicasWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/replicas-watchers"
+      body: "*"
+    };
+  }
+}
+
+service RaftGroups {
+  // Query queries the collection of raft groups
+  rpc Query(RaftGroupsQueryRequest) returns (RaftGroupsQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/raft-groups"
+    };
+  }
+
+  // Create creates a raft group
+  rpc Create(RaftGroupsCreateRequest) returns (RaftGroupsCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/raft-groups"
+      body: "*"
+    };
+  }
+
+  // Update updates a raft group
+  rpc Update(RaftGroupsUpdateRequest) returns (RaftGroupsUpdateResponse) {
+    option (google.api.http) = {
+      put: "/v1/raft-groups/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete deletes a raft group
+  rpc Delete(RaftGroupsDeleteRequest) returns (RaftGroupsDeleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/raft-groups/{id}"
+      body: "*"
+    };
+  }
+
+  // Watch watches the collection of raft groups for changes
+  rpc Watch(RaftGroupsWatchRequest) returns (stream RaftGroupsWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/raft-groups-watchers"
+      body: "*"
+    };
+  }
+}
+
+message Error {
+    enum ErrorCode {
+        ErrNotFound = 0;
+    }
+
+    // Code must be one of the standard error codes
+    ErrorCode code = 1;
+    // Type can be used by a specific service to further discover what went wrong
+    string type = 2;
+    // Message can carry more detail on what the problem is
+    string message = 3;
+}
+
+message Empty {
+}
+
+message Chunk {
+    oneof chunk_data {
+        bytes data = 1;
+        raftpb.Snapshot metadata = 2;
+    }
+}
+
+message RaftEntry {
+    bytes data = 1;
+    string association_id = 2;
+}
+
+message ObjectMetadata {
+    string name = 1;
+    map<string, string> labels = 2;
+}
+
+message StorageClass {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    StorageClassSpec spec = 2 [(gogoproto.nullable) = false];
+    StorageClassStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message StorageClassSpec {
+}
+
+message StorageClassStatus {
+}
+
+message StorageHost {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    StorageHostSpec spec = 2 [(gogoproto.nullable) = false];
+    StorageHostStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message StorageHostSpec {
+    // A list of storage classes that this host provides
+    repeated string storage_classes = 1;
+    // A flag indicating whether or not this host can host raft replicas
+    bool raft_host = 2;
+    // Putting this here so I remember. We should use labels for availability zone indication
+    string availability_zone = 3;
+}
+
+message StorageHostStatus {
+}
+
+message Store {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    StoreSpec spec = 2 [(gogoproto.nullable) = false];
+    StoreStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message StoreSpec {
+    // A reference to the storage class that this store belongs
+    // to
+    string storage_class = 1;
+    // How many replicas should each partition have
+    uint32 replication_factor = 2;
+}
+
+message StoreStatus {
+}
+
+message Partition {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    PartitionSpec spec = 2 [(gogoproto.nullable) = false];
+    PartitionStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message PartitionSpec {
+    // A reference to the store that this belongs to
+    string store = 2;
+    // A reference to the raft group that this is linked to
+    string raft_group = 3;
+    // The number of replicas for this partition.
+    uint32 replication_factor = 4;
+}
+
+message PartitionStatus {
+}
+
+message Replica {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    ReplicaSpec spec = 2 [(gogoproto.nullable) = false];
+    ReplicaStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message ReplicaSpec {
+    // A reference to the partition that this belongs to
+    string partition = 1;
+    // A reference to the raft group replica that this is linked to
+    string raft_group_replica = 2;
+    // A reference to the storage host where this replica should reside
+    string storage_host = 3;
+    string storage_class = 4;
+}
+
+message ReplicaStatus {
+    // A reference to the storage host where this replica actually resides
+    string storage_host = 1;
+}
+
+message RaftGroup {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    RaftGroupSpec spec = 2 [(gogoproto.nullable) = false];
+    RaftGroupStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message RaftGroupSpec {
+    // A reference to the partition that this raft group is linked to
+    string partition = 1;
+    // The number of replicas for this raft group
+    uint32 replication_factor = 2;
+}
+
+message RaftGroupStatus {
+}
+
+message RaftGroupReplica {
+    ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+    RaftGroupReplicaSpec spec = 2 [(gogoproto.nullable) = false];
+    RaftGroupReplicaStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message RaftGroupReplicaSpec {
+    // A reference to the raft group that this belongs to
+    string raft_group = 1;
+    // A reference to the replica that this is linked to
+    string replica = 2;
+    // A reference to the storage host where this replica resides
+    string storage_host = 3;
+}
+
+message RaftGroupReplicaStatus {
+}
