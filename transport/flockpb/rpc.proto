@@ -20,7 +20,94 @@ option (gogoproto.goproto_enum_prefix_all) = false;
 //    If the current leader doesn't know it has been replaced this guard ensures it cant effect change.
 // Multiple controllers may attempt to become leader but only one will win
 // Mapping this to a REST API:
+// Lease:
+//   id: 33
+//   ttl: 30
+//
+// get lease
+// claim lease
+// renew lease
+// reqlinquish lease
+//
+// POST /fencing-tokens { id: 123, ttl: 30, group: "abc" }
+// create
+// GET /fencing-tokens
+// query
+// DELETE /fencing-tokens/{id}
+// delete
+//
+// Under the hood:
+// Leases/<lease_id>
+// Keys/FENCING_TOKENS/<lease_id> // just reuses the lease ID since it's a unique identifier
+//   Lease: <lease_id>
+// each key under /fencingtokens is tied to a lease and so its lifecycle is controlled by the lease
+// but this layer of indirection allows us to use leases for other purposes later on rather than
+// only having one layer (directly using leases to represent our fencing tokens)
 // 
+// GET /fencing-groups
+// GET /fencing-groups/{name}
+// { name: "abc", latest_token: 123 }
+// 
+// /fencing-groups/{name}
+// 
+// Other APIs:
+// POST/PUT /partitions?fencing_group=<group>&fencing_token=<token_id>"
+//
+// Under the hood:
+// Txn:
+//    Conditions:
+//       Domain: Key=FENCING_GROUPS/{group}
+//       Quantifier: EXISTS
+//       Predicate: LEASE={token_id}
+
+service FencingTokens {
+  // Query queries the collection of fencing tokens
+  rpc Query(FencingTokensQueryRequest) returns (FencingTokensQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/fencing-tokens"
+    };
+  }
+
+  // Create creates a fencing token
+  rpc Create(FencingTokensCreateRequest) returns (FencingTokensCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/fencing-tokens"
+      body: "*"
+    };
+  }
+
+  // Delete revokes a fencing token
+  rpc Delete(FencingTokensDeleteRequest) returns (FencingCreateDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/v1/fencing-tokens/{id}"
+    };
+  }
+
+  // Watch watches the collection of fencing tokens
+  rpc Watch(FencingTokensWatchRequest) returns (FencingTokensWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/fencing-tokens-watchers"
+      body: "*"
+    };
+  }
+}
+
+service FencingGroups {
+  // Query queries the collection of fencing groups
+  rpc Query(FencingGroupsQueryRequest) returns (FencingGroupsQueryResponse) {
+    option (google.api.http) = {
+      get: "/v1/fencing-groups"
+    };
+  }
+
+  // Watch watches the collection of fencing groups
+  rpc Watch(FencingGroupsWatchRequest) returns (FencingGroupsWatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/fencing-groups-watchers"
+      body: "*"
+    };
+  }
+}
 
 service StorageClasses {
   // Query queries the collection of storage classes
@@ -49,8 +136,7 @@ service StorageClasses {
   // Delete deregisters a storage class
   rpc Delete(StorageClassesDeleteRequest) returns (StorageClassesDeleteResponse) {
     option (google.api.http) = {
-      post: "/v1/storage-classes/{id}"
-      body: "*"
+      delete: "/v1/storage-classes/{id}"
     };
   }
 
@@ -90,8 +176,7 @@ service StorageHosts {
   // Delete removes a storage host
   rpc Delete(StorageHostsDeleteRequest) returns (StorageHostsDeleteResponse) {
     option (google.api.http) = {
-      post: "/v1/storage-hosts/{id}"
-      body: "*"
+      delete: "/v1/storage-hosts/{id}"
     };
   }
 
@@ -131,8 +216,7 @@ service Stores {
   // Delete deletes a store
   rpc Delete(StoresDeleteRequest) returns (StoresDeleteResponse) {
     option (google.api.http) = {
-      post: "/v1/stores/{id}"
-      body: "*"
+      delete: "/v1/stores/{id}"
     };
   }
 
@@ -172,8 +256,7 @@ service Partitions {
   // Delete deletes a partition
   rpc Delete(PartitionsDeleteRequest) returns (PartitionsDeleteResponse) {
     option (google.api.http) = {
-      post: "/v1/partitions/{id}"
-      body: "*"
+      delete: "/v1/partitions/{id}"
     };
   }
 
@@ -213,8 +296,7 @@ service Replicas {
   // Delete deletes a replica
   rpc Delete(ReplicasDeleteRequest) returns (ReplicasDeleteResponse) {
     option (google.api.http) = {
-      post: "/v1/replicas/{id}"
-      body: "*"
+      delete: "/v1/replicas/{id}"
     };
   }
 
@@ -254,8 +336,7 @@ service RaftGroups {
   // Delete deletes a raft group
   rpc Delete(RaftGroupsDeleteRequest) returns (RaftGroupsDeleteResponse) {
     option (google.api.http) = {
-      post: "/v1/raft-groups/{id}"
-      body: "*"
+      delete: "/v1/raft-groups/{id}"
     };
   }
 
@@ -266,6 +347,222 @@ service RaftGroups {
       body: "*"
     };
   }
+}
+
+message FencingTokensQueryRequest {
+}
+
+message FencingTokensQueryResponse {
+}
+
+message FencingTokensCreateRequest {
+}
+
+message FencingTokensCreateResponse {
+}
+
+message FencingTokensDeleteRequest {
+}
+
+message FencingCreateDeleteResponse {
+}
+
+message FencingTokensWatchRequest {
+}
+
+message FencingTokensWatchResponse {
+}
+
+message FencingGroupsQueryRequest {
+}
+
+message FencingGroupsQueryResponse {
+}
+
+message FencingGroupsWatchRequest {
+}
+
+message FencingGroupsWatchResponse {
+}
+
+message StorageClassesQueryRequest {
+}
+
+message StorageClassesQueryResponse {
+}
+
+message StorageClassesCreateRequest {
+}
+
+message StorageClassesCreateResponse {
+}
+
+message StorageClassesUpdateRequest {
+}
+
+message StorageClassesUpdateResponse {
+}
+
+message StorageClassesDeleteRequest {
+}
+
+message StorageClassesDeleteResponse {
+}
+
+message StorageClassesWatchRequest {
+}
+
+message StorageClassesWatchResponse {
+}
+
+message StorageHostsQueryRequest {
+}
+
+message StorageHostsQueryResponse {
+}
+
+message StorageHostsCreateRequest {
+}
+
+message StorageHostsCreateResponse {
+}
+
+message StorageHostsUpdateRequest {
+}
+
+message StorageHostsUpdateResponse {
+}
+
+message StorageHostsDeleteRequest {
+}
+
+message StorageHostsDeleteResponse {
+}
+
+message StorageHostsWatchRequest {
+}
+
+message StorageHostsWatchResponse {
+}
+
+message StoresQueryRequest {
+}
+
+message StoresQueryResponse {
+}
+
+message StoresCreateRequest {
+}
+
+message StoresCreateResponse {
+}
+
+message StoresUpdateRequest {
+}
+
+message StoresUpdateResponse {
+}
+
+message StoresDeleteRequest {
+}
+
+message StoresDeleteResponse {
+}
+
+message StoresWatchRequest {
+}
+
+message StoresWatchResponse {
+}
+
+message PartitionsQueryRequest {
+}
+
+message PartitionsQueryResponse {
+}
+
+message PartitionsCreateRequest {
+}
+
+message PartitionsCreateResponse {
+}
+
+message PartitionsUpdateRequest {
+}
+
+message PartitionsUpdateResponse {
+}
+
+message PartitionsDeleteRequest {
+}
+
+message PartitionsDeleteResponse {
+}
+
+message PartitionsWatchRequest {
+}
+
+message PartitionsWatchResponse {
+}
+
+message ReplicasQueryRequest {
+}
+
+message ReplicasQueryResponse {
+}
+
+message ReplicasCreateRequest {
+}
+
+message ReplicasCreateResponse {
+}
+
+message ReplicasUpdateRequest {
+}
+
+message ReplicasUpdateResponse {
+}
+
+message ReplicasDeleteRequest {
+}
+
+message ReplicasDeleteResponse {
+}
+
+message ReplicasWatchRequest {
+}
+
+message ReplicasWatchResponse {
+}
+
+message RaftGroupsQueryRequest {
+}
+
+message RaftGroupsQueryResponse {
+}
+
+message RaftGroupsCreateRequest {
+}
+
+message RaftGroupsCreateResponse {
+}
+
+message RaftGroupsUpdateRequest {
+}
+
+message RaftGroupsUpdateResponse {
+}
+
+message RaftGroupsDeleteRequest {
+}
+
+message RaftGroupsDeleteResponse {
+}
+
+message RaftGroupsWatchRequest {
+}
+
+message RaftGroupsWatchResponse {
 }
 
 message Error {
