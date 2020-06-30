@@ -566,36 +566,63 @@ message RaftGroupsWatchResponse {
 }
 
 message Error {
-    enum ErrorCode {
-        ErrNotFound = 0;
-    }
+  enum ErrorCode {
+      ErrNotFound = 0;
+  }
 
-    // Code must be one of the standard error codes
-    ErrorCode code = 1;
-    // Type can be used by a specific service to further discover what went wrong
-    string type = 2;
-    // Message can carry more detail on what the problem is
-    string message = 3;
-}
-
-message Empty {
+  // Code must be one of the standard error codes
+  ErrorCode code = 1;
+  // Type can be used by a specific service to further discover what went wrong
+  string type = 2;
+  // Message can carry more detail on what the problem is
+  string message = 3;
 }
 
 message Chunk {
-    oneof chunk_data {
-        bytes data = 1;
-        raftpb.Snapshot metadata = 2;
-    }
+  oneof chunk_data {
+      bytes data = 1;
+      raftpb.Snapshot metadata = 2;
+  }
 }
 
 message RaftEntry {
-    bytes data = 1;
-    string association_id = 2;
+  bytes data = 1;
+  string association_id = 2;
 }
 
 message ObjectMetadata {
     string name = 1;
     map<string, string> labels = 2;
+}
+
+message FencingToken {
+  ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+  FencingTokenSpec spec = 2 [(gogoproto.nullable) = false];
+  FencingTokenStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message FencingTokenSpec {
+  int64 id = 1;
+  int64 ttl = 2;
+  string group = 3;
+}
+
+message FencingTokenStatus {
+  string expires = 1;
+}
+
+message FencingGroup {
+  ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
+  FencingGroupSpec spec = 2 [(gogoproto.nullable) = false];
+  FencingGroupStatus status = 3 [(gogoproto.nullable) = false];
+}
+
+message FencingGroupSpec {
+  string name = 1;
+}
+
+message FencingGroupStatus {
+  int64 token_id = 1;
 }
 
 message StorageClass {
