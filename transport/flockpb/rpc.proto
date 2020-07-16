@@ -76,8 +76,16 @@ service FencingTokens {
     };
   }
 
+  // Renew renews a fencing token
+  rpc Renew(FencingTokensRenewRequest) returns (FencingTokensRenewResponse) {
+    option (google.api.http) = {
+      post: "/v1/fencing-token/{id}/renewals"
+      body: "*"
+    };
+  }
+
   // Delete revokes a fencing token
-  rpc Delete(FencingTokensDeleteRequest) returns (FencingCreateDeleteResponse) {
+  rpc Delete(FencingTokensDeleteRequest) returns (FencingTokensDeleteResponse) {
     option (google.api.http) = {
       delete: "/v1/fencing-tokens/{id}"
     };
@@ -349,22 +357,47 @@ service RaftGroups {
   }
 }
 
+message Guard {
+  string fencing_group = 1;
+  int64 fencing_token = 2;
+}
+
+message WatchResponse {
+  // Create, Update, Delete
+
+}
+
 message FencingTokensQueryRequest {
+  string id = 1;
+  string group = 2;
 }
 
 message FencingTokensQueryResponse {
+  repeated FencingToken data = 1;
 }
 
 message FencingTokensCreateRequest {
+  FencingToken token = 1;
 }
 
 message FencingTokensCreateResponse {
+  FencingToken token = 1;
+}
+
+message FencingTokensRenewRequest {
+  string id = 1;
+}
+
+message FencingTokensRenewResponse {
+  FencingToken token = 1;
 }
 
 message FencingTokensDeleteRequest {
+  string id = 1;
 }
 
-message FencingCreateDeleteResponse {
+message FencingTokensDeleteResponse {
+  FencingToken token = 1;
 }
 
 message FencingTokensWatchRequest {
@@ -386,215 +419,243 @@ message FencingGroupsWatchResponse {
 }
 
 message StorageClassesQueryRequest {
+  Guard guard = 1;
+  string name = 2;
+  int64 version = 3;
 }
 
 message StorageClassesQueryResponse {
+  repeated StorageClass data = 1;
 }
 
 message StorageClassesCreateRequest {
+  Guard guard = 1;
+  StorageClass storage_class = 2;
 }
 
 message StorageClassesCreateResponse {
+  StorageClass storage_class = 1;
 }
 
 message StorageClassesUpdateRequest {
+  Guard guard = 1;
+  StorageClass body = 2;
 }
 
 message StorageClassesUpdateResponse {
+  StorageClass body = 1;
 }
 
 message StorageClassesDeleteRequest {
+  Guard guard = 1;
+  string name = 2;
 }
 
 message StorageClassesDeleteResponse {
+  StorageClass body = 1;
 }
 
 message StorageClassesWatchRequest {
+  Guard guard = 1;
 }
 
 message StorageClassesWatchResponse {
 }
 
 message StorageHostsQueryRequest {
+  Guard guard = 1;
+  string storage_classes = 2;
+  bool raft_host = 3;
+  string availability_zone = 4;
 }
 
 message StorageHostsQueryResponse {
+  repeated StorageHost data = 1;
 }
 
 message StorageHostsCreateRequest {
+  Guard guard = 1;
+  StorageHost storage_host = 2;
 }
 
 message StorageHostsCreateResponse {
+  StorageHost storage_host = 1;
 }
 
 message StorageHostsUpdateRequest {
+  Guard guard = 1;
+  StorageHost storage_host = 2;
 }
 
 message StorageHostsUpdateResponse {
+  StorageHost storage_host = 1;
 }
 
 message StorageHostsDeleteRequest {
+  Guard guard = 1;
+  string name = 2;
 }
 
 message StorageHostsDeleteResponse {
+  StorageHost storage_host = 1;
 }
 
 message StorageHostsWatchRequest {
+  Guard guard = 1;
 }
 
 message StorageHostsWatchResponse {
 }
 
 message StoresQueryRequest {
+  Guard guard = 1;
 }
 
 message StoresQueryResponse {
 }
 
 message StoresCreateRequest {
+  Guard guard = 1;
 }
 
 message StoresCreateResponse {
 }
 
 message StoresUpdateRequest {
+  Guard guard = 1;
 }
 
 message StoresUpdateResponse {
 }
 
 message StoresDeleteRequest {
+  Guard guard = 1;
 }
 
 message StoresDeleteResponse {
 }
 
 message StoresWatchRequest {
+  Guard guard = 1;
 }
 
 message StoresWatchResponse {
 }
 
 message PartitionsQueryRequest {
+  Guard guard = 1;
 }
 
 message PartitionsQueryResponse {
 }
 
 message PartitionsCreateRequest {
+  Guard guard = 1;
 }
 
 message PartitionsCreateResponse {
 }
 
 message PartitionsUpdateRequest {
+  Guard guard = 1;
 }
 
 message PartitionsUpdateResponse {
 }
 
 message PartitionsDeleteRequest {
+  Guard guard = 1;
 }
 
 message PartitionsDeleteResponse {
 }
 
 message PartitionsWatchRequest {
+  Guard guard = 1;
 }
 
 message PartitionsWatchResponse {
 }
 
 message ReplicasQueryRequest {
+  Guard guard = 1;
 }
 
 message ReplicasQueryResponse {
 }
 
 message ReplicasCreateRequest {
+  Guard guard = 1;
 }
 
 message ReplicasCreateResponse {
 }
 
 message ReplicasUpdateRequest {
+  Guard guard = 1;
 }
 
 message ReplicasUpdateResponse {
 }
 
 message ReplicasDeleteRequest {
+  Guard guard = 1;
 }
 
 message ReplicasDeleteResponse {
 }
 
 message ReplicasWatchRequest {
+  Guard guard = 1;
 }
 
 message ReplicasWatchResponse {
 }
 
 message RaftGroupsQueryRequest {
+  Guard guard = 1;
 }
 
 message RaftGroupsQueryResponse {
 }
 
 message RaftGroupsCreateRequest {
+  Guard guard = 1;
 }
 
 message RaftGroupsCreateResponse {
 }
 
 message RaftGroupsUpdateRequest {
+  Guard guard = 1;
 }
 
 message RaftGroupsUpdateResponse {
 }
 
 message RaftGroupsDeleteRequest {
+  Guard guard = 1;
 }
 
 message RaftGroupsDeleteResponse {
 }
 
 message RaftGroupsWatchRequest {
+  Guard guard = 1;
 }
 
 message RaftGroupsWatchResponse {
 }
 
-message Error {
-  enum ErrorCode {
-      ErrNotFound = 0;
-  }
-
-  // Code must be one of the standard error codes
-  ErrorCode code = 1;
-  // Type can be used by a specific service to further discover what went wrong
-  string type = 2;
-  // Message can carry more detail on what the problem is
-  string message = 3;
-}
-
-message Chunk {
-  oneof chunk_data {
-      bytes data = 1;
-      raftpb.Snapshot metadata = 2;
-  }
-}
-
-message RaftEntry {
-  bytes data = 1;
-  string association_id = 2;
-}
-
 message ObjectMetadata {
     string name = 1;
     map<string, string> labels = 2;
+    int64 version = 3;
 }
 
+// First phase:
+// Implement raft group scheduling
+// Requires FencingToken, StorageHost, RaftGroup, RaftGroupReplica and associated services
 message FencingToken {
   ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
   FencingTokenSpec spec = 2 [(gogoproto.nullable) = false];
@@ -637,6 +698,8 @@ message StorageClassSpec {
 message StorageClassStatus {
 }
 
+// Controllers use the storage hosts collection in their decision
+// of where to place replicas
 message StorageHost {
     ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
     StorageHostSpec spec = 2 [(gogoproto.nullable) = false];
@@ -655,6 +718,8 @@ message StorageHostSpec {
 message StorageHostStatus {
 }
 
+// Stores describe the specification for various
+// distributed stores.
 message Store {
     ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
     StoreSpec spec = 2 [(gogoproto.nullable) = false];
@@ -672,6 +737,9 @@ message StoreSpec {
 message StoreStatus {
 }
 
+// Partitions describe a named partition of store. Each partition
+// is linked to the raft group which forms the input for this
+// partition.
 message Partition {
     ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
     PartitionSpec spec = 2 [(gogoproto.nullable) = false];
@@ -690,6 +758,9 @@ message PartitionSpec {
 message PartitionStatus {
 }
 
+// Replicas are created by a flock controller in response to the creation of
+// a partition. Each replica is linked to a raft group replica that forms
+// the input for this replica.
 message Replica {
     ObjectMetadata metadata = 1 [(gogoproto.nullable) = false];
     ReplicaSpec spec = 2 [(gogoproto.nullable) = false];
