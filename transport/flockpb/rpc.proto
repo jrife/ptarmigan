@@ -373,7 +373,7 @@ message FencingTokensQueryRequest {
 }
 
 message FencingTokensQueryResponse {
-  repeated FencingToken data = 1;
+  repeated FencingToken tokens = 1;
 }
 
 message FencingTokensCreateRequest {
@@ -400,13 +400,56 @@ message FencingTokensDeleteResponse {
   FencingToken token = 1;
 }
 
+message FencingTokensWatchCursor {
+  int64 revision = 1;
+  string name = 2;
+}
+
 message FencingTokensWatchRequest {
+  // start is an optional cursor to watch from (exclusive). No start is "now".
+  FencingTokensWatchCursor start = 1 [(gogoproto.nullable) = false];
+  // filter out create events.
+  bool no_create = 2;
+  // filter out update events.
+  bool no_update = 3;
+  // filter out delete event.
+  bool no_delete = 4;
+  // If prev_kv is set, created watcher gets the previous token before the event happens.
+  // If the previous token is already compacted, nothing will be returned.
+  bool prev_kv = 7;
 }
 
 message FencingTokensWatchResponse {
+  // Indicates that the watch request tried watching from a
+  // compacted revision. The client should treat the watcher
+  // as canceled and should not try to create any watcher with
+  // the same start again.
+  bool compacted = 1;
+  // Watchers should keep track of the latest after cursor
+  // so that they can resume where they left off with a
+  // subsequent watch request. If the last watch request
+  // was canceled due to compaction this cursor is not valid
+  // Use of an after cursor from a compacted revision will
+  // result in another canceled watch request.
+  FencingTokensWatchCursor after = 2 [(gogoproto.nullable) = false];
+  repeated FencingTokensEvent events = 3 [(gogoproto.nullable) = false];
+}
+
+message FencingTokensEvent {
+  enum EventType {
+    CREATE = 0;
+    UPDATE = 1;
+    DELETE = 2;
+  }
+
+  EventType type = 1;
+  FencingToken token = 2 [(gogoproto.nullable) = false];
+  FencingToken prev_token = 3;
 }
 
 message FencingGroupsQueryRequest {
+  string name = 1;
+  string token = 2;
 }
 
 message FencingGroupsQueryResponse {
